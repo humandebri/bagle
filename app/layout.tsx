@@ -21,9 +21,17 @@ const shipporiMincho = Shippori_Mincho({
 })
 
 export const metadata: Metadata = {
-  title: "Bagel - Online Shop",
-  description: "美味しいベーグルをオンラインでご注文いただけます。",
-}
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  title: {
+    template: '%s | Bagel',
+    default: 'Bagel',
+  },
+  description: '美味しいベーグルをオンラインでご注文いただけます',
+  openGraph: {
+    title: 'Bagel',
+    images: ['/images/bagle_shop_image.jpg'],
+  }
+};
 
 export default function RootLayout({
   children,

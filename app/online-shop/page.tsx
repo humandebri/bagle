@@ -1,16 +1,14 @@
 import { ShoppingBag } from "lucide-react"
-import BagelMenu from "@/components/bagel-menu"
+import BagelMenu from "@/components/BagelMenu"
+import { sampleBagels } from "@/lib/sampleBagels";
+
+export const metadata = {
+  title: 'SHOP', 
+};
 
 export default function Home() {
   return (
     <main className="min-h-screen">
-      {/* <div
-          className="relative w-full bg-cover"
-          style={{
-            backgroundImage: "url('/images/panpkin.jpg')",
-          }}
-        > */}
-
         <div className="relative z-10 mx-auto mt-12 bg-white text-black p-6 rounded-sm">
           <div className="bg-gray-100 p-3 mb-6 text-center">
             <p className="text-sm">お持ち帰り、できるだけ早く（明日） 変更</p>
@@ -30,9 +28,8 @@ export default function Home() {
             </div>
           </div>
 
-          <BagelMenu />
+          <BagelMenu bagels={sampleBagels} />
         </div>
-      {/* </div> */}
     </main>
   )
 }
