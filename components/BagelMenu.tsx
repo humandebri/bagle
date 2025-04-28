@@ -1,27 +1,23 @@
-import Link from 'next/link';
-import BagelCard, { Bagel } from './BagelCard';
+"use client";
 
-type Props = {
-  bagels: Bagel[];
-  /** true = 各カードを `/bagel/[id]` へリンクさせる（デフォルト） */
-  linkable?: boolean;
-};
+import { useRouter } from "next/navigation";
+import BagelCard, { Bagel } from "./BagelCard";
 
-export default function BagelMenu({ bagels, linkable = true }: Props) {
+type Props = { bagels: Bagel[] };
+
+export default function BagelMenu({ bagels }: Props) {
+  const router = useRouter();
+
+  const openModal = (id: number) =>
+    router.push(`/online-shop?modal=bagel&id=${id}`, { scroll: false });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {bagels.map((bagel) =>
-        linkable ? (
-          <Link
-            href={`/online-shop/bagle/${bagel.id}`}
-            key={bagel.id}
-          >
-            <BagelCard bagel={bagel} />
-          </Link>
-        ) : (
-          <BagelCard bagel={bagel} key={bagel.id} />
-        ),
-      )}
+      {bagels.map((b) => (
+        <button key={b.id} onClick={() => openModal(b.id)} className="text-left">
+          <BagelCard bagel={b} />
+        </button>
+      ))}
     </div>
   );
 }
