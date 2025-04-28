@@ -29,7 +29,7 @@ export default function BagelModal({ bagel, onClose }: Props) {
   }, []);
 
   const close = () => (onClose ? onClose() : router.back());
-  const inc = () => setQuantity((q) => q + 1);
+  const inc = () => setQuantity((q) => (q < 8 ? q + 1 : q));
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
     addToCart({ id: bagel.id, name: bagel.name, price: bagel.price, quantity });
@@ -54,7 +54,7 @@ export default function BagelModal({ bagel, onClose }: Props) {
         {/* ✕ボタン（スマホのみ表示） */}
         <button
           onClick={close}
-          className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-black md:hidden"
+          className="absolute top-2 right-4 text-3xl text-gray-400 hover:text-black md:hidden"
           aria-label="閉じる"
         >
           ✕
@@ -119,7 +119,7 @@ export default function BagelModal({ bagel, onClose }: Props) {
       <div className="w-full max-w-md px-6 py-7 border-t border-gray-300 bg-white md:hidden">
         <button
           onClick={add}
-          className="w-full py-5 w-20 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+          className="w-full py-5  bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
         >
           注文に追加する ¥{quantity * bagel.price}
         </button>

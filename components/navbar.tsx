@@ -16,7 +16,7 @@ const links = [
 export default function Navbar() {
   const pathname = usePathname();
   return (
-    <nav className="relative z-10 flex justify-center items-center h-16 px-4 text-gray-300 bg-gray-700/60">
+    <nav className="relative z-10 flex justify-center items-center h-16 px-4 text-gray-300 bg-[#887c5d]/70">
       <div className="flex space-x-8 sm:text-[18px]">
       {links.map((link) => {
           return (
