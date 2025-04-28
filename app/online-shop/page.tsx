@@ -47,7 +47,7 @@ export default function OnlineShop() {
       )}
 
       {/* ---------- フッター ---------- */}
-      {!showModal && (
+      {!showModal && totalQuantity > 0 && (
         <CartFooter
           totalQuantity={totalQuantity}
           onClick={() => router.push('/online-shop/cart')}

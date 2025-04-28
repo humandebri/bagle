@@ -17,7 +17,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
     <div className="flex border-b pb-6">
       {/* ------- 左側 ------- */}
       <div className="w-2/3 pr-4">
-        <h4 className="text-2xl text-gray-400 font-medium mb-2">{bagel.name}</h4>
+        <h4 className="text-2xl text-gray-400 mb-2">{bagel.name}</h4>
 
         <p className="text-xl text-gray-400 mb-4 leading-relaxed">
           {bagel.description}
@@ -33,7 +33,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
           )}
         </div>
 
-        <p className="font-medium">¥ {bagel.price.toLocaleString()}</p>
+        <p className="text-xl text-gray-400">¥ {bagel.price.toLocaleString()}</p>
       </div>
 
       {/* ------- 右側 ------- */}
