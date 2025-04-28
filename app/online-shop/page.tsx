@@ -6,6 +6,8 @@ import { ShoppingBag }             from 'lucide-react';
 import BagelMenu                   from '@/components/BagelMenu';
 import BagelModal                  from '@/components/BagelModal';
 import { sampleBagels }            from '@/lib/sampleBagels';
+import DispatchModal               from '@/components/DispatchModal';
+import { useState } from "react";
 
 export default function OnlineShop() {
   /* --- URL パラメータ処理 ----------------------- */
@@ -13,19 +15,27 @@ export default function OnlineShop() {
   const router    = useRouter();
   const idParam   = sp.get('id');
   const showModal = sp.get('modal') === 'bagel' && idParam;   // ←★ 変数名を統一
+  const showDispath = sp.get('modal') === 'dispatch';
   const bagel     = sampleBagels.find(b => b.id === Number(idParam));
 
   /* --- カート情報 ------------------------------- */
   const cartItems     = useCartStore(s => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
+  /* --- 日付の管理 ------------------------------- */
+  const [dispatchDate, setDispatchDate] = useState<string>("");
+  const [dispatchTime, setDispatchTime] = useState<string>("");
   /* --- 画面 ------------------------------------ */
   return (
     <main className="min-h-[calc(100vh-7rem)]">
       {/* ---------- 通常ページ ---------- */}
-      <div className="relative z-10 mx-auto mt-5 bg-white text-black p-6 rounded-sm">
-        <div className="bg-gray-100 p-3 mb-6 text-center">
-          <p className="text-sm">お持ち帰り、できるだけ早く（明日） 変更</p>
+      <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+        <div className="border-2  p-3 mb-6 text-center">
+        <button onClick={() => router.push(`/online-shop?modal=dispatch`)}>
+          {dispatchDate && dispatchTime
+            ? `お持ち帰り , ${dispatchDate} ${dispatchTime} `
+            : "日時を選択してください"}
+        </button>
         </div>
 
         <div className="flex border-b mb-8">
@@ -45,6 +55,20 @@ export default function OnlineShop() {
           onClose={() => router.push('/online-shop', { scroll: false })}
         />
       )}
+
+      {/* ---------- dispatchモーダル ---------- */}
+      {showDispath && (
+          <DispatchModal
+          onClose={() => router.push('/online-shop', { scroll: false })}
+          onSave={(date, time) => {
+            setDispatchDate(date);
+            setDispatchTime(time);
+            router.push('/online-shop', { scroll: false });
+          }}
+          initialDate={dispatchDate} // ← これ！
+          initialTime={dispatchTime} // ← これ！
+        />
+        )}
 
       {/* ---------- フッター ---------- */}
       {!showModal && totalQuantity > 0 && (
