@@ -1,23 +1,28 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { Bagel, Tag } from "@/components/BagelCard";
+import { sampleBagels } from "@/lib/sampleBagels"; // Bagelデータを探す用
+import { Tag } from "@/components/BagelCard";
 
-type Props = {
-  bagel: Bagel;
-  onClose?: () => void;
-};
-
-export default function BagelModal({ bagel, onClose }: Props) {
+export default function BagelModalPage() {
   const router = useRouter();
-  const [quantity, setQuantity] = useState(1);
-  const [loaded, setLoaded] = useState(false);
+  const params = useParams();
+  const id = params.id?.toString(); // モーダルURLからid取得
 
+  const bagel = sampleBagels.find(b => b.id.toString() === id);
+
+  const cartItems = useCartStore((s) => s.items); // カート中身を取得
   const addToCart = useCartStore((s) => s.addToCart);
+
+  // すでにカートにある場合、その個数を初期値に
+  const existingItem = cartItems.find((item) => item.id.toString() === id);
+  const [quantity, setQuantity] = useState(existingItem ? existingItem.quantity : 1);
+
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 100);
@@ -28,10 +33,11 @@ export default function BagelModal({ bagel, onClose }: Props) {
     };
   }, []);
 
-  const close = () => (onClose ? onClose() : router.back());
+  const close = () => router.back();
   const inc = () => setQuantity((q) => (q < 8 ? q + 1 : q));
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
+    if (!bagel) return;
     addToCart({ id: bagel.id, name: bagel.name, price: bagel.price, quantity });
     close();
   };
@@ -41,6 +47,14 @@ export default function BagelModal({ bagel, onClose }: Props) {
       close();
     }
   };
+
+  if (!bagel) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-500">
+        商品が見つかりませんでした
+      </div>
+    );
+  }
 
   return (
     <div
@@ -106,7 +120,7 @@ export default function BagelModal({ bagel, onClose }: Props) {
               {/* PCだけ 注文ボタン横並び */}
               <button
                 onClick={add}
-                className="hidden md:inline-block flex-shrink-0  w-64 py-4  px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+                className="hidden md:inline-block flex-shrink-0 w-64 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
               >
                 注文 ¥{quantity * bagel.price}
               </button>
@@ -119,7 +133,7 @@ export default function BagelModal({ bagel, onClose }: Props) {
       <div className="w-full max-w-md px-6 py-7 border-t border-gray-300 bg-white md:hidden">
         <button
           onClick={add}
-          className="w-full py-5  bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+          className="w-full py-5 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
         >
           注文に追加する ¥{quantity * bagel.price}
         </button>
