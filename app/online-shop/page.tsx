@@ -69,10 +69,10 @@ function CartFooter({
 }) {
   return (
     <div className="fixed bottom-0 w-full bg-white flex justify-center z-30 border-t border-gray-300">
-      <div className="w-full max-w-md px-6 py-7">
+      <div className="w-full max-w-md px-6 py-3">
         <button
           onClick={onClick}
-          className="w-full relative py-5 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center"
+          className="w-full relative py-3 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center"
           aria-label="カートを見る"
         >
           カートを見る

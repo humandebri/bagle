@@ -119,13 +119,13 @@ export default function DispatchModalPage() {
         {/* スマホ用固定フッター */}
         <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-50">
           <button
-            className="flex-1 py-4 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
+            className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
             onClick={close}
           >
             キャンセル
           </button>
           <button
-            className="flex-1 py-4 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+            className="flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
             onClick={save}
           >
             保存
@@ -135,13 +135,13 @@ export default function DispatchModalPage() {
         {/* PC用フッター */}
         <div className="hidden md:flex w-full max-w-lg px-6 py-7 border-t border-gray-300 bg-white space-x-4">
           <button
-            className="flex-1 py-5 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
+            className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
             onClick={close}
           >
             キャンセル
           </button>
           <button
-            className="flex-1 py-5 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+            className="flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
             onClick={save}
           >
             保存

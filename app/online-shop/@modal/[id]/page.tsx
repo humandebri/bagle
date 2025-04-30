@@ -103,7 +103,7 @@ export default function BagelModalPage() {
           <p className="text-xl text-gray-400 mb-6">{bagel.longDescription}</p>
 
           {/* 数量 & 注文ボタン */}
-          <div className="my-8">
+          <div className="my-8 pb-28">
             <p className="mb-2 text-gray-400">数量</p>
             <div className="flex items-center space-x-4">
               <div className="flex items-center border-2 border-gray-300 w-44 h-15">
@@ -129,10 +129,10 @@ export default function BagelModalPage() {
       </div>
 
       {/* スマホだけ 固定フッター */}
-      <div className="md:hidden sticky bottom-0  w-full max-w-md px-6 py-7 border-t border-gray-300 bg-white">
+      <div className="md:hidden sticky bottom-0  w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white">
         <button
           onClick={add}
-          className="w-full py-5 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+          className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
         >
           注文に追加する ¥{quantity * bagel.price}
         </button>

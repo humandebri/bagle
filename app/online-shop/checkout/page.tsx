@@ -145,6 +145,7 @@ export default function CheckoutPage() {
     );
   }
   return (
+    <>
     <main className="min-h-[calc(100vh-7rem)] px-6 py-10 bg-white">
       <h1 className="text-3xl mb-8">注文手続き</h1>
 
@@ -231,16 +232,18 @@ export default function CheckoutPage() {
         </div>
       </section>
 
-      {/* --- 注文確定ボタン --- */}
 
-      <div className="w-full max-w-md px-6 py-7 bg-white md:hidden">
-        <button
-          onClick={handleSubmit}
-          className="w-full py-5 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
-        >
-          次へ
-        </button>
-      </div>
     </main>
+          {/* --- 注文確定ボタン --- */}
+
+          <div className="fixed bottom-0 w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white md:hidden">
+          <button
+            onClick={handleSubmit}
+            className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+          >
+            次へ
+          </button>
+        </div>
+    </>
   );
 }
