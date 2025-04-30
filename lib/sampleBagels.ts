@@ -23,4 +23,5 @@ export const sampleBagels = [
     image: "/images/panpkin.jpg",
     tags: ["vegan", "vegetarian"],
   },
+  
 ];

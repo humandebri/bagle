@@ -57,13 +57,13 @@ export default function BagelModalPage() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white md:bg-black/50"
-      onClick={handleBackgroundClick}
+    className="fixed inset-0 z-50  bg-white md:bg-black/50 flex flex-col overflow-y-scroll  overscroll-contain touch-auto"
+    onClick={handleBackgroundClick}
+  >
+    <div
+      className="relative pb-28 mx-auto w-full max-w-md md:max-w-[500px] bg-white shadow-lg md:mt-20 md:mb-10 rounded-lg overflow-hidden min-h-full "
+      onClick={(e) => e.stopPropagation()}
     >
-      <div
-        className="relative flex flex-col w-full h-full md:h-auto md:w-[500px] md:shadow-lg md:overflow-hidden bg-white"
-        onClick={(e) => e.stopPropagation()}
-      >
         {/* ✕ボタン（スマホのみ表示） */}
         <button
           onClick={close}
@@ -129,7 +129,7 @@ export default function BagelModalPage() {
       </div>
 
       {/* スマホだけ 固定フッター */}
-      <div className="w-full max-w-md px-6 py-7 border-t border-gray-300 bg-white md:hidden">
+      <div className="md:hidden sticky bottom-0  w-full max-w-md px-6 py-7 border-t border-gray-300 bg-white">
         <button
           onClick={add}
           className="w-full py-5 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
