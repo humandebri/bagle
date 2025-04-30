@@ -11,9 +11,8 @@ import { Tag } from "@/components/BagelCard";
 export default function BagelModalPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id?.toString(); // モーダルURLからid取得
-
-  const bagel = sampleBagels.find(b => b.id.toString() === id);
+  const id = params.id; // すでに string 型のはず
+  const bagel = sampleBagels.find(b => b.id === id);
 
   const cartItems = useCartStore((s) => s.items); // カート中身を取得
   const addToCart = useCartStore((s) => s.addToCart);

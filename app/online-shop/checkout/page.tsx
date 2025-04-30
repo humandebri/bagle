@@ -91,7 +91,12 @@ export default function CheckoutPage() {
     if (!validate()) return;
   
     // プロフィール情報も保存（上書きまたは新規）
-    const { error: profileError } = await supabase.from('profiles').upsert({
+    if (!session?.user?.email) {
+      router.push('/online-shop');
+      return;
+    }
+    
+    const { error: profileError } = await supabase.from("profiles").upsert({
       email: session.user.email,
       first_name: firstName,
       last_name: lastName,
