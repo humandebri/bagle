@@ -3,7 +3,7 @@
 import Image from 'next/image';
 
 export type Bagel = {
-  id: string | number;
+  id: string;
   name: string;
   description: string;
   longDescription: string;
