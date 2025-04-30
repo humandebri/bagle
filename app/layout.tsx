@@ -4,6 +4,8 @@ import type { Metadata } from "next"
 import {Shippori_Mincho , Montserrat} from 'next/font/google'
 import { ThemeProvider } from "next-themes"
 import Navbar from "@/components/navbar"
+import { Toaster } from "@/components/ui/sonner"
+import NextAuthProvider from '@/components/providers/session-provider';
 
 
 const montserrat = Montserrat({ 
@@ -40,11 +42,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning className={`${montserrat.variable} ${shipporiMincho.variable}`}>
-      <body className={montserrat.className}>
+      <body className={`${montserrat.className} text-gray-500`}>
+      <NextAuthProvider>
+
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <Navbar />
           {children}
+          <Toaster />
         </ThemeProvider>
+        </NextAuthProvider>
       </body>
     </html>
   )

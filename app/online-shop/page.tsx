@@ -1,53 +1,55 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useCartStore }            from '@/store/cart-store';
-import { ShoppingBag }             from 'lucide-react';
-import BagelMenu                   from '@/components/BagelMenu';
-import BagelModal                  from '@/components/BagelModal';
-import { sampleBagels }            from '@/lib/sampleBagels';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCartStore } from '@/store/cart-store';
+import { ShoppingBag } from 'lucide-react';
+import BagelMenu from '@/components/BagelMenu';
+import { sampleBagels } from '@/lib/sampleBagels';
 
-export default function OnlineShop() {
-  /* --- URL パラメータ処理 ----------------------- */
-  const sp        = useSearchParams();
-  const router    = useRouter();
-  const idParam   = sp.get('id');
-  const showModal = sp.get('modal') === 'bagel' && idParam;   // ←★ 変数名を統一
-  const bagel     = sampleBagels.find(b => b.id === Number(idParam));
+export default function OnlineShopPage() {
+  const router = useRouter();
 
-  /* --- カート情報 ------------------------------- */
-  const cartItems     = useCartStore(s => s.items);
+  // マウントチェック
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // カート情報
+  const cartItems = useCartStore((s) => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
-  /* --- 画面 ------------------------------------ */
+  // 日付・時間
+  const dispatchDate = useCartStore((s) => s.dispatchDate);
+  const dispatchTime = useCartStore((s) => s.dispatchTime);
+
   return (
     <main className="min-h-[calc(100vh-7rem)]">
-      {/* ---------- 通常ページ ---------- */}
-      <div className="relative z-10 mx-auto mt-5 bg-white text-black p-6 rounded-sm">
-        <div className="bg-gray-100 p-3 mb-6 text-center">
-          <p className="text-sm">お持ち帰り、できるだけ早く（明日） 変更</p>
+      {/* 通常ページ */}
+      <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+        <div className="border-2 p-3 mb-6 text-center">
+          {mounted && (
+            <button onClick={() => router.push(`/online-shop/dispatch`)}>
+              {dispatchDate && dispatchTime
+                ? `お持ち帰り , ${dispatchDate} ${dispatchTime}`
+                : "日時を選択してください"}
+            </button>
+          )}
         </div>
 
         <div className="flex border-b mb-8">
           <div className="w-1/2 pb-2 border-b-2">
-            <button className="font-medium text-2xl  text-gray-400">BAGEL</button>
+            <button className="font-medium text-2xl text-gray-400">BAGEL</button>
           </div>
         </div>
 
-        {/* ←★ BagelMenu をここで描画してから div を閉じる */}
+        {/* ベーグルメニュー */}
         <BagelMenu bagels={sampleBagels} />
       </div>
 
-      {/* ---------- モーダル ---------- */}
-      {showModal && bagel && (
-        <BagelModal
-          bagel={bagel}
-          onClose={() => router.push('/online-shop', { scroll: false })}
-        />
-      )}
-
-      {/* ---------- フッター ---------- */}
-      {!showModal && (
+      {/* フッター */}
+      {mounted && totalQuantity > 0 && (
         <CartFooter
           totalQuantity={totalQuantity}
           onClick={() => router.push('/online-shop/cart')}
@@ -57,7 +59,7 @@ export default function OnlineShop() {
   );
 }
 
-/* --- フッターを別コンポーネントに分離 --- */
+/* --- フッターコンポーネント --- */
 function CartFooter({
   totalQuantity,
   onClick,
@@ -77,7 +79,7 @@ function CartFooter({
           <div className="flex absolute right-6">
             <ShoppingBag className="h-5 w-5" />
             {totalQuantity > 0 && (
-              <span className="ml-1 w-5 h-5 flex items-center justify-center text-sm">
+              <span className="ml-1 w-5 h-5 flex items-center justify-center">
                 {totalQuantity}
               </span>
             )}
