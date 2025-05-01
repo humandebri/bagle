@@ -37,10 +37,13 @@ export default function BagelModalPage() {
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
     if (!bagel) return;
-    addToCart({ id: bagel.id, name: bagel.name, price: bagel.price, quantity });
+    addToCart(
+      { id: bagel.id, name: bagel.name, price: bagel.price, quantity },
+      true // ←上書きすることで数量がダブらない
+    );
     close();
   };
-
+  
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       close();

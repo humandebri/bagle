@@ -4,9 +4,12 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { FcGoogle } from 'react-icons/fc'; // ← ここ注目
 import Link from 'next/link';
 import { PowerIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 
 export default function Account() {
+  const router = useRouter();
+
   const { data: session, status } = useSession();
 
   if (status === 'loading') {
@@ -33,12 +36,7 @@ export default function Account() {
     <div className="max-w-2xl mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl text-gray-400">アカウント</h1>
-        {/* <button 
-          onClick={() => signOut()}
-          className=" text-gray-500 hover:text-gray-700"
-        >
-          ログアウト
-        </button> */}
+  
         <button
           className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-sky-100 hover:text-[#887c5d]"
           onClick={() => signOut()}
@@ -47,19 +45,28 @@ export default function Account() {
         </button>
       </div>
       
+      <div className="p-6">
       <div className="mb-8">
-        <h2 className="text-xl mb-4 text-gray-400">注文履歴</h2>
-        {/* 注文履歴コンポーネント */}
+      <button
+          onClick={() => router.push('/account/orders')}
+          className="w-full text-left p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+        >
+          <h2 className="text-xl mb-4 text-gray-400">注文情報</h2>
+          {/* 説明など入れてもOK */}
+        </button>
       </div>
-      
+
       <div>
-      <Link href="/account/profile">
-        <div className="p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+        <button
+          onClick={() => router.push('/account/profile')}
+          className="w-full text-left p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+        >
           <h2 className="text-xl mb-4 text-gray-400">アカウント情報</h2>
           {/* 説明など入れてもOK */}
-        </div>
-      </Link>
+        </button>
+      </div>
     </div>
     </div>
   );
 }
+

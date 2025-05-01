@@ -20,7 +20,12 @@
     ],
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    // 既存設定…
+    "typeRoots": [
+      "./types",                 // 追加した型フォルダ
+      "./node_modules/@types"    // 既定
+    ]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

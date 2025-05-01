@@ -23,7 +23,7 @@ export default function CartPage() {
 
   return (
     <>
-    <main className="min-h-[calc(100vh-7rem)] px-6 py-10 bg-white">
+    <main className="min-h-[calc(100vh-7rem)] pb-20 px-6 py-10 bg-white">
       <h1 className="text-3xl  mb-8">Cart </h1>
       <button
           onClick={close}
