@@ -33,10 +33,11 @@ export async function POST(req: NextRequest) {
       clientSecret: intent.client_secret,
       requiresAction: intent.status === 'requires_action',
     });
-  } catch (err: any) {
-    console.error('Stripeエラー:', err);
+  } catch (err: unknown) {
+    const error = err as Error; // errは Error 型とは限らないため、明示的に型変換
+    console.error('Stripeエラー:', error.message);
     return NextResponse.json(
-      { error: err.message || '支払いエラーが発生しました' },
+      { error: error.message || '支払いエラーが発生しました' },
       { status: 500 }
     );
   }

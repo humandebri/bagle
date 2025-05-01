@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 export default function CheckoutPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
-  const items        = useCartStore((s) => s.items);
   const router       = useRouter();
   const { data: session, status } = useSession();
 
@@ -25,14 +24,27 @@ export default function CheckoutPage() {
   const validate = () => {
     const e = { firstName: '', lastName: '', phone: '', email: '' };
     let ok = true;
-
-    if (!firstName) e.firstName = '名を入力してください', ok = false;
-    if (!lastName)  e.lastName  = '姓を入力してください', ok = false;
-    if (!phone || !/^0\d{1,4}-\d{1,4}-\d{3,4}$/.test(phone))
-      e.phone = '例: 090-1234-5678', ok = false;
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      e.email = 'メール形式が不正です', ok = false;
-
+  
+    if (!firstName) {
+      e.firstName = '名を入力してください';
+      ok = false;
+    }
+  
+    if (!lastName) {
+      e.lastName = '姓を入力してください';
+      ok = false;
+    }
+  
+    if (!phone || !/^0\d{1,4}-\d{1,4}-\d{3,4}$/.test(phone)) {
+      e.phone = '例: 090-1234-5678';
+      ok = false;
+    }
+  
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      e.email = 'メール形式が不正です';
+      ok = false;
+    }
+  
     setErrors(e);
     return ok;
   };

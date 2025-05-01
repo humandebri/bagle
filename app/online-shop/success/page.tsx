@@ -21,7 +21,6 @@ export default function SuccessPage() {
   useEffect(() => {
     const saveOrder = async () => {
       const userId = session?.user?.id;
-      const userEmail = session?.user?.email;
 
       if (!userId || items.length === 0 || saved) return;
 

@@ -1,8 +1,7 @@
 'use client';
 
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { FcGoogle } from 'react-icons/fc'; // ← ここ注目
-import Link from 'next/link';
+import { FcGoogle } from 'react-icons/fc'; 
 import { PowerIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
