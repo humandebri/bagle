@@ -14,14 +14,91 @@ export const sampleBagels = [
   {
     id: "d2197e55-8b0f-4f26-9753-718b403b3523",
     name: "SESAME",
-    description: "原材料：北海道産小麦粉　種子島粗糖　シママース　天然酵母　国産かぼちゃ　カボチャの種",
-    longDescription: `原材料：北海道産小麦粉　種子島粗糖　シママース　天然酵母　国産かぼちゃ　カボチャの種
-      香ばしい胡麻の風味がベーグル本来の味わいを引き立てます。北海道産の厳選された小麦粉を使用し、
+    description: "香ばしい胡麻がアクセント。シンプルだけど奥深い。",
+    longDescription: `香ばしい胡麻の風味がベーグル本来の味わいを引き立てます。北海道産の厳選された小麦粉を使用し、
       じっくりと発酵させることで深い風味を引き出しています。朝食やランチに最適で、クリームチーズや
       アボカドとの相性が抜群です。`,
     price: 370,
     image: "/images/panpkin.jpg",
     tags: ["vegan", "vegetarian"],
   },
-  
+  {
+    id: "5e34b2b2-c7c9-42b5-b5e7-dcfbeab9a001",
+    name: "CINNAMON RAISIN",
+    description: "シナモンの香りとレーズンの甘さが絶妙。",
+    longDescription: `甘くスパイシーなシナモンと、ジューシーなレーズンが練り込まれたベーグル。
+      軽くトーストしてバターを塗れば、朝食やティータイムにぴったりの一品です。`,
+    price: 390,
+    image: "/images/panpkin.jpg",
+    tags: ["vegetarian"],
+  },
+  {
+    id: "bfa23c70-f542-4a2e-aec5-e5b8d1ef2f94",
+    name: "BLUEBERRY",
+    description: "ブルーベリーの酸味が爽やかな定番フレーバー。",
+    longDescription: `甘酸っぱいブルーベリーをたっぷり練り込んだベーグル。
+      トーストするとフルーツの香りが引き立ち、クリームチーズとの相性も抜群です。`,
+    price: 400,
+    image: "/images/panpkin.jpg",
+    tags: ["vegetarian"],
+  },
+  {
+    id: "c9786ed8-e73c-4c9c-a17f-cb2f038274f5",
+    name: "ONION",
+    description: "ローストオニオンの旨味が香ばしい。",
+    longDescription: `表面にローストしたオニオンをたっぷりトッピング。
+      そのまま食べても、サンドイッチにしても旨味がしっかり。`,
+    price: 380,
+    image: "/images/panpkin.jpg",
+    tags: [],
+  },
+  {
+    id: "f0a76c71-e3b1-49e5-ace1-bcdee35bc28f",
+    name: "GARLIC",
+    description: "ガーリックのパンチが効いた風味豊かな一品。",
+    longDescription: `ガーリック好きにおすすめのベーグル。パスタやスープと合わせると食事パンとしても満足感◎。`,
+    price: 390,
+    image: "/images/panpkin.jpg",
+    tags: [],
+  },
+  {
+    id: "1cfc7616-10d9-4de1-9865-f2c3f9d5feda",
+    name: "CHOCOLATE",
+    description: "濃厚チョコレートを練り込んだスイーツ系ベーグル。",
+    longDescription: `甘さ控えめのダークチョコレートを練り込んで焼き上げたベーグル。
+      甘党の方にぴったりです。`,
+    price: 420,
+    image: "/images/panpkin.jpg",
+    tags: ["vegetarian"],
+  },
+  {
+    id: "ec47a053-1ee1-48a0-bf4a-202a3d8bff0f",
+    name: "MATCHA",
+    description: "抹茶の香りと渋みが楽しめる和風フレーバー。",
+    longDescription: `京都宇治産の抹茶を使用した、香り高い和風ベーグル。
+      あんこやホイップと合わせると絶品です。`,
+    price: 410,
+    image: "/images/panpkin.jpg",
+    tags: ["vegetarian"],
+  },
+  {
+    id: "fc5427ee-f103-41a3-99b6-5f74817eb999",
+    name: "CHEESE",
+    description: "表面をカリッと焼いたチーズがクセになる。",
+    longDescription: `チーズ好きにはたまらない、表面にチーズをのせて焼き上げたベーグル。
+      軽くトーストするとさらに香ばしさがアップします。`,
+    price: 430,
+    image: "/images/panpkin.jpg",
+    tags: [],
+  },
+  {
+    id: "a8e0cdd6-0eae-45f3-aaa1-9ae44e9b0a80",
+    name: "TOMATO BASIL",
+    description: "トマトとバジルの爽やかコンビ。",
+    longDescription: `セミドライトマトとバジルを練り込んだ、食欲をそそるベーグル。
+      パスタやサラダと合わせてどうぞ。`,
+    price: 410,
+    image: "/images/panpkin.jpg",
+    tags: ["vegetarian"],
+  },
 ];

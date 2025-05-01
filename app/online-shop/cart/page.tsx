@@ -93,7 +93,7 @@ export default function CartPage() {
         <p >カートに商品がありません。</p>
       )}
     </main>
-        <div className="fixed bottom-0 w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white md:hidden">
+        <div className="fixed bottom-0 z-20 w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white md:hidden">
         <button
           onClick={() => router.push('/online-shop/checkout')}
           className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"

@@ -56,12 +56,13 @@ export default function BagelModalPage() {
   }
 
   return (
+    <>
     <div
-    className="fixed inset-0 z-50  bg-white md:bg-black/50 flex flex-col overflow-y-scroll  overscroll-contain touch-auto"
-    onClick={handleBackgroundClick}
-  >
+      className="fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center"
+      onClick={handleBackgroundClick}
+    >
     <div
-      className="relative pb-28 mx-auto w-full max-w-md md:max-w-[500px] bg-white shadow-lg md:mt-20 md:mb-10 rounded-lg overflow-hidden min-h-full "
+      className="relative  mx-auto w-full max-w-md md:max-w-[500px] bg-white md:mt-20 md:mb-10 min-h-full "
       onClick={(e) => e.stopPropagation()}
     >
         {/* ✕ボタン（スマホのみ表示） */}
@@ -103,9 +104,9 @@ export default function BagelModalPage() {
           <p className="text-xl text-gray-400 mb-6">{bagel.longDescription}</p>
 
           {/* 数量 & 注文ボタン */}
-          <div className="my-8 pb-28">
+          <div className="my-8 pb-30">
             <p className="mb-2 text-gray-400">数量</p>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 ">
               <div className="flex items-center border-2 border-gray-300 w-44 h-15">
                 <button onClick={dec} className="flex-1 flex justify-center items-center">
                   <Minus className="w-5 h-5" />
@@ -129,14 +130,16 @@ export default function BagelModalPage() {
       </div>
 
       {/* スマホだけ 固定フッター */}
-      <div className="md:hidden sticky bottom-0  w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white">
-        <button
-          onClick={add}
-          className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
-        >
-          注文に追加する ¥{quantity * bagel.price}
-        </button>
-      </div>
+
     </div>
+  <div className="md:hidden z-20 fixed bottom-0  w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white">
+    <button
+      onClick={add}
+      className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+    >
+      注文に追加する ¥{quantity * bagel.price}
+    </button>
+  </div>
+  </>
   );
 }

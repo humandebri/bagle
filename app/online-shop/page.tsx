@@ -25,7 +25,8 @@ export default function OnlineShopPage() {
   const dispatchTime = useCartStore((s) => s.dispatchTime);
 
   return (
-    <main className="min-h-[calc(100vh-7rem)]">
+    <>
+    <main className="min-h-[calc(100vh-7rem)] pb-15">
       {/* 通常ページ */}
       <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
         <div className="border-2 p-3 mb-6 text-center">
@@ -47,15 +48,15 @@ export default function OnlineShopPage() {
         {/* ベーグルメニュー */}
         <BagelMenu bagels={sampleBagels} />
       </div>
-
-      {/* フッター */}
-      {mounted && totalQuantity > 0 && (
-        <CartFooter
-          totalQuantity={totalQuantity}
-          onClick={() => router.push('/online-shop/cart')}
-        />
-      )}
     </main>
+    {/* フッター */}
+    {mounted && totalQuantity > 0 && (
+      <CartFooter
+        totalQuantity={totalQuantity}
+        onClick={() => router.push('/online-shop/cart')}
+      />
+    )}
+    </>
   );
 }
 
@@ -68,7 +69,7 @@ function CartFooter({
   onClick: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 w-full bg-white flex justify-center z-30 border-t border-gray-300">
+    <div className="fixed bottom-0 w-full bg-white flex justify-center z-20 border-t border-gray-300">
       <div className="w-full max-w-md px-6 py-3">
         <button
           onClick={onClick}
