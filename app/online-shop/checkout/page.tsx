@@ -35,11 +35,10 @@ export default function CheckoutPage() {
       ok = false;
     }
   
-    if (!phone || !/^0\d{1,4}-\d{1,4}-\d{3,4}$/.test(phone)) {
-      e.phone = '例: 090-1234-5678';
+    if (!phone || !/^\d+$/.test(phone)) {
+      e.phone = '数字のみを入力してください（例: 09012345678）';
       ok = false;
     }
-  
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.email = 'メール形式が不正です';
       ok = false;
@@ -139,9 +138,9 @@ export default function CheckoutPage() {
         <section className="mb-10">
           <h2 className="text-xl mb-4">連絡先情報</h2>
           <div className="space-y-6">
-            <InputField label="名" value={firstName} onChange={setFirstName} error={errors.firstName} placeholder="例：太郎" />
             <InputField label="姓" value={lastName} onChange={setLastName} error={errors.lastName} placeholder="例：山田" />
-            <InputField label="電話番号" value={phone} onChange={setPhone} error={errors.phone} placeholder="例：090-1234-5678" type="tel" />
+            <InputField label="名" value={firstName} onChange={setFirstName} error={errors.firstName} placeholder="例：太郎" />
+            <InputField label="電話番号" value={phone} onChange={setPhone} error={errors.phone} placeholder="例：09012345678(ハイフンなし)" type="tel" />
             <InputField label="メールアドレス" value={email} onChange={setEmail} error={errors.email} placeholder="例：example@email.com" type="email" />
           </div>
         </section>

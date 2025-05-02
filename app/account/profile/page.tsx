@@ -106,8 +106,8 @@ export default function ProfilePage() {
           <p>読み込み中...</p>
         ) : (
           <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-            <InputField label="名" value={firstName} onChange={setFirstName} />
             <InputField label="姓" value={lastName} onChange={setLastName} />
+            <InputField label="名" value={firstName} onChange={setFirstName} />
             <InputField
               label="電話番号"
               value={phone}

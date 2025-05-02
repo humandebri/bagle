@@ -25,17 +25,16 @@ type CartState = {
 
 
 // --- 初期配送情報 ---
-const initialDispatchDate = (() => {
+export const initialDispatchDate = (() => {
   const date = new Date();
-  date.setDate(date.getDate() + 2); // 2日後
+  date.setDate(date.getDate() + 2);
   return date.toLocaleDateString("ja-JP", {
     month: "long",
     day: "numeric",
     weekday: "short",
   });
 })();
-const initialDispatchTime = "11:00";
-
+export const initialDispatchTime = "11:00";
 const maxbagel = 8;
 
 export const useCartStore = create<CartState>()(

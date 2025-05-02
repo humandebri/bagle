@@ -6,6 +6,8 @@ import { useCartStore } from '@/store/cart-store';
 import { ShoppingBag } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { sampleBagels } from '@/lib/sampleBagels';
+import { initialDispatchDate, initialDispatchTime } from '@/store/cart-store';
+
 
 export default function OnlineShopPage() {
   const router = useRouter();
@@ -15,7 +17,12 @@ export default function OnlineShopPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
+  
+  useEffect(() => {
+    if (mounted && (!dispatchDate || !dispatchTime)) {
+      useCartStore.getState().setDispatchInfo(initialDispatchDate, initialDispatchTime);
+    }
+  }, [mounted]);
   // カート情報
   const cartItems = useCartStore((s) => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);

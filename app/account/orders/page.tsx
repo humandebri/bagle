@@ -1,8 +1,10 @@
+// app/account/orders/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 
 type OrderItem = {
   name: string;
@@ -69,7 +71,11 @@ export default function OrdersPage() {
 
       <div className="space-y-6">
         {orders.map((order) => (
-          <div key={order.id} className="border rounded p-4 bg-white shadow-sm">
+          <Link
+            key={order.id}
+            href={`/account/orders/${order.id}`}
+            className="block border rounded p-4 bg-white shadow-sm hover:bg-gray-50 transition"
+          >
             <p className="text-sm text-gray-500 mb-2">
               注文日時: {new Date(order.created_at).toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' })}
             </p>
@@ -88,7 +94,7 @@ export default function OrdersPage() {
             <p className="text-right font-bold">
               合計: ¥{order.total_price.toLocaleString()}
             </p>
-          </div>
+          </Link>
         ))}
       </div>
     </main>
