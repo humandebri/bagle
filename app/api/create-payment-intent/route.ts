@@ -7,34 +7,35 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, paymentMethod } = await req.json();
+    const { items, customerId } = await req.json();
 
-    // 金額を再計算（円 → 銭）
+    if (!customerId) {
+      return NextResponse.json({ error: 'customerId is required' }, { status: 400 });
+    }
+
     const amount = items.reduce(
       (sum: number, i: { price: number; quantity: number }) =>
         sum + i.price * i.quantity * 100,
       0
-    ) + 10 * 100; // 袋代（¥10）を加算
+    ) + 10 * 100;
 
     const intent = await stripe.paymentIntents.create({
       amount,
       currency: 'jpy',
-      payment_method: paymentMethod,
-      confirmation_method: 'automatic',
-      confirm: true,
-      setup_future_usage: 'off_session',
+      customer: customerId,
       automatic_payment_methods: {
         enabled: true,
-        allow_redirects: 'never', // これが超重要！
+        allow_redirects: 'never',
       },
+      off_session: true,
+      confirm: true,
     });
 
     return NextResponse.json({
       clientSecret: intent.client_secret,
-      requiresAction: intent.status === 'requires_action',
     });
   } catch (err: unknown) {
-    const error = err as Error; // errは Error 型とは限らないため、明示的に型変換
+    const error = err as Error;
     console.error('Stripeエラー:', error.message);
     return NextResponse.json(
       { error: error.message || '支払いエラーが発生しました' },

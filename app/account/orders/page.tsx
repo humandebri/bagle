@@ -1,4 +1,3 @@
-// app/account/orders/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -19,6 +18,7 @@ type Order = {
   dispatch_date: string;
   dispatch_time: string;
   total_price: number;
+  shipped: boolean;
 };
 
 export default function OrdersPage() {
@@ -26,6 +26,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filter, setFilter] = useState<'pending' | 'shipped'>('pending');
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -34,7 +35,7 @@ export default function OrdersPage() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, items, dispatch_date, dispatch_time, total_price')
+        .select('id, created_at, items, dispatch_date, dispatch_time, total_price, shipped')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -61,42 +62,73 @@ export default function OrdersPage() {
     return <div className="p-6 text-center text-red-600">{error}</div>;
   }
 
-  if (!orders.length) {
-    return <div className="p-6 text-center text-gray-500">注文履歴がありません。</div>;
-  }
+  const filteredOrders = orders.filter((order) =>
+    filter === 'shipped' ? order.shipped : !order.shipped
+  );
 
   return (
     <main className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">注文履歴</h1>
 
-      <div className="space-y-6">
-        {orders.map((order) => (
-          <Link
-            key={order.id}
-            href={`/account/orders/${order.id}`}
-            className="block border rounded p-4 bg-white shadow-sm hover:bg-gray-50 transition"
-          >
-            <p className="text-sm text-gray-500 mb-2">
-              注文日時: {new Date(order.created_at).toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' })}
-            </p>
-
-            <ul className="mb-2 text-sm text-gray-800 space-y-1">
-              {order.items?.map((item, i) => (
-                <li key={i}>
-                  {item.name} × {item.quantity}（¥{item.price.toLocaleString()}）
-                </li>
-              ))}
-            </ul>
-
-            <p className="text-sm text-gray-600 mb-1">
-              受取日時: {order.dispatch_date} {order.dispatch_time}
-            </p>
-            <p className="text-right font-bold">
-              合計: ¥{order.total_price.toLocaleString()}
-            </p>
-          </Link>
-        ))}
+      {/* タブ切り替え */}
+      <div className="flex mb-6 space-x-4">
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-4 py-2 rounded border ${
+            filter === 'pending'
+              ? 'bg-[#887c5d] text-white'
+              : 'bg-white text-gray-700'
+          }`}
+        >
+         受け取り待ち 
+        </button>
+        <button
+          onClick={() => setFilter('shipped')}
+          className={`px-4 py-2 rounded border ${
+            filter === 'shipped'
+              ? 'bg-[#887c5d] text-white'
+              : 'bg-white text-gray-700'
+          }`}
+        >
+          受け取り済み
+        </button>
       </div>
+
+      {/* フィルター結果 */}
+      {filteredOrders.length === 0 ? (
+        <div className="text-center text-gray-500">
+          {filter === 'pending' ? '受け取り待ちの注文はありません。' : '受け取り済みの注文はありません。'}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {filteredOrders.map((order) => (
+            <Link
+              key={order.id}
+              href={`/account/orders/${order.id}`}
+              className="block border rounded p-4 bg-white shadow-sm hover:bg-gray-50 transition"
+            >
+              <p className="text-sm text-gray-500 mb-2">
+                注文日時: {new Date(order.created_at).toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' })}
+              </p>
+
+              <ul className="mb-2 text-sm text-gray-800 space-y-1">
+                {order.items?.map((item, i) => (
+                  <li key={i}>
+                    {item.name} × {item.quantity}（¥{item.price.toLocaleString()}）
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-sm text-gray-600 mb-1">
+                受取日時: {order.dispatch_date} {order.dispatch_time}
+              </p>
+              <p className="text-right font-bold">
+                合計: ¥{order.total_price.toLocaleString()}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

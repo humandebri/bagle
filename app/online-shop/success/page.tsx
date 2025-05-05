@@ -1,62 +1,52 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
-import { supabase } from '@/lib/supabase';
 import { useSession } from 'next-auth/react';
 
 export default function SuccessPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  const items         = useCartStore((s) => s.items);
-  const dispatchDate  = useCartStore((s) => s.dispatchDate);
-  const dispatchTime  = useCartStore((s) => s.dispatchTime);
-  const resetCart     = useCartStore((s) => s.reset);
+  const items = useCartStore((s) => s.items);
+  const dispatchDate = useCartStore((s) => s.dispatchDate);
+  const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const resetCart = useCartStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
 
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0) + 10;
 
   useEffect(() => {
+    const parseJapaneseDate = (jpDate: string): string => {
+      const match = jpDate.match(/^(\d{1,2})月(\d{1,2})日/);
+      if (!match) return '';
+      const month = match[1].padStart(2, '0');
+      const day = match[2].padStart(2, '0');
+      const year = new Date().getFullYear();
+      return `${year}-${month}-${day}`;
+    };
+
     const saveOrder = async () => {
-      const userId = session?.user?.id;
+      if (!session?.user?.id || items.length === 0 || saved) return;
 
-      if (!userId || items.length === 0 || saved) return;
-
-      // ① プロフィール取得（UUIDで検索）
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, phone')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('プロフィール取得エラー:', profileError.message);
-      }
-
-      const customerName = profile
-        ? `${profile.last_name ?? ''} ${profile.first_name ?? ''}`.trim()
-        : '未登録ユーザー';
-
-      const phone = profile?.phone ?? '';
-
-      // ② 注文データ保存
-      const { error: orderError } = await supabase.from('orders').insert({
-        user_id: userId,
-        items,
-        dispatch_date: dispatchDate,
-        dispatch_time: dispatchTime,
-        total_price: total,
-        customer_name: customerName,
-        phone,
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items,
+          dispatch_date: parseJapaneseDate(dispatchDate),
+          dispatch_time: dispatchTime,
+        }),
       });
 
-      if (orderError) {
-        console.error('注文保存エラー:', orderError.message);
-      } else {
+      if (res.ok) {
         setSaved(true);
         resetCart();
+      } else {
+        const data = await res.json();
+        console.error('注文保存エラー:', data.error || '不明なエラー');
       }
     };
 

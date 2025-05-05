@@ -14,6 +14,15 @@ export default function OnlineShopPage() {
 
   // マウントチェック
   const [mounted, setMounted] = useState(false);
+  
+  // カート情報
+  const cartItems = useCartStore((s) => s.items);
+  const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+
+  // 日付・時間
+  const dispatchDate = useCartStore((s) => s.dispatchDate);
+  const dispatchTime = useCartStore((s) => s.dispatchTime);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -22,14 +31,7 @@ export default function OnlineShopPage() {
     if (mounted && (!dispatchDate || !dispatchTime)) {
       useCartStore.getState().setDispatchInfo(initialDispatchDate, initialDispatchTime);
     }
-  }, [mounted]);
-  // カート情報
-  const cartItems = useCartStore((s) => s.items);
-  const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-
-  // 日付・時間
-  const dispatchDate = useCartStore((s) => s.dispatchDate);
-  const dispatchTime = useCartStore((s) => s.dispatchTime);
+  }, [mounted, dispatchDate, dispatchTime]);
 
   return (
     <>

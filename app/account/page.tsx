@@ -18,7 +18,7 @@ export default function Account() {
   if (!session) {
     return (
       <div className="max-w-md mx-auto p-8">
-        <h1 className="text-2xl text-gray-400 mb-6">アカウント</h1>
+        <h1 className="text-2xl text-gray-400 mb-6">マイページ</h1>
         <p className="mb-4">ログインして注文履歴を確認したり、アカウント情報を管理しましょう。</p>
         <button 
           onClick={() => signIn('google')}
@@ -34,7 +34,7 @@ export default function Account() {
   return (
     <div className="max-w-2xl mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl text-gray-400">アカウント</h1>
+        <h1 className="text-2xl text-gray-400">マイページ</h1>
   
         <button
           className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-sky-100 hover:text-[#887c5d]"

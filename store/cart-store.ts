@@ -2,13 +2,15 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { toast } from "sonner";
 
-type CartItem = {
-  id: string; // UUID
+// カートアイテム型
+export type CartItem = {
+  id: string;
   name: string;
   price: number;
   quantity: number;
 };
 
+// カートストアの型
 type CartState = {
   items: CartItem[];
   dispatchDate: string;
@@ -18,13 +20,13 @@ type CartState = {
   increaseQuantity: (id: string) => void;
   decreaseQuantity: (id: string) => void;
   removeFromCart: (id: string) => void;
-  paymentMethodId: string | null;
-  setPaymentMethodId: (id: string) => void;
-  reset: () => void; // ← これを追加！
+  paymentMethodId: string | null; // ← 追加
+  setPaymentMethodId: (id: string) => void; // ← 追加
+  reset: () => void;
 };
 
 
-// --- 初期配送情報 ---
+// 初期受け取り日時
 export const initialDispatchDate = (() => {
   const date = new Date();
   date.setDate(date.getDate() + 2);
@@ -37,6 +39,7 @@ export const initialDispatchDate = (() => {
 export const initialDispatchTime = "11:00";
 const maxbagel = 8;
 
+// Zustandストア
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
@@ -110,24 +113,24 @@ export const useCartStore = create<CartState>()(
             .filter((item): item is CartItem => item !== null),
         })),
 
-        removeFromCart: (id) =>
-          set((state) => ({
-            items: state.items.filter((item) => item.id !== id),
-          })),
-        
-        paymentMethodId: null,
-        
-        setPaymentMethodId: (id) => set({ paymentMethodId: id }),
-        
-        reset: () =>
-          set({
-            items: [],
-            dispatchDate: '',
-            dispatchTime: '',
-            paymentMethodId: null,
-          }),
-      }),
+      removeFromCart: (id) =>
+        set((state) => ({
+          items: state.items.filter((item) => item.id !== id),
+        })),
       
-      { name: 'cart-storage' }
-    )
-  );
+      paymentMethodId: null,
+      setPaymentMethodId: (id) => set({ paymentMethodId: id }),
+
+      reset: () =>
+        set({
+          items: [],
+          dispatchDate: initialDispatchDate,
+          dispatchTime: initialDispatchTime,
+          paymentMethodId: null,
+        }),
+    }),
+    {
+      name: "cart-storage",
+    }
+  )
+);

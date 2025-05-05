@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from "next/navigation";
 
 type OrderItem = {
   name: string;
@@ -21,6 +22,8 @@ type Order = {
 };
 
 export default function OrderDetailPage() {
+  const router = useRouter();
+  const close = () => router.back();
   const params = useParams();
   const orderId = params.id as string;
 
@@ -54,7 +57,8 @@ export default function OrderDetailPage() {
   if (!order) return <div className="p-6 text-center">注文が見つかりません。</div>;
 
   return (
-    <main className="max-w-xl mx-auto p-6">
+    <>
+    <main className="max-w-xl mx-auto p-6 pb-15 ">
       <h1 className="text-2xl font-bold mb-4">注文詳細</h1>
       <p className="text-sm text-gray-500 mb-2">
         注文ID: {order.id}<br />
@@ -76,5 +80,37 @@ export default function OrderDetailPage() {
         合計: ¥{order.total_price.toLocaleString()}
       </p>
     </main>
+    {/* スマホ用固定フッター */}
+    <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-50">
+    <button
+      className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
+      onClick={close}
+    >
+      戻る
+    </button>
+    <button
+      className="flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+      onClick={() => router.push(`/account/orders/${order.id}/edit`)}
+    >
+      変更
+    </button>
+  </div>
+
+  {/* PC用フッター */}
+  <div className="hidden md:flex w-full max-w-lg px-6 py-7 border-t border-gray-300 bg-white space-x-4">
+    <button
+      className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
+      onClick={close}
+    >
+      戻る
+    </button>
+    <button
+      className="flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+      onClick={() => router.push(`/account/orders/${order.id}/edit`)}
+    >
+      変更
+    </button>
+  </div>
+  </>
   );
 }
