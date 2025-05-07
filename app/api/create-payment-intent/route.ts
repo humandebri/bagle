@@ -7,38 +7,41 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, customerId } = await req.json();
+    const { amount, customerId, paymentMethodId } = await req.json();
 
-    if (!customerId) {
-      return NextResponse.json({ error: 'customerId is required' }, { status: 400 });
+    if (!amount || !customerId || !paymentMethodId) {
+      return NextResponse.json(
+        { error: '必要なパラメータが不足しています' },
+        { status: 400 }
+      );
     }
 
-    const amount = items.reduce(
-      (sum: number, i: { price: number; quantity: number }) =>
-        sum + i.price * i.quantity * 100,
-      0
-    ) + 10 * 100;
-
-    const intent = await stripe.paymentIntents.create({
+    // PaymentIntentを作成
+    const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'jpy',
       customer: customerId,
+      payment_method: paymentMethodId,
+      capture_method: 'manual',
+      confirm: true,
       automatic_payment_methods: {
         enabled: true,
-        allow_redirects: 'never',
-      },
-      off_session: true,
-      confirm: true,
+        allow_redirects: 'never'
+      }
     });
 
-    return NextResponse.json({
-      clientSecret: intent.client_secret,
-    });
-  } catch (err: unknown) {
-    const error = err as Error;
-    console.error('Stripeエラー:', error.message);
+    return NextResponse.json({ paymentIntent });
+  } catch (err) {
+    console.error('PaymentIntent作成エラー:', err);
+    const errorMessage = err instanceof Error ? err.message : '不明なエラー';
+    const errorDetails = err instanceof Error ? err.stack : undefined;
+    
     return NextResponse.json(
-      { error: error.message || '支払いエラーが発生しました' },
+      { 
+        error: 'PaymentIntentの作成に失敗しました',
+        details: errorMessage,
+        stack: errorDetails
+      },
       { status: 500 }
     );
   }

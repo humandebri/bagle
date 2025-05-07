@@ -9,49 +9,48 @@ import {
 } from '@stripe/react-stripe-js';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useCartStore } from '@/store/cart-store'; // ← 追加！
-import { useSession } from 'next-auth/react'; // ← 追加
-
+import { useCartStore } from '@/store/cart-store';
 
 export default function PaymentPage() {
-  const { data: session } = useSession(); // ← 追加
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
-  const setPMId = useCartStore((s) => s.setPaymentMethodId); // ← 支払い用に保存
+  const setPMId = useCartStore((s) => s.setPaymentMethodId);
 
   const [clientSecret, setClientSecret] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-    // ✅ customerId を session から取得して POST
-    useEffect(() => {
-      const fetchClientSecret = async () => {
-        const customerId = session?.user?.id; // ← SupabaseのUUIDなど
-  
-        if (!customerId) {
-          setError('カスタマーIDが見つかりません');
-          return;
-        }
-  
-        const res = await fetch('/api/create-setup-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customerId }),
-        });
-  
-        const { clientSecret, error } = await res.json();
-        if (error) {
-          setError(error);
-        } else {
-          setClientSecret(clientSecret);
-        }
-      };
-  
-      if (session) {
-        fetchClientSecret();
+  // SetupIntentを取得する（customerIdも送信）
+  useEffect(() => {
+    const fetchClientSecret = async () => {
+      const res = await fetch('/api/create-or-get-customer', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const { customerId, error: err1 } = await res.json();
+      console.log(res)
+      if (err1 || !customerId) {
+        setError('カスタマー情報の取得に失敗しました');
+        return;
       }
-    }, [session]);
+  
+      const res2 = await fetch('/api/create-setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId }),
+      });
+      const { clientSecret, error: err2 } = await res2.json();
+      if (err2 || !clientSecret) {
+        setError('セットアップIntentの取得に失敗しました');
+      } else {
+        setClientSecret(clientSecret);
+      }
+    };
+  
+    fetchClientSecret();
+  }, []);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,9 +78,8 @@ export default function PaymentPage() {
       return;
     }
 
-    // ✅ 支払い時に使うために payment_method ID を保持
     const paymentMethodId = result.setupIntent.payment_method as string;
-    setPMId(paymentMethodId); // Zustandに保存
+    setPMId(paymentMethodId);
     router.push('/online-shop/review');
   };
 
