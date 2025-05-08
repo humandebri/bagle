@@ -7,6 +7,8 @@ import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { sampleBagels } from "@/lib/sampleBagels"; // Bagelデータを探す用
 import { Tag } from "@/components/BagelCard";
+import { MAX_BAGEL_PER_ORDER } from "@/lib/constants";
+import { toast } from "sonner";
 
 export default function BagelModalPage() {
   const router = useRouter();
@@ -33,13 +35,31 @@ export default function BagelModalPage() {
   }, []);
 
   const close = () => router.back();
-  const inc = () => setQuantity((q) => (q < 8 ? q + 1 : q));
+  const inc = () => {
+    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    if (totalQuantity >= MAX_BAGEL_PER_ORDER) {
+      toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
+        description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+      });
+      return;
+    }
+    setQuantity((q) => (q < 3 ? q + 1 : q));
+  };
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
     if (!bagel) return;
+    
+    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    if (totalQuantity + quantity > MAX_BAGEL_PER_ORDER) {
+      toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
+        description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+      });
+      return;
+    }
+
     addToCart(
       { id: bagel.id, name: bagel.name, price: bagel.price, quantity },
-      true // ←上書きすることで数量がダブらない
+      true
     );
     close();
   };

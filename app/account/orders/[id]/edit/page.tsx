@@ -1,9 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button } from "@/components/ui/button";
+
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Minus, Plus } from 'lucide-react';
+import { TimeSlot } from '@/lib/supabase-server';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type OrderItem = {
   name: string;
@@ -11,12 +21,7 @@ type OrderItem = {
   quantity: number;
 };
 
-// type Order = {
-//   items: OrderItem[];
-//   dispatch_date: string;
-//   dispatch_time: string;
-//   shipped: boolean;
-// };
+type DateOption = { iso: string; label: string };
 
 export default function EditOrderPage() {
   const { id } = useParams();
@@ -28,12 +33,51 @@ export default function EditOrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editAllowed, setEditAllowed] = useState(false);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [availableDates, setAvailableDates] = useState<DateOption[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [originalTotal, setOriginalTotal] = useState(0);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+
+  const TIME_RANGE_MAP = {
+    '11:00': '11:15',
+    '11:15': '11:30',
+    '11:30': '11:45',
+    '11:45': '12:00',
+    '12:00': '13:00',
+    '13:00': '14:00',
+    '14:00': '15:00',
+  };
+  type TimeRangeKey = keyof typeof TIME_RANGE_MAP;
+
+  /** 日付を日本語形式に変換 */
+  function formatDate(isoDate: string): string {
+    try {
+      const date = new Date(isoDate);
+      if (isNaN(date.getTime())) {
+        return '日付を選んでください';
+      }
+      return date.toLocaleDateString('ja-JP', {
+        month: 'numeric',
+        day: 'numeric',
+        weekday: 'short',
+      });
+    } catch {
+      return '日付を選んでください';
+    }
+  }
+
+  function formatTimeRange(startTime: string): string {
+    const start = startTime.slice(0, 5) as TimeRangeKey;
+    const end = TIME_RANGE_MAP[start];
+    return end ? `${start} - ${end}` : start;
+  }
 
   useEffect(() => {
     const fetchOrder = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('items, dispatch_date, dispatch_time, shipped')
+        .select('items, dispatch_date, dispatch_time, shipped, total_price, payment_intent_id, payment_status')
         .eq('id', id)
         .single();
 
@@ -45,20 +89,65 @@ export default function EditOrderPage() {
       setItems((data.items as OrderItem[]).filter((item) => item.quantity > 0));
       setDispatchDate(data.dispatch_date);
       setDispatchTime(data.dispatch_time);
-
+      setOriginalTotal(data.total_price);
+      setPaymentIntentId(data.payment_intent_id);
 
       // 編集可能かどうかを判定
       const today = new Date();
       const targetDate = new Date(data.dispatch_date);
       targetDate.setDate(targetDate.getDate() - 1); // 2日前まで
 
-      setEditAllowed(!data.shipped && today <= targetDate);
+      setEditAllowed(!data.shipped && today <= targetDate && data.payment_status !== 'cancelled');
 
       setLoading(false);
     };
 
     fetchOrder();
   }, [id]);
+
+  // タイムスロットの取得
+  useEffect(() => {
+    const fetchTimeSlots = async () => {
+      try {
+        const res = await fetch('/api/get-available-slots');
+        const { timeSlots } = await res.json();
+        setTimeSlots(timeSlots);
+
+        // 重複しない日付(ISO)を抽出
+        const isoDates = Array.from(
+          new Set(
+            timeSlots
+              .filter((s: TimeSlot) => s.is_available)
+              .map((s: TimeSlot) => s.date),
+          ),
+        ) as string[];
+
+        setAvailableDates(
+          isoDates.map((iso) => ({
+            iso,
+            label: formatDate(iso),
+          })),
+        );
+      } catch (err) {
+        console.error('Error fetching time slots:', err);
+      }
+    };
+
+    fetchTimeSlots();
+  }, []);
+
+  // 日付が決まったら時間リストを作る
+  useEffect(() => {
+    if (!dispatchDate) return;
+
+    const times = timeSlots
+      .filter(
+        (s) => s.date === dispatchDate && s.is_available,
+      )
+      .map((s) => s.time);
+
+    setAvailableTimes(times);
+  }, [dispatchDate, timeSlots]);
 
   const increase = (index: number) => {
     setItems(prev =>
@@ -72,7 +161,7 @@ export default function EditOrderPage() {
     setItems(prev =>
       prev.map((item, i) =>
         i === index ? { ...item, quantity: Math.max(item.quantity - 1, 0) } : item
-      ).filter(item => item.quantity > 0) // 0個のアイテムは除外
+      ).filter(item => item.quantity > 0)
     );
   };
 
@@ -81,85 +170,227 @@ export default function EditOrderPage() {
   };
 
   const save = async () => {
-    const total_price = items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 10;
+    const newTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 10;
 
-    const { error } = await supabase
-      .from('orders')
-      .update({
-        items,
-        dispatch_date: dispatchDate,
-        dispatch_time: dispatchTime,
-        total_price,
-      })
-      .eq('id', id);
+    try {
+      // 1. 古いタイムスロットを解放
+      const { data: oldSlot, error: oldSlotError } = await supabase
+        .from('time_slots')
+        .select('current_bookings')
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime)
+        .single();
 
-    if (error) {
-      alert('保存に失敗しました');
-    } else {
+      if (oldSlotError) {
+        console.error('古いタイムスロットの取得に失敗:', oldSlotError);
+        throw new Error('古いタイムスロットの取得に失敗しました');
+      }
+
+      const { error: updateOldSlotError } = await supabase
+        .from('time_slots')
+        .update({ current_bookings: (oldSlot?.current_bookings || 0) - 1 })
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime);
+
+      if (updateOldSlotError) {
+        console.error('古いタイムスロットの解放に失敗:', updateOldSlotError);
+        throw new Error('古いタイムスロットの解放に失敗しました');
+      }
+
+      // 2. 新しいタイムスロットを予約
+      const { data: newSlot, error: newSlotError } = await supabase
+        .from('time_slots')
+        .select('current_bookings')
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime)
+        .single();
+
+      if (newSlotError) {
+        console.error('新しいタイムスロットの取得に失敗:', newSlotError);
+        throw new Error('新しいタイムスロットの取得に失敗しました');
+      }
+
+      const { error: updateNewSlotError } = await supabase
+        .from('time_slots')
+        .update({ current_bookings: (newSlot?.current_bookings || 0) + 1 })
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime);
+
+      if (updateNewSlotError) {
+        console.error('新しいタイムスロットの予約に失敗:', updateNewSlotError);
+        throw new Error('新しいタイムスロットの予約に失敗しました');
+      }
+
+      // 3. 注文情報を更新
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({
+          items,
+          dispatch_date: dispatchDate,
+          dispatch_time: dispatchTime,
+          total_price: newTotal,
+        })
+        .eq('id', id);
+
+      if (orderError) {
+        console.error('注文情報の更新に失敗:', orderError);
+        throw new Error('注文情報の更新に失敗しました');
+      }
+
+      // 4. 金額が変更された場合はStripeの支払い意図を更新
+      if (newTotal !== originalTotal) {
+        try {
+          const response = await fetch('/api/update-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: id,
+              newAmount: newTotal,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Stripe更新エラー:', errorData);
+            throw new Error(errorData.error || '支払い金額の更新に失敗しました');
+          }
+        } catch (stripeError) {
+          console.error('Stripe更新処理でエラー:', stripeError);
+          throw new Error('支払い金額の更新に失敗しました');
+        }
+      }
+
       router.push(`/account/orders/${id}`);
+    } catch (error) {
+      console.error('注文更新エラーの詳細:', error);
+      alert(error instanceof Error ? error.message : '注文の更新に失敗しました');
     }
   };
 
-  const generateDateOptions = (): string[] => {
-    const options: string[] = [];
-    const today = new Date();
-    for (let i = 2; i <= 6; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      options.push(
-        date.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' })
-      );
+  const cancelOrder = async () => {
+    if (!confirm('本当に注文をキャンセルしますか？')) {
+      return;
     }
-    return options;
-  };
 
-  const timeOptions = [
-    '11:00', '11:15', '11:30', '11:45',
-    '12:00', '12:15', '12:30', '12:45',
-    '13:00', '13:15', '13:30', '13:45',
-    '14:00', '14:15', '14:30', '14:45',
-    '15:00', '15:15', '15:30', '15:45',
-  ];
+    try {
+      // 1. タイムスロットを解放
+      const { data: slot, error: slotError } = await supabase
+        .from('time_slots')
+        .select('current_bookings')
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime)
+        .single();
+
+      if (slotError) {
+        throw new Error('タイムスロットの取得に失敗しました');
+      }
+
+      const { error: updateSlotError } = await supabase
+        .from('time_slots')
+        .update({ current_bookings: Math.max(0, (slot?.current_bookings || 0) - 1) })
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime);
+
+      if (updateSlotError) {
+        throw new Error('タイムスロットの解放に失敗しました');
+      }
+
+      // 2. Stripeの支払いをキャンセル
+      if (paymentIntentId) {
+        const response = await fetch('/api/cancel-payment-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentIntentId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || '支払いのキャンセルに失敗しました');
+        }
+
+        // すでにキャンセル済みの場合は警告を表示
+        if (data.message) {
+          console.warn(data.message);
+        }
+      }
+
+      // 3. 注文をキャンセル状態に更新
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ 
+          payment_status: 'cancelled',
+          shipped: false
+        })
+        .eq('id', id);
+
+      if (orderError) {
+        throw new Error('注文のキャンセルに失敗しました');
+      }
+
+      router.push('/account/orders');
+    } catch (error) {
+      console.error('キャンセルエラー:', error);
+      alert(error instanceof Error ? error.message : '注文のキャンセルに失敗しました');
+    }
+  };
 
   if (loading) return <div className="p-6 text-center">読み込み中...</div>;
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
-  if (!editAllowed) return  (
-  <div className="p-6 text-center text-gray-500">
-    この注文は編集できません。
-  </div>
+  if (!editAllowed) return (
+    <div className="p-6 text-center text-gray-500">
+      {paymentIntentId ? 'この注文は編集できません。' : 'この注文はキャンセルされています。'}
+    </div>
   );
-
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 10;
 
   return (
     <>
-      <main className="min-h-[calc(100vh-7rem)] pb-20 px-6 py-10 bg-white">
-        <h1 className="text-3xl mb-8">注文内容の編集</h1>
+      <main className="min-h-[calc(100vh-7rem)] pb-8 px-6 py-5 bg-white">
+        <h1 className="text-xl mb-3">注文内容の編集</h1>
 
         {/* 受取日時 */}
         <div className="mb-8 space-y-2">
           <label className="block text-sm text-gray-700">受取日</label>
-          <select
+          <Select
             value={dispatchDate}
-            onChange={(e) => setDispatchDate(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            onValueChange={(v) => setDispatchDate(v)}
           >
-            {generateDateOptions().map((date) => (
-              <option key={date} value={date}>{date}</option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full items-center border-2 border-gray-300 h-15 text-xl">
+              <SelectValue placeholder="日付を選択してください">
+                {dispatchDate ? formatDate(dispatchDate) : "お持ち帰り日時を選択してください"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {availableDates.map(({ iso, label }) => (
+                <SelectItem key={iso} value={iso}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <label className="block text-sm text-gray-700 mt-4">受取時間</label>
-          <select
+          <Select
             value={dispatchTime}
-            onChange={(e) => setDispatchTime(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            onValueChange={(v) => setDispatchTime(v)}
           >
-            {timeOptions.map((time) => (
-              <option key={time} value={time}>{time}</option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full items-center border-2 border-gray-300 h-15 text-xl">
+              <SelectValue placeholder="時間を選択してください">
+                {dispatchTime ? formatTimeRange(dispatchTime) : "お持ち帰り日時を選択してください"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {availableTimes.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {formatTimeRange(t)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {items.length > 0 ? (
@@ -190,7 +421,7 @@ export default function EditOrderPage() {
               </div>
             ))}
 
-            <div className="flex justify-between text-xl">
+            <div className="flex justify-between">
               <p>袋代</p>
               <p>¥10</p>
             </div>
@@ -199,7 +430,13 @@ export default function EditOrderPage() {
               <p>¥{total.toLocaleString()}</p>
             </div>
 
-            <div className="hidden md:flex justify-end mt-8">
+            <div className="hidden md:flex justify-end mt-8 space-x-4">
+              <button
+                onClick={cancelOrder}
+                className="w-32 py-4 px-6  text-white text-lg hover:bg-red-700"
+              >
+                キャンセル
+              </button>
               <button
                 onClick={save}
                 className="w-64 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
@@ -211,16 +448,36 @@ export default function EditOrderPage() {
         ) : (
           <p>商品がありません。</p>
         )}
-      </main>
+      <div className="w-full bg-white border-t border-gray-300 px-6 py-4 space-y-3 md:hidden">
+            {/* キャンセル & 確定 */}
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                className="flex-1 border-[#887c5d] text-[#887c5d] hover:bg-[#f5f2ea]"
+                onClick={cancelOrder}
+              >
+                キャンセル
+              </Button>
+              <Button
+                className="flex-1 bg-[#887c5d] text-white hover:bg-[#6e634b]"
+                onClick={save}
+              >
+                確定
+              </Button>
+            </div>
 
-      <div className="fixed bottom-0 z-20 w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white md:hidden">
-        <button
-          onClick={save}
-          className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
-        >
-          保存して戻る
-        </button>
-      </div>
+            {/* 戻る */}
+            <Button
+              variant="outline"
+              className="w-full border-[#887c5d] text-[#887c5d] hover:bg-[#f5f2ea] h-10"
+              onClick={() => router.push(`/account/orders/${id}`)}
+            >
+              戻る
+            </Button>
+          </div>
+
+
+      </main>
     </>
   );
 }

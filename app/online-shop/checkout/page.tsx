@@ -146,10 +146,21 @@ export default function CheckoutPage() {
         </section>
       </main>
 
+      {/* スマートフォン用の固定ボタン */}
       <div className="fixed bottom-0 w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white md:hidden">
         <button
           onClick={handleSubmit}
           className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+        >
+          次へ
+        </button>
+      </div>
+
+      {/* PC用のボタン */}
+      <div className="hidden md:block px-6 py-3">
+        <button
+          onClick={handleSubmit}
+          className="w-full max-w-md py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
         >
           次へ
         </button>

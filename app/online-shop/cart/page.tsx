@@ -3,6 +3,7 @@
 import { useCartStore } from '@/store/cart-store';
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import { toast } from "sonner";
 
 
 
@@ -10,6 +11,8 @@ import { useRouter } from 'next/navigation';
 export default function CartPage() {
     
   const items = useCartStore((state) => state.items); 
+  const dispatchDate = useCartStore((state) => state.dispatchDate);
+  const dispatchTime = useCartStore((state) => state.dispatchTime);
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const finalAmount = totalAmount + 10; 
   const increaseQuantity = useCartStore((state) => state.increaseQuantity);
@@ -18,8 +21,28 @@ export default function CartPage() {
 
   const router = useRouter();
   const close = () => {
-  router.push('/online-shop');
-    };
+    router.push('/online-shop');
+  };
+
+  const handleCheckout = () => {
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    
+    if (totalQuantity > 8) {
+      toast.error("予約できる個数は最大8個までです！", {
+        description: "お一人様8個までご予約いただけます。",
+      });
+      return;
+    }
+
+    if (!dispatchDate || !dispatchTime) {
+      toast.error("受け取り日時を選択してください", {
+        description: "商品を受け取る日時を選択してください。",
+      });
+      return;
+    }
+
+    router.push('/online-shop/checkout');
+  };
 
   return (
     <>
@@ -82,7 +105,7 @@ export default function CartPage() {
 
         <div className="hidden md:flex justify-end mt-8">
             <button
-                onClick={() => router.push('/online-shop/checkout')}
+                onClick={handleCheckout}
                 className="flex-shrink-0 w-64 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
             >
                 注文 ¥{finalAmount.toLocaleString()}
@@ -95,7 +118,7 @@ export default function CartPage() {
     </main>
         <div className="fixed bottom-0 z-20 w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white md:hidden">
         <button
-          onClick={() => router.push('/online-shop/checkout')}
+          onClick={handleCheckout}
           className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
         >
           お支払いへ進む

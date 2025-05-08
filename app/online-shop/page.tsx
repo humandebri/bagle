@@ -6,8 +6,7 @@ import { useCartStore } from '@/store/cart-store';
 import { ShoppingBag } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { sampleBagels } from '@/lib/sampleBagels';
-import { initialDispatchDate, initialDispatchTime } from '@/store/cart-store';
-
+import { DateTimeDisplay } from '@/components/DateTimeDisplay';
 
 export default function OnlineShopPage() {
   const router = useRouter();
@@ -26,12 +25,6 @@ export default function OnlineShopPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-  
-  useEffect(() => {
-    if (mounted && (!dispatchDate || !dispatchTime)) {
-      useCartStore.getState().setDispatchInfo(initialDispatchDate, initialDispatchTime);
-    }
-  }, [mounted, dispatchDate, dispatchTime]);
 
   return (
     <>
@@ -41,12 +34,15 @@ export default function OnlineShopPage() {
         <div className="border-2 p-3 mb-6 text-center">
           {mounted && (
             <button onClick={() => router.push(`/online-shop/dispatch`)}>
-              {dispatchDate && dispatchTime
-                ? `お持ち帰り , ${dispatchDate} ${dispatchTime}`
-                : "日時を選択してください"}
+              {dispatchDate && dispatchTime ? (
+                <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
+              ) : (
+                "日時を選択してください"
+              )}
             </button>
           )}
         </div>
+
 
         <div className="flex border-b mb-8">
           <div className="w-1/2 pb-2 border-b-2">

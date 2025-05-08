@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { toast } from "sonner";
+import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 
 // カートアイテム型
 export type CartItem = {
@@ -27,17 +28,8 @@ type CartState = {
 
 
 // 初期受け取り日時
-export const initialDispatchDate = (() => {
-  const date = new Date();
-  date.setDate(date.getDate() + 2);
-  return date.toLocaleDateString("ja-JP", {
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  });
-})();
-export const initialDispatchTime = "11:00";
-const maxbagel = 8;
+export const initialDispatchDate = '';  // 空文字列に変更
+export const initialDispatchTime = '';  // 空文字列に変更
 
 // Zustandストア
 export const useCartStore = create<CartState>()(
@@ -50,15 +42,22 @@ export const useCartStore = create<CartState>()(
       addToCart: (item, override = false) => {
         const state = get();
         const totalQuantity = state.items.reduce((sum, i) => sum + i.quantity, 0);
+        const existingItem = state.items.find((i) => i.id === item.id);
 
-        if (!override && totalQuantity + item.quantity > maxbagel) {
-          toast("予約できる個数は最大8個までです！", {
-            description: "お一人様8個までご予約いただけます。",
+        if (!override && totalQuantity + item.quantity > MAX_BAGEL_PER_ORDER) {
+          toast(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
+            description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
           });
           return;
         }
 
-        const existingItem = state.items.find((i) => i.id === item.id);
+        if (!override && existingItem && existingItem.quantity + item.quantity > MAX_BAGEL_PER_ITEM) {
+          toast("同じ商品は最大3個までです！", {
+            description: `お一人様${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+          });
+          return;
+        }
+
         if (existingItem) {
           set({
             items: state.items.map((i) =>
@@ -84,10 +83,18 @@ export const useCartStore = create<CartState>()(
       increaseQuantity: (id) =>
         set((state) => {
           const totalQuantity = state.items.reduce((sum, i) => sum + i.quantity, 0);
+          const existingItem = state.items.find((i) => i.id === id);
 
-          if (totalQuantity >= maxbagel) {
-            toast(`予約できる個数は最大${maxbagel}個までです！`, {
-              description: `お一人様${maxbagel}個までご予約いただけます。`,
+          if (totalQuantity >= MAX_BAGEL_PER_ORDER) {
+            toast(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
+              description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+            });
+            return state;
+          }
+
+          if (existingItem && existingItem.quantity >= MAX_BAGEL_PER_ITEM) {
+            toast("同じ商品は最大3個までです！", {
+              description: "お一人様3個までご予約いただけます。",
             });
             return state;
           }

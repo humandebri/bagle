@@ -1,6 +1,15 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+export type TimeSlot = {
+  id: string;
+  date: string;
+  time: string;
+  max_capacity: number;
+  current_bookings: number;
+  is_available: boolean;
+};
+
 export const createServerSupabaseClient = async () => {
   const cookieStore = await cookies();
 
