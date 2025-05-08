@@ -3,11 +3,29 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface OrderDetails {
+  dispatchDate: string;
+  dispatchTime: string;
+  items: OrderItem[];
+  total: number;
+}
+
+interface RequestBody {
+  email: string;
+  orderDetails: OrderDetails;
+}
+
 export async function POST(request: Request) {
   try {
-    const { email, orderDetails } = await request.json();
+    const { email, orderDetails }: RequestBody = await request.json();
 
-    const { data, error } = await resend.emails.send({
+    await resend.emails.send({
       from: '予約確認 <onboarding@resend.dev>',
       to: email,
       subject: 'ご予約が確定いたしました',
@@ -27,7 +45,7 @@ export async function POST(request: Request) {
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
             <h2 style="color: #666; margin-top: 0;">■ご注文内容</h2>
             <ul style="list-style: none; padding: 0;">
-              ${orderDetails.items.map((item: any) => `
+              ${orderDetails.items.map((item: OrderItem) => `
                 <li style="margin-bottom: 10px;">
                   ${item.name} × ${item.quantity} - ¥${(item.price * item.quantity).toLocaleString()}
                 </li>
@@ -72,12 +90,9 @@ export async function POST(request: Request) {
       `,
     });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('メール送信エラー:', error);
     return NextResponse.json({ error: 'メール送信に失敗しました' }, { status: 500 });
   }
 } 
