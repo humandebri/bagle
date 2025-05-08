@@ -14,22 +14,22 @@ export type CartItem = {
 // カートストアの型
 type CartState = {
   items: CartItem[];
-  dispatchDate: string;
-  dispatchTime: string;
-  addToCart: (item: CartItem, override?: boolean) => void;
-  setDispatchInfo: (date: string, time: string) => void;
-  increaseQuantity: (id: string) => void;
-  decreaseQuantity: (id: string) => void;
-  removeFromCart: (id: string) => void;
-  paymentMethodId: string | null; // ← 追加
-  setPaymentMethodId: (id: string) => void; // ← 追加
+  dispatchDate: string | null;
+  dispatchTime: string | null;
+  addItem: (item: CartItem) => void;
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
+  clearCart: () => void;
+  setDispatchDate: (date: string | null) => void;
+  setDispatchTime: (time: string | null) => void;
+  paymentMethodId: string | null;
+  setPaymentMethodId: (id: string) => void;
   reset: () => void;
 };
 
-
 // 初期受け取り日時
-export const initialDispatchDate = '';  // 空文字列に変更
-export const initialDispatchTime = '';  // 空文字列に変更
+export const initialDispatchDate = null;
+export const initialDispatchTime = null;
 
 // Zustandストア
 export const useCartStore = create<CartState>()(
@@ -39,91 +39,38 @@ export const useCartStore = create<CartState>()(
       dispatchDate: initialDispatchDate,
       dispatchTime: initialDispatchTime,
 
-      addToCart: (item, override = false) => {
-        const state = get();
-        const totalQuantity = state.items.reduce((sum, i) => sum + i.quantity, 0);
+      addItem: (item) =>
+        set((state) => {
         const existingItem = state.items.find((i) => i.id === item.id);
-
-        if (!override && totalQuantity + item.quantity > MAX_BAGEL_PER_ORDER) {
-          toast(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
-            description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
-          });
-          return;
-        }
-
-        if (!override && existingItem && existingItem.quantity + item.quantity > MAX_BAGEL_PER_ITEM) {
-          toast("同じ商品は最大3個までです！", {
-            description: `お一人様${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
-          });
-          return;
-        }
-
         if (existingItem) {
-          set({
+            return {
             items: state.items.map((i) =>
               i.id === item.id
-                ? {
-                    ...i,
-                    quantity: override ? item.quantity : i.quantity + item.quantity,
-                  }
+                  ? { ...i, quantity: i.quantity + item.quantity }
                 : i
             ),
-          });
-        } else {
-          set({ items: [...state.items, item] });
-        }
-      },
-
-      setDispatchInfo: (date, time) =>
-        set(() => ({
-          dispatchDate: date,
-          dispatchTime: time,
-        })),
-
-      increaseQuantity: (id) =>
-        set((state) => {
-          const totalQuantity = state.items.reduce((sum, i) => sum + i.quantity, 0);
-          const existingItem = state.items.find((i) => i.id === id);
-
-          if (totalQuantity >= MAX_BAGEL_PER_ORDER) {
-            toast(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
-              description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
-            });
-            return state;
+            };
           }
-
-          if (existingItem && existingItem.quantity >= MAX_BAGEL_PER_ITEM) {
-            toast("同じ商品は最大3個までです！", {
-              description: "お一人様3個までご予約いただけます。",
-            });
-            return state;
-          }
-
-          return {
-            items: state.items.map((item) =>
-              item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-            ),
-          };
+          return { items: [...state.items, item] };
         }),
 
-      decreaseQuantity: (id) =>
+      removeItem: (id) =>
         set((state) => ({
-          items: state.items
-            .map((item) => {
-              if (item.id === id) {
-                return item.quantity > 1
-                  ? { ...item, quantity: item.quantity - 1 }
-                  : null;
-              }
-              return item;
-            })
-            .filter((item): item is CartItem => item !== null),
+          items: state.items.filter((i) => i.id !== id),
         })),
 
-      removeFromCart: (id) =>
+      updateQuantity: (id, quantity) =>
         set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
+          items: state.items.map((i) =>
+            i.id === id ? { ...i, quantity } : i
+          ),
         })),
+
+      clearCart: () => set({ items: [] }),
+
+      setDispatchDate: (date) => set({ dispatchDate: date }),
+
+      setDispatchTime: (time) => set({ dispatchTime: time }),
       
       paymentMethodId: null,
       setPaymentMethodId: (id) => set({ paymentMethodId: id }),
