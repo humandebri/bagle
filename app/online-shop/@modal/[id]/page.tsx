@@ -17,7 +17,7 @@ export default function BagelModalPage() {
   const bagel = sampleBagels.find(b => b.id === id);
 
   const cartItems = useCartStore((s) => s.items); // カート中身を取得
-  const addToCart = useCartStore((s) => s.addToCart);
+  const addToCart = useCartStore((s) => s.addItem);
 
   // すでにカートにある場合、その個数を初期値に
   const existingItem = cartItems.find((item) => item.id.toString() === id);
@@ -58,8 +58,7 @@ export default function BagelModalPage() {
     }
 
     addToCart(
-      { id: bagel.id, name: bagel.name, price: bagel.price, quantity },
-      true
+      { id: bagel.id, name: bagel.name, price: bagel.price, quantity }
     );
     close();
   };
@@ -127,8 +126,8 @@ export default function BagelModalPage() {
           <p className="text-xl text-gray-400 mb-6">{bagel.longDescription}</p>
 
           {/* 数量 & 注文ボタン */}
-          <div className="my-8 pb-30">
-            <p className="mb-2 text-gray-400">数量</p>
+          <div className="my-8 pb-30 bg-white">
+            <p className="mb-2 text-gray-400 ">数量</p>
             <div className="flex items-center space-x-4 ">
               <div className="flex items-center border-2 border-gray-300 w-44 h-15">
                 <button onClick={dec} className="flex-1 flex justify-center items-center">

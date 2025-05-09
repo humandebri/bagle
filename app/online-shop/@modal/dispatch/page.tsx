@@ -18,7 +18,8 @@ export default function DispatchModalPage() {
   const router = useRouter();
   const dispatchDate = useCartStore((s) => s.dispatchDate);           // ISO yyyy‑mm‑dd
   const dispatchTime = useCartStore((s) => s.dispatchTime);           // '11:00' など
-  const setDispatchInfo = useCartStore((s) => s.setDispatchInfo);
+  const setDispatchDate = useCartStore((s) => s.setDispatchDate);
+  const setDispatchTime = useCartStore((s) => s.setDispatchTime);
 
   const [selectedDate, setSelectedDate] = useState<string>(dispatchDate || '');
   const [selectedTime, setSelectedTime] = useState<string>(dispatchTime || '');
@@ -131,7 +132,8 @@ export default function DispatchModalPage() {
         return;
       }
 
-      setDispatchInfo(selectedDate, selectedTime); // Zustand に保存
+      setDispatchDate(selectedDate); // Zustand に保存
+      setDispatchTime(selectedTime); // Zustand に保存
       router.back();
     } catch (err) {
       console.error('Error updating time slot:', err);

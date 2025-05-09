@@ -21,6 +21,7 @@ type Order = {
   dispatch_time: string;
   total_price: number;
   payment_status: string;
+  shipped: boolean;
 };
 
 export default function OrderDetailPage() {
@@ -37,7 +38,7 @@ export default function OrderDetailPage() {
     const fetchOrder = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, items, dispatch_date, dispatch_time, total_price, payment_status')
+        .select('id, created_at, items, dispatch_date, dispatch_time, total_price, payment_status, shipped')
         .eq('id', orderId)
         .single();
 
@@ -75,7 +76,21 @@ export default function OrderDetailPage() {
       </p>
 
       {order.payment_status === 'cancelled' && (
-        <p className="text-red-600 mb-4">この注文はキャンセルされています。</p>
+        <div className="bg-red-50 border border-red-200 rounded p-4 mb-4">
+          <p className="text-red-600 font-medium">この注文はキャンセルされています。</p>
+        </div>
+      )}
+
+      {!order.shipped && order.payment_status !== 'cancelled' && (
+        <div className="bg-[#887c5d]/10 border border-[#887c5d]/20 rounded p-4 mb-4">
+          <p className="text-[#887c5d] font-medium">この注文は受取待ちです。</p>
+        </div>
+      )}
+
+      {order.shipped && (
+        <div className="bg-green-50 border border-green-200 rounded p-4 mb-4">
+          <p className="text-green-600 font-medium">この注文は受取済みです。</p>
+        </div>
       )}
 
       <ul className="mb-4 text-sm text-gray-800 space-y-1">

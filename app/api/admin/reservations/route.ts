@@ -1,157 +1,144 @@
+/* ---------------------------------------------------------------- *
+ *  API – /api/admin/orders
+ *  runtime: Node.js   (Supabase JS は Edge 不可)
+ * ---------------------------------------------------------------- */
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/auth';
-import { supabase } from '@/app/lib/supabase';
-import { Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';   // ★ ここを追加
+import { authOptions } from '@/app/lib/auth';        // 設定オブジェクト
+import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 
-// 予約一覧の取得
-export async function GET(request: Request) {
-  const session = await getServerSession(authOptions) as Session;
+export const runtime = 'nodejs';
 
+/* --- Supabase admin client -------------------------------------- */
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, // service‑role key
+  { auth: { persistSession: false } }
+);
+
+/* --- Zod スキーマ ---------------------------------------------- */
+const updateSchema = z.object({
+  id: z.string().uuid(),
+  status: z.string(),
+  dispatchDate: z.string().length(10),  // 'YYYY-MM-DD'
+  dispatchTime: z.string().min(4),      // '11:00'
+  items: z.array(
+    z.object({
+      id: z.string().uuid(),
+      name: z.string(),
+      price: z.number().int().nonnegative(),
+      quantity: z.number().int().positive(),
+    })
+  ),
+});
+
+/* ================================================================ */
+/*  GET – 一覧取得                                                  */
+/* ================================================================ */
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions); // ★ 修正点
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
-  const status = searchParams.get('status');
+  const { searchParams } = new URL(req.url);
+  const start = searchParams.get('startDate');
+  const end   = searchParams.get('endDate');
+  const st    = searchParams.get('status');
 
   try {
-    let query = supabase
+    let q = supabase
       .from('orders')
       .select(`
-        id,
-        user_id,
-        created_at,
-        items,
-        dispatch_date,
-        dispatch_time,
-        total_price,
-        payment_status,
-        profiles!user_id (
-          first_name,
-          last_name,
-          phone
-        )
+        id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
+        payment_status, profiles(first_name,last_name,phone)
       `)
       .order('dispatch_date', { ascending: true });
 
-    if (startDate && endDate) {
-      query = query
-        .gte('dispatch_date', startDate)
-        .lte('dispatch_date', endDate);
-    }
+    if (start && end) q = q.gte('dispatch_date', start).lte('dispatch_date', end);
+    if (st)           q = q.eq('payment_status', st);
 
-    if (status) {
-      query = query.eq('payment_status', status);
-    }
+    const { data, error } = await q;
+    if (error) throw error;
 
-    const { data: orders, error } = await query;
-
-    if (error) {
-      console.error('Supabase error:', error);
-      throw error;
-    }
-
-    if (!orders) {
-      return NextResponse.json([]);
-    }
-
-    // 顧客情報を整形
-    const formattedOrders = orders.map(order => {
-      const profile = (order.profiles as unknown) as { 
-        first_name: string | null; 
-        last_name: string | null; 
-        phone: string | null 
+    const formatted = (data ?? []).map((o) => {
+      const p = o.profiles as {
+        first_name: string | null;
+        last_name:  string | null;
+        phone:      string | null;
       } | null;
-      
+
       return {
-        ...order,
-        status: order.payment_status,
-        customer_name: profile ? `${profile.last_name || ''} ${profile.first_name || ''}`.trim() : null,
-        phone: profile?.phone || null,
-        profiles: undefined, // 整形後は不要なので削除
+        ...o,
+        status: o.payment_status,
+        customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
+        phone: p?.phone ?? null,
       };
     });
 
-    return NextResponse.json(formattedOrders);
-  } catch (error) {
-    console.error('予約取得エラー:', error);
+    return NextResponse.json(formatted);
+  } catch (err) {
+    console.error('予約取得エラー:', err);
     return NextResponse.json({ error: '予約の取得に失敗しました' }, { status: 500 });
   }
 }
 
-// 予約の更新
-export async function PUT(request: Request) {
-  const session = await getServerSession(authOptions) as Session;
-
+/* ================================================================ */
+/*  PUT – 予約更新                                                  */
+/* ================================================================ */
+export async function PUT(req: Request) {
+  const session = await getServerSession(authOptions); // ★ 修正点
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
   try {
-    const body = await request.json();
-    const { id, status, dispatchDate, dispatchTime, items } = body;
+    const { id, status, dispatchDate, dispatchTime, items } =
+      updateSchema.parse(await req.json());
 
-    const updateData: any = {
-      payment_status: status,
-      dispatch_date: dispatchDate,
-      dispatch_time: dispatchTime,
-      items: items,
-    };
-
-    // updated_atカラムが存在する場合のみ設定
-    // Supabaseのテーブル定義で自動更新される場合は、ここでの設定は不要かもしれません。
-    // 例: ALTER TABLE orders ALTER COLUMN updated_at SET DEFAULT now();
-    // もし手動で更新時刻を管理したい場合は、テーブルに`updated_at TIMESTAMPTZ`カラムを作成してください。
-    // 今回はエラーログに基づき、一旦コメントアウトします。
-
-    const { data: order, error: orderError } = await supabase
+    const { data, error } = await supabase
       .from('orders')
-      .update(updateData)
+      .update({
+        payment_status: status,
+        dispatch_date:  dispatchDate,
+        dispatch_time:  dispatchTime,
+        items,
+      })
       .eq('id', id)
       .select()
       .single();
 
-    if (orderError) {
-      console.error('予約更新エラー(Supabase):', orderError);
-      throw orderError;
-    }
-
-    return NextResponse.json(order);
-  } catch (error) {
-    console.error('予約更新エラー:', error);
+    if (error) throw error;
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error('予約更新エラー:', err);
     return NextResponse.json({ error: '予約の更新に失敗しました' }, { status: 500 });
   }
 }
 
-// 予約の削除
-export async function DELETE(request: Request) {
-  const session = await getServerSession(authOptions) as Session;
-
+/* ================================================================ */
+/*  DELETE – 予約削除                                               */
+/* ================================================================ */
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions); // ★ 修正点
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-
     if (!id) {
       return NextResponse.json({ error: '予約IDが必要です' }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from('orders')
-      .delete()
-      .eq('id', id);
-
+    const { error } = await supabase.from('orders').delete().eq('id', id);
     if (error) throw error;
 
     return NextResponse.json({ message: '予約を削除しました' });
-  } catch (error) {
-    console.error('予約削除エラー:', error);
+  } catch (err) {
+    console.error('予約削除エラー:', err);
     return NextResponse.json({ error: '予約の削除に失敗しました' }, { status: 500 });
   }
-} 
+}

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 type Category = {
   id: string
@@ -48,11 +49,7 @@ export default function EditProductPage({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     // 商品データの取得
     const { data: productData, error: productError } = await supabase
       .from('products')
@@ -96,7 +93,11 @@ export default function EditProductPage({
     setCategories(categoriesData)
     setTags(tagsData)
     setLoading(false)
-  }
+  }, [supabase, params.id])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -229,10 +230,12 @@ export default function EditProductPage({
           </label>
           <div className="mt-1 flex items-center space-x-4">
             {product.image && (
-              <img
+              <Image
                 src={product.image}
                 alt={product.name}
-                className="h-32 w-32 object-cover rounded"
+                width={128}
+                height={128}
+                className="object-cover rounded"
               />
             )}
             <input

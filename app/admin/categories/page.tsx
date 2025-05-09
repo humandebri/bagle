@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
@@ -20,11 +20,7 @@ export default function CategoriesPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -37,7 +33,11 @@ export default function CategoriesPage() {
 
     setCategories(data || [])
     setLoading(false)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault()

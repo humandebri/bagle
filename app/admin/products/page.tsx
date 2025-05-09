@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase' // ✅ 修正ポイント：共通クライアントを使う
 
 type Product = {
   id: string
@@ -18,33 +18,28 @@ type Product = {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   const router = useRouter()
+
+  const fetchProducts = useCallback(async () => {
+    console.log('📥 fetchProducts called')
+    try {
+      const response = await fetch('/api/products')
+      if (!response.ok) {
+        throw new Error('商品データの取得に失敗しました')
+      }
+      const data = await response.json()
+      setProducts(data)
+    } catch (error) {
+      console.error('商品データの取得に失敗しました:', error)
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     fetchProducts()
-  }, [])
-
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(*)
-      `)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching products:', error)
-      return
-    }
-
-    setProducts(data || [])
-    setLoading(false)
-  }
+  }, [fetchProducts])
 
   const handleEdit = (id: string) => {
     router.push(`/admin/products/${id}`)
@@ -84,45 +79,29 @@ export default function AdminProductsPage() {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                商品名
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                カテゴリー
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                価格
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ステータス
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                操作
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">商品名</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">カテゴリー</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">価格</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {products.map((product) => (
               <tr key={product.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {product.name}
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
-                    {product.category.name}
-                  </div>
+                  <div className="text-sm text-gray-500">{product.category?.name ?? '未分類'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">¥{product.price}</div>
+                  <div className="text-sm text-gray-500">¥{product.price.toLocaleString('ja-JP')}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      product.is_available
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                      product.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}
                   >
                     {product.is_available ? '販売中' : '販売停止中'}
@@ -136,9 +115,7 @@ export default function AdminProductsPage() {
                     編集
                   </button>
                   <button
-                    onClick={() =>
-                      handleToggleAvailability(product.id, product.is_available)
-                    }
+                    onClick={() => handleToggleAvailability(product.id, product.is_available)}
                     className="text-red-600 hover:text-red-900"
                   >
                     {product.is_available ? '販売停止' : '販売再開'}
@@ -151,4 +128,4 @@ export default function AdminProductsPage() {
       </div>
     </div>
   )
-} 
+}

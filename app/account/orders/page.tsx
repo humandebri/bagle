@@ -145,6 +145,12 @@ export default function OrdersPage() {
                 {order.payment_status === 'cancelled' && (
                   <span className="text-red-600 text-sm font-medium">キャンセル済み</span>
                 )}
+                {!order.shipped && order.payment_status !== 'cancelled' && (
+                  <span className="text-[#887c5d] text-sm font-medium">受取待ち</span>
+                )}
+                {order.shipped && (
+                  <span className="text-green-600 text-sm font-medium">受取済み</span>
+                )}
               </div>
             </Link>
           ))}

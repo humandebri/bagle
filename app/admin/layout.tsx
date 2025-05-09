@@ -38,7 +38,7 @@ export default function AdminLayout({
     { name: 'ダッシュボード', href: '/admin', icon: HomeIcon },
     { name: '商品管理', href: '/admin/products', icon: CubeIcon },
     { name: 'カテゴリー管理', href: '/admin/categories', icon: FolderIcon },
-    { name: 'タグ管理', href: '/admin/tags', icon: TagIcon },
+    // { name: 'タグ管理', href: '/admin/tags', icon: TagIcon },
     { name: '予約管理', href: '/admin/reservations', icon: CalendarIcon },
   ];
 

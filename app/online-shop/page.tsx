@@ -7,6 +7,7 @@ import { ShoppingBag } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
 import { createBrowserClient } from '@supabase/ssr';
+import { Bagel } from '@/components/BagelCard';
 
 type Product = {
   id: string;
@@ -37,6 +38,8 @@ export default function OnlineShopPage() {
   const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const cartItems = useCartStore((s) => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
@@ -48,31 +51,40 @@ export default function OnlineShopPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('商品データの取得に失敗しました');
+      }
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error('商品データの取得に失敗しました:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(*),
-        tags:product_tags(
-          tag:tags(*)
-        )
-      `)
-      .eq('is_available', true)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching products:', error);
-      return;
-    }
-
-    setProducts(data || []);
-    setLoading(false);
+  const convertToBagels = (products: Product[]): Bagel[] => {
+    return products.map(product => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      longDescription: product.long_description,
+      price: product.price,
+      image: product.image,
+      tags: product.tags.map(({ tag }) => tag.name),
+    }));
   };
 
   if (loading) {
@@ -81,36 +93,38 @@ export default function OnlineShopPage() {
 
   return (
     <>
-    <main className="min-h-[calc(100vh-7rem)] pb-15">
-      <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
-        <div className="border-2 p-3 mb-6 text-center">
-          {mounted && (
-            <button onClick={() => router.push(`/online-shop/dispatch`)}>
-              {dispatchDate && dispatchTime ? (
-                <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
-              ) : (
-                "日時を選択してください"
-              )}
-            </button>
-          )}
-        </div>
+      <main className="min-h-[calc(100vh-7rem)] pb-15">
+        <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+          <div className="border-2 p-3 mb-6 text-center">
+            {mounted && (
+              <button onClick={() => router.push(`/online-shop/dispatch`)}>
+                {dispatchDate && dispatchTime ? (
+                  <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
+                ) : (
+                  "日時を選択してください"
+                )}
+              </button>
+            )}
+          </div>
 
-        <div className="flex border-b mb-8">
-          <div className="w-1/2 pb-2 border-b-2">
-            <button className="font-medium text-2xl text-gray-400">BAGEL</button>
+          <div className="flex border-b mb-8">
+            <div className="w-1/2 pb-2 border-b-2">
+              <button className="font-medium text-2xl text-gray-400">BAGEL</button>
+            </div>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <BagelMenu bagels={convertToBagels(products)} />
           </div>
         </div>
+      </main>
 
-          <BagelMenu products={products} />
-      </div>
-    </main>
-
-    {mounted && totalQuantity > 0 && (
-      <CartFooter
-        totalQuantity={totalQuantity}
-        onClick={() => router.push('/online-shop/cart')}
-      />
-    )}
+      {mounted && totalQuantity > 0 && !isModalOpen && (
+        <CartFooter
+          totalQuantity={totalQuantity}
+          onClick={() => router.push('/online-shop/cart')}
+        />
+      )}
     </>
   );
 }

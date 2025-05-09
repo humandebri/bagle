@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
@@ -9,17 +9,8 @@ type Category = {
   name: string
 }
 
-type Tag = {
-  id: string
-  name: string
-  label: string
-  color: string
-  tooltip: string
-}
-
 export default function NewProductPage() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -41,11 +32,7 @@ export default function NewProductPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     // カテゴリー一覧の取得
     const { data: categoriesData, error: categoriesError } = await supabase
       .from('categories')
@@ -57,19 +44,7 @@ export default function NewProductPage() {
       return
     }
 
-    // タグ一覧の取得
-    const { data: tagsData, error: tagsError } = await supabase
-      .from('tags')
-      .select('*')
-      .order('name')
-
-    if (tagsError) {
-      console.error('Error fetching tags:', tagsError)
-      return
-    }
-
     setCategories(categoriesData)
-    setTags(tagsData)
     setLoading(false)
 
     // デフォルトカテゴリーを設定
@@ -79,12 +54,16 @@ export default function NewProductPage() {
         category_id: categoriesData[0].id,
       }))
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const { data, error } = await supabase.from('products').insert([
+    const { error } = await supabase.from('products').insert([
       {
         name: product.name,
         description: product.description,
