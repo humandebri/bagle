@@ -5,25 +5,62 @@ import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { sampleBagels } from "@/lib/sampleBagels"; // Bagelデータを探す用
 import { Tag } from "@/components/BagelCard";
 import { MAX_BAGEL_PER_ORDER } from "@/lib/constants";
 import { toast } from "sonner";
 
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  long_description: string;
+  price: number;
+  image: string;
+  is_available: boolean;
+  is_limited: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  category: {
+    name: string;
+  };
+};
+
 export default function BagelModalPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id; // すでに string 型のはず
-  const bagel = sampleBagels.find(b => b.id === id);
+  const id = params.id as string;
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const cartItems = useCartStore((s) => s.items); // カート中身を取得
-  const addToCart = useCartStore((s) => s.addToCart);
+  const cartItems = useCartStore((s) => s.items);
+  const addToCart = useCartStore((s) => s.addItem);
 
   // すでにカートにある場合、その個数を初期値に
   const existingItem = cartItems.find((item) => item.id.toString() === id);
   const [quantity, setQuantity] = useState(existingItem ? existingItem.quantity : 1);
 
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products/${id}`);
+        if (!response.ok) {
+          throw new Error('商品データの取得に失敗しました');
+        }
+        const data = await response.json();
+        setProduct(data);
+      } catch (error) {
+        console.error('商品データの取得に失敗しました:', error);
+        setError('商品データの取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 100);
@@ -47,7 +84,7 @@ export default function BagelModalPage() {
   };
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
-    if (!bagel) return;
+    if (!product) return;
     
     const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     if (totalQuantity + quantity > MAX_BAGEL_PER_ORDER) {
@@ -58,8 +95,7 @@ export default function BagelModalPage() {
     }
 
     addToCart(
-      { id: bagel.id, name: bagel.name, price: bagel.price, quantity },
-      true
+      { id: product.id, name: product.name, price: product.price, quantity }
     );
     close();
   };
@@ -70,10 +106,18 @@ export default function BagelModalPage() {
     }
   };
 
-  if (!bagel) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-500">
-        商品が見つかりませんでした
+        読み込み中...
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-500">
+        {error || '商品が見つかりませんでした'}
       </div>
     );
   }
@@ -101,8 +145,8 @@ export default function BagelModalPage() {
         <div className="mt-12 flex justify-center">
           <div className="relative w-80 h-50 rounded-full overflow-hidden">
             <Image
-              src={bagel.image ?? "/placeholder.svg"}
-              alt={bagel.name}
+              src={product.image ?? "/placeholder.svg"}
+              alt={product.name}
               fill
               className={`object-cover transition-all duration-700 ${
                 loaded ? "opacity-100 blur-0 scale-100" : "opacity-70 blur-sm scale-105"
@@ -113,22 +157,22 @@ export default function BagelModalPage() {
 
         {/* 情報 */}
         <div className="p-6 pt-8">
-          <h2 className="text-3xl text-gray-400 mb-1">{bagel.name}</h2>
+          <h2 className="text-3xl text-gray-400 mb-1">{product.name}</h2>
 
           <div className="flex space-x-1 py-5">
-            {bagel.tags.includes("vegetarian") && (
+            {product.category.name === "vegetarian" && (
               <Tag label="VG" color="lime-500" tooltip="ベジタリアン" />
             )}
-            {bagel.tags.includes("vegan") && (
+            {product.category.name === "vegan" && (
               <Tag label="V" color="green-500" tooltip="ヴィーガン" />
             )}
           </div>
 
-          <p className="text-xl text-gray-400 mb-6">{bagel.longDescription}</p>
+          <p className="text-xl text-gray-400 mb-6">{product.long_description}</p>
 
           {/* 数量 & 注文ボタン */}
-          <div className="my-8 pb-30">
-            <p className="mb-2 text-gray-400">数量</p>
+          <div className="my-8 pb-30 bg-white">
+            <p className="mb-2 text-gray-400 ">数量</p>
             <div className="flex items-center space-x-4 ">
               <div className="flex items-center border-2 border-gray-300 w-44 h-15">
                 <button onClick={dec} className="flex-1 flex justify-center items-center">
@@ -145,7 +189,7 @@ export default function BagelModalPage() {
                 onClick={add}
                 className="hidden md:inline-block flex-shrink-0 w-64 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
               >
-                注文 ¥{quantity * bagel.price}
+                注文 ¥{quantity * product.price}
               </button>
             </div>
           </div>
@@ -153,14 +197,13 @@ export default function BagelModalPage() {
       </div>
 
       {/* スマホだけ 固定フッター */}
-
     </div>
   <div className="md:hidden z-20 fixed bottom-0  w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white">
     <button
       onClick={add}
       className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
     >
-      注文に追加する ¥{quantity * bagel.price}
+      注文に追加する ¥{quantity * product.price}
     </button>
   </div>
   </>

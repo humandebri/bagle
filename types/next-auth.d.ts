@@ -1,19 +1,31 @@
 // types/next-auth.d.ts
-import NextAuth from "next-auth";
+import NextAuth from 'next-auth';
+import { DefaultSession, DefaultUser } from 'next-auth';
 
-declare module "next-auth" {
-  // Session 用
+// セッションの型拡張
+declare module 'next-auth' {
   interface Session {
     user: {
-      id: string;            // ← 追加
+      id: string;
       name?: string | null;
       email?: string | null;
       image?: string | null;
-    };
+      role?: string;              // ✅ 追加（adminなど）
+    } & DefaultSession['user'];
+    accessToken?: string;         // ✅ Supabase連携用
   }
 
-  // User 用（DB レコード）
-  interface User {
-    id: string;              // ← 追加
+  interface User extends DefaultUser {
+    id: string;
+    role?: string;
+  }
+}
+
+// JWTの型拡張（jwtコールバックで扱う）
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string;
+    role?: string;
+    accessToken?: string;
   }
 }

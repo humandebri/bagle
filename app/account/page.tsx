@@ -2,7 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { FcGoogle } from 'react-icons/fc'; 
-import { PowerIcon } from '@heroicons/react/24/outline';
+import { PowerIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
 
@@ -31,6 +31,8 @@ export default function Account() {
     );
   }
 
+  const isAdmin = (session?.user as { role?: string })?.role === 'admin';
+
   return (
     <div className="max-w-2xl mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
@@ -44,18 +46,28 @@ export default function Account() {
         </button>
       </div>
       
-      <div className="p-6">
-      <div className="mb-8">
-      <button
+      <div className="p-6 space-y-6">
+        {isAdmin && (
+          <button
+            onClick={() => router.push('/admin')}
+            className="w-full text-left p-6 border border-blue-500 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 cursor-pointer flex justify-between items-center"
+          >
+            <div>
+              <h2 className="text-xl mb-1 text-blue-700">管理者ページへ</h2>
+              <p className="text-sm text-blue-600">商品や注文の管理を行います。</p>
+            </div>
+            <ArrowRightIcon className="w-6 h-6 text-blue-700" />
+          </button>
+        )}
+
+        <button
           onClick={() => router.push('/account/orders')}
           className="w-full text-left p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
         >
           <h2 className="text-xl mb-4 text-gray-400">注文情報</h2>
           {/* 説明など入れてもOK */}
         </button>
-      </div>
 
-      <div>
         <button
           onClick={() => router.push('/account/profile')}
           className="w-full text-left p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -64,7 +76,6 @@ export default function Account() {
           {/* 説明など入れてもOK */}
         </button>
       </div>
-    </div>
     </div>
   );
 }

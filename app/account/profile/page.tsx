@@ -24,7 +24,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const userId = session?.user?.id;
+      const userId = (session?.user as { id: string })?.id;
       const userEmail = session?.user?.email;
 
       if (!userId || !userEmail) {
@@ -65,7 +65,7 @@ export default function ProfilePage() {
   }, [session]);
 
   const handleSave = async () => {
-    const userId = session?.user?.id;
+    const userId = (session?.user as { id: string })?.id;
     const userEmail = session?.user?.email;
 
     if (!userId || !userEmail) {

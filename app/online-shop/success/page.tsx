@@ -36,7 +36,7 @@ export default function SuccessPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items,
-          dispatch_date: parseJapaneseDate(dispatchDate),
+          dispatch_date: parseJapaneseDate(dispatchDate || ''),
           dispatch_time: dispatchTime,
         }),
       });

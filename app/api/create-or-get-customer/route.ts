@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/app/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

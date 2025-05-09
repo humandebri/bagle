@@ -11,9 +11,9 @@ export default function BagelMenu({ bagels }: Props) {
       {bagels.map((b) => (
         <Link
           key={b.id}
-          href={`/online-shop/${b.id}`} // ここで「通常パス」に自然リンク！
-          scroll={false}                // スクロール位置そのままにする
-          className="text-left block"    // buttonではなくLinkに変更
+          href={`/online-shop/${b.id}`}
+          scroll={false}
+          className="text-left block"
         >
           <BagelCard bagel={b} />
         </Link>

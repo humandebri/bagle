@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DateTimeDisplay_order } from '@/components/DateTimeDisplay';
+import { STORE_PHONE_NUMBER } from '@/lib/constants';
 
 // 日付と時間のフォーマット関数をインポート
 const formatDate = (isoDate: string): string => {
@@ -170,8 +171,8 @@ export default function ReviewPage() {
           email: session?.user?.email,
           orderDetails: {
             items,
-            dispatchDate: formatDate(dispatchDate),
-            dispatchTime: formatTimeRange(dispatchTime),
+            dispatchDate: formatDate(dispatchDate || ''),
+            dispatchTime: formatTimeRange(dispatchTime || ''),
             total
           }
         }),
@@ -196,7 +197,7 @@ export default function ReviewPage() {
       {/* 受取日時 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お持ち帰り日時</h3>
-        <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+        <DateTimeDisplay_order date={dispatchDate || ''} time={dispatchTime || ''} />
         {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
       </div>
 
@@ -233,7 +234,7 @@ export default function ReviewPage() {
       {/* キャンセルポリシーの案内 */}
       <div className="text-xs text-gray-600 mt-4 pb-5 leading-relaxed space-y-1">
         <p>・キャンセルは <strong>2日前まで無料</strong> でマイページから可能です。</p>
-        <p>・前日のキャンセルはお電話（📞111-222-3333）でご連絡ください。</p>
+        <p>・前日のキャンセルはお電話（📞{STORE_PHONE_NUMBER}）でご連絡ください。</p>
         <p><strong>・当日以降のキャンセル・無断キャンセルには、キャンセル料（商品代金の100%）を頂戴します。</strong></p>
       </div>
 

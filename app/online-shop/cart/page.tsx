@@ -15,9 +15,8 @@ export default function CartPage() {
   const dispatchTime = useCartStore((state) => state.dispatchTime);
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const finalAmount = totalAmount + 10; 
-  const increaseQuantity = useCartStore((state) => state.increaseQuantity);
-  const decreaseQuantity = useCartStore((state) => state.decreaseQuantity);
-  const removeFromCart = useCartStore((state) => state.removeFromCart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
 
   const router = useRouter();
   const close = () => {
@@ -64,7 +63,7 @@ export default function CartPage() {
                 {/* 左側：商品情報 */}
                 <div>
                 <p className="text-lg">{item.name}</p>
-                <button onClick={() => removeFromCart(item.id)} className="pt-5 text-[#887c5d] hover:underline">
+                <button onClick={() => removeItem(item.id)} className="pt-5 text-[#887c5d] hover:underline">
                     削除
                 </button>
                 </div>
@@ -78,13 +77,13 @@ export default function CartPage() {
 
                 {/* 数量ボタン */}
                 <div className="flex items-center border-2 border-[#887c5d]/60 w-35 h-10">
-                <button onClick={() => decreaseQuantity(item.id)} className="flex-1 flex justify-center items-center">
+                <button onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))} className="flex-1 flex justify-center items-center">
                 <Minus className="w-5 h-5" />
                 </button>
 
                 <span className="flex-1 text-center text-xl text-gray-400">{item.quantity}</span>
 
-                <button onClick={() => increaseQuantity(item.id)} className="flex-1 flex justify-center items-center">
+                <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="flex-1 flex justify-center items-center">
                 <Plus className="w-5 h-5" />
                 </button>
                 </div>
