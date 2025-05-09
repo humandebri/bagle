@@ -31,7 +31,7 @@ export default function Account() {
     );
   }
 
-  const isAdmin = session?.user?.role === 'admin';
+  const isAdmin = (session?.user as { role?: string })?.role === 'admin';
 
   return (
     <div className="max-w-2xl mx-auto p-8">

@@ -171,8 +171,8 @@ export default function ReviewPage() {
           email: session?.user?.email,
           orderDetails: {
             items,
-            dispatchDate: formatDate(dispatchDate),
-            dispatchTime: formatTimeRange(dispatchTime),
+            dispatchDate: formatDate(dispatchDate || ''),
+            dispatchTime: formatTimeRange(dispatchTime || ''),
             total
           }
         }),
@@ -197,7 +197,7 @@ export default function ReviewPage() {
       {/* 受取日時 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お持ち帰り日時</h3>
-        <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+        <DateTimeDisplay_order date={dispatchDate || ''} time={dispatchTime || ''} />
         {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
       </div>
 

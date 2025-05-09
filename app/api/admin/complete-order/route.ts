@@ -32,9 +32,11 @@ export async function POST(req: NextRequest) {
       try {
         // 決済を実行
         await stripe.paymentIntents.capture(order.payment_intent_id);
-      } catch (err: any) {
-        // 既にキャプチャ済みの場合はエラーを無視して続行
-        if (err.code === 'payment_intent_unexpected_state') {
+      } catch (err: unknown) {
+        if (
+          err instanceof Stripe.errors.StripeError &&
+          err.code === 'payment_intent_unexpected_state'
+        ) {
           console.log('決済は既にキャプチャ済みです');
         } else {
           console.error('決済エラー:', err);

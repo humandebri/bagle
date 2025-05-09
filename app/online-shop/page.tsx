@@ -6,7 +6,6 @@ import { useCartStore } from '@/store/cart-store';
 import { ShoppingBag } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
-import { createBrowserClient } from '@supabase/ssr';
 import { Bagel } from '@/components/BagelCard';
 
 type Product = {
@@ -23,14 +22,6 @@ type Product = {
   category: {
     name: string;
   };
-  tags: {
-    tag: {
-      name: string;
-      label: string;
-      color: string;
-      tooltip: string;
-    };
-  }[];
 };
 
 export default function OnlineShopPage() {
@@ -38,18 +29,12 @@ export default function OnlineShopPage() {
   const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const cartItems = useCartStore((s) => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   const fetchProducts = async () => {
     try {
@@ -61,6 +46,7 @@ export default function OnlineShopPage() {
       setProducts(data);
     } catch (error) {
       console.error('商品データの取得に失敗しました:', error);
+      setError('商品データの取得に失敗しました');
       setProducts([]);
     } finally {
       setLoading(false);
@@ -83,12 +69,16 @@ export default function OnlineShopPage() {
       longDescription: product.long_description,
       price: product.price,
       image: product.image,
-      tags: product.tags.map(({ tag }) => tag.name),
+      tags: [],
     }));
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center min-h-[calc(100vh-7rem)]">読み込み中...</div>;
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center min-h-[calc(100vh-7rem)] text-red-500">{error}</div>;
   }
 
   return (
@@ -119,7 +109,7 @@ export default function OnlineShopPage() {
         </div>
       </main>
 
-      {mounted && totalQuantity > 0 && !isModalOpen && (
+      {mounted && totalQuantity > 0 && (
         <CartFooter
           totalQuantity={totalQuantity}
           onClick={() => router.push('/online-shop/cart')}

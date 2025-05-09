@@ -1,43 +1,63 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }   // ★ Promise にする
 ) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+  const { id } = await params                        // ★ await で展開
 
-  const { data: product, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      category:categories(*),
-      tags:product_tags(
-        tag:tags(*)
+  try {
+    const supabase = await createServerSupabaseClient()
+
+    const { data: product, error } = await supabase
+      .from('products')
+      .select(
+        `
+        id,
+        name,
+        description,
+        long_description,
+        price,
+        image,
+        is_available,
+        is_limited,
+        start_date,
+        end_date,
+        category:categories ( name )
+      `
       )
-    `)
-    .eq('id', params.id)
-    .single()
+      .eq('id', id)
+      .single()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[GET /api/products/:id] fetch error', error)
+      return NextResponse.json(
+        { error: '商品データの取得に失敗しました' },
+        { status: 500 }
+      )
+    }
+
+    if (!product) {
+      return NextResponse.json(
+        { error: '商品が見つかりませんでした' },
+        { status: 404 }
+      )
+    }
+
+    if (!product.is_available) {
+      return NextResponse.json(
+        { error: 'この商品は現在販売していません' },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(product)
+  } catch (err) {
+    console.error('[GET /api/products/:id] server error', err)
+    return NextResponse.json(
+      { error: 'サーバーエラーが発生しました' },
+      { status: 500 }
+    )
   }
-
-  if (!product) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-  }
-
-  return NextResponse.json(product)
-} 
+}

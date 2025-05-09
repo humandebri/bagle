@@ -38,7 +38,7 @@ const updateSchema = z.object({
 /* ================================================================ */
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions); // ★ 修正点
-  if (!session || session.user.role !== 'admin') {
+  if (!session || (session.user as { role?: string }).role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       .from('orders')
       .select(`
         id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
-        payment_status, profiles(first_name,last_name,phone)
+        payment_status, profiles(first_name,last_name,phone), shipped
       `)
       .order('dispatch_date', { ascending: true });
 
@@ -63,11 +63,13 @@ export async function GET(req: Request) {
     if (error) throw error;
 
     const formatted = (data ?? []).map((o) => {
-      const p = o.profiles as {
-        first_name: string | null;
-        last_name:  string | null;
-        phone:      string | null;
-      } | null;
+      const p = Array.isArray(o.profiles)
+        ? o.profiles[0] ?? null
+        : (o.profiles as {
+            first_name: string | null;
+            last_name: string | null;
+            phone: string | null;
+          } | null);
 
       return {
         ...o,
@@ -89,7 +91,7 @@ export async function GET(req: Request) {
 /* ================================================================ */
 export async function PUT(req: Request) {
   const session = await getServerSession(authOptions); // ★ 修正点
-  if (!session || session.user.role !== 'admin') {
+  if (!session || (session.user as { role?: string }).role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
@@ -122,7 +124,7 @@ export async function PUT(req: Request) {
 /* ================================================================ */
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions); // ★ 修正点
-  if (!session || session.user.role !== 'admin') {
+  if (!session || (session.user as { role?: string }).role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 

@@ -21,6 +21,7 @@
       "./types",
       "./node_modules/@types"
     ],
+    "types": ["next-auth"],
     "plugins": [
       {
         "name": "next"

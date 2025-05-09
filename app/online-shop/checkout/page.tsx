@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    const userId = session?.user?.id;
+    const userId = (session?.user as { id: string })?.id;
     const userMail = session?.user?.email;
     if (!userId) return;
   
@@ -81,7 +81,7 @@ export default function CheckoutPage() {
   const handleSubmit = async () => {
     if (!validate()) return;
   
-    const userId = session?.user?.id;
+    const userId = (session?.user as { id: string })?.id;
     const userMail = session?.user?.email;
   
     if (!userId || !userMail) {

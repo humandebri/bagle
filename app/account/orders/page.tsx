@@ -32,7 +32,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const userId = session?.user?.id;
+      const userId = (session?.user as { id: string })?.id;
       if (!userId) return;
 
       const { data, error } = await supabase

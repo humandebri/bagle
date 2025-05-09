@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { 
   HomeIcon, 
-  TagIcon, 
   FolderIcon, 
   CubeIcon,
   CalendarIcon
@@ -21,7 +20,7 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role !== 'admin') {
+    if (status === 'authenticated' && (session?.user as { role?: string })?.role !== 'admin') {
       router.push('/account');
     }
   }, [session, status, router]);
@@ -30,7 +29,7 @@ export default function AdminLayout({
     return <div className="p-8 text-center">ロード中...</div>;
   }
 
-  if (status === 'authenticated' && session?.user?.role !== 'admin') {
+  if (status === 'authenticated' && (session?.user as { role?: string })?.role !== 'admin') {
     return null;
   }
 
@@ -41,6 +40,8 @@ export default function AdminLayout({
     // { name: 'タグ管理', href: '/admin/tags', icon: TagIcon },
     { name: '予約管理', href: '/admin/reservations', icon: CalendarIcon },
   ];
+
+  
 
   return (
     <div className="min-h-screen bg-gray-100">

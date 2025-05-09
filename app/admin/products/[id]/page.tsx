@@ -1,21 +1,15 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
+import { useParams } from 'next/navigation';
+
 
 type Category = {
   id: string
   name: string
-}
-
-type Tag = {
-  id: string
-  name: string
-  label: string
-  color: string
-  tooltip: string
 }
 
 type Product = {
@@ -30,24 +24,16 @@ type Product = {
   start_date: string | null
   end_date: string | null
   category_id: string
-  tags: { tag: Tag }[]
 }
 
-export default function EditProductPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default function EditProductPage() {
+  const { id } = useParams();
+  const productId = id as string;
+
   const [product, setProduct] = useState<Product | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   const fetchData = useCallback(async () => {
     // 商品データの取得
@@ -55,15 +41,18 @@ export default function EditProductPage({
       .from('products')
       .select(`
         *,
-        tags:product_tags(
-          tag:tags(*)
-        )
+        category:categories(*)
       `)
-      .eq('id', params.id)
+      .eq('id', productId)
       .single()
 
     if (productError) {
-      console.error('Error fetching product:', productError)
+      console.error('Error fetching product:', {
+        message: productError.message,
+        details: productError.details,
+        hint: productError.hint,
+        code: productError.code
+      })
       return
     }
 
@@ -78,128 +67,78 @@ export default function EditProductPage({
       return
     }
 
-    // タグ一覧の取得
-    const { data: tagsData, error: tagsError } = await supabase
-      .from('tags')
-      .select('*')
-      .order('name')
-
-    if (tagsError) {
-      console.error('Error fetching tags:', tagsError)
-      return
-    }
-
     setProduct(productData)
     setCategories(categoriesData)
-    setTags(tagsData)
     setLoading(false)
-  }, [supabase, params.id])
+  }, [productId])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !product) return
-
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('productId', product.id)
-
+    const file = e.target.files?.[0];
+    if (!file || !product) return;
+  
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('productId', product.id);
+  
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
-      })
-
+        credentials: 'include',
+      });
+  
       if (!response.ok) {
-        throw new Error('アップロードに失敗しました')
+        throw new Error('アップロードに失敗しました');
       }
-
-      const data = await response.json()
-      setProduct({ ...product, image: data.url })
+  
+      const data = await response.json();
+      setProduct({ ...product, image: data.url });
+  
     } catch (error) {
-      console.error('Error uploading image:', error)
-      alert('画像のアップロードに失敗しました')
+      console.error('Error uploading image:', error);
+      alert('画像のアップロードに失敗しました');
     }
-  }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!product) return
 
-    const { error } = await supabase
-      .from('products')
-      .update({
-        name: product.name,
-        description: product.description,
-        long_description: product.long_description,
-        price: product.price,
-        image: product.image,
-        is_available: product.is_available,
-        is_limited: product.is_limited,
-        start_date: product.start_date,
-        end_date: product.end_date,
-        category_id: product.category_id,
-      })
-      .eq('id', product.id)
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: product.name,
+          description: product.description,
+          long_description: product.long_description,
+          price: product.price,
+          image: product.image,
+          is_available: product.is_available,
+          is_limited: product.is_limited,
+          start_date: product.start_date,
+          end_date: product.end_date,
+          category_id: product.category_id,
+        })
+        .eq('id', productId)
 
-    if (error) {
+      if (error) {
+        console.error('Error updating product:', error)
+        alert('商品の更新に失敗しました')
+        return
+      }
+
+      alert('商品を更新しました')
+      router.push('/admin/products')
+    } catch (error) {
       console.error('Error updating product:', error)
-      return
+      alert('商品の更新に失敗しました')
     }
-
-    router.push('/admin/products')
   }
-
-  const handleAddTag = async (tagId: string) => {
-    if (!product) return;
-
-    try {
-      const response = await fetch(`/api/products/${product.id}/tags`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tagId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('タグの追加に失敗しました');
-      }
-
-      // タグを追加した商品データを再取得
-      fetchData();
-    } catch (error) {
-      console.error('Error adding tag:', error);
-      alert('タグの追加に失敗しました');
-    }
-  };
-
-  const handleRemoveTag = async (tagId: string) => {
-    if (!product) return;
-
-    try {
-      const response = await fetch(`/api/products/${product.id}/tags`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tagId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('タグの削除に失敗しました');
-      }
-
-      // タグを削除した商品データを再取得
-      fetchData();
-    } catch (error) {
-      console.error('Error removing tag:', error);
-      alert('タグの削除に失敗しました');
-    }
-  };
 
   if (loading || !product) {
     return <div>Loading...</div>
@@ -220,7 +159,7 @@ export default function EditProductPage({
             onChange={(e) =>
               setProduct({ ...product, name: e.target.value })
             }
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
           />
         </div>
 
@@ -262,7 +201,7 @@ export default function EditProductPage({
               setProduct({ ...product, description: e.target.value })
             }
             rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
           />
         </div>
 
@@ -276,7 +215,7 @@ export default function EditProductPage({
               setProduct({ ...product, long_description: e.target.value })
             }
             rows={5}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
           />
         </div>
 
@@ -290,7 +229,7 @@ export default function EditProductPage({
             onChange={(e) =>
               setProduct({ ...product, price: parseInt(e.target.value) })
             }
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
           />
         </div>
 
@@ -299,11 +238,11 @@ export default function EditProductPage({
             カテゴリー
           </label>
           <select
-            value={product.category_id}
+            value={product.category_id ?? ''}
             onChange={(e) =>
               setProduct({ ...product, category_id: e.target.value })
             }
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -353,7 +292,7 @@ export default function EditProductPage({
                 onChange={(e) =>
                   setProduct({ ...product, start_date: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
               />
             </div>
 
@@ -367,64 +306,11 @@ export default function EditProductPage({
                 onChange={(e) =>
                   setProduct({ ...product, end_date: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
               />
             </div>
           </>
         )}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            タグ
-          </label>
-          <div className="mt-2 space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {product.tags.map(({ tag }) => (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-sm"
-                  style={{
-                    backgroundColor: tag.color,
-                    color: '#fff',
-                  }}
-                >
-                  {tag.label}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag.id)}
-                    className="ml-2 text-white hover:text-gray-200"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div>
-              <select
-                onChange={(e) => {
-                  const tagId = e.target.value;
-                  if (tagId) {
-                    handleAddTag(tagId);
-                    e.target.value = '';
-                  }
-                }}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              >
-                <option value="">タグを追加</option>
-                {tags
-                  .filter(
-                    (tag) =>
-                      !product.tags.some(({ tag: existingTag }) => existingTag.id === tag.id)
-                  )
-                  .map((tag) => (
-                    <option key={tag.id} value={tag.id}>
-                      {tag.label}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-        </div>
 
         <div className="flex justify-end space-x-4">
           <button

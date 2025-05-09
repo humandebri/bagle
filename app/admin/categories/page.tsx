@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { useSession } from 'next-auth/react'
 
 type Category = {
   id: string
@@ -14,13 +15,22 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [newCategoryName, setNewCategoryName] = useState('')
   const router = useRouter()
+  const { data: session, status } = useSession()
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const userId = (session?.user as { id: string })?.id;
+  // 未ログインならログイン画面に飛ばす
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    }
+  }, [status, router])
 
   const fetchCategories = useCallback(async () => {
+    if (!userId) {
+      console.log('ユーザーが認証されていません')
+      return
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -33,39 +43,59 @@ export default function CategoriesPage() {
 
     setCategories(data || [])
     setLoading(false)
-  }, [supabase])
+  }, [userId])
 
   useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+    if (userId) {
+      fetchCategories()
+    }
+  }, [fetchCategories, userId])
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCategoryName.trim()) return
+    if (!newCategoryName.trim() || !userId) return
 
-    const { error } = await supabase.from('categories').insert([
-      {
-        name: newCategoryName.trim(),
-      },
-    ])
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('user_id', userId)
+        .single()
 
-    if (error) {
-      console.error('Error adding category:', error)
-      alert('カテゴリーの追加に失敗しました')
-      return
+      if (profileError) {
+        console.error('プロフィール取得エラー:', profileError)
+        return
+      }
+
+      if (!profile?.is_admin) {
+        alert('管理者権限がありません')
+        return
+      }
+
+      const { error } = await supabase
+        .from('categories')
+        .insert([{ name: newCategoryName.trim() }])
+        .select()
+
+      if (error) {
+        alert(`カテゴリーの追加に失敗しました: ${error.message}`)
+        return
+      }
+
+      setNewCategoryName('')
+      fetchCategories()
+    } catch (err) {
+      console.error('予期せぬエラー:', err)
+      alert('エラーが発生しました')
     }
-
-    setNewCategoryName('')
-    fetchCategories()
   }
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('このカテゴリーを削除してもよろしいですか？')) return
+    if (!confirm('このカテゴリーを削除しますか？')) return
 
     const { error } = await supabase.from('categories').delete().eq('id', id)
 
     if (error) {
-      console.error('Error deleting category:', error)
       alert('カテゴリーの削除に失敗しました')
       return
     }
@@ -128,4 +158,4 @@ export default function CategoriesPage() {
       </div>
     </div>
   )
-} 
+}
