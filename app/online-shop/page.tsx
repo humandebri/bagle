@@ -85,7 +85,7 @@ export default function OnlineShopPage() {
     <>
       <main className="min-h-[calc(100vh-7rem)] pb-15">
         <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
-          <div className="border-2 p-3 mb-6 text-center">
+          <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
             {mounted && (
               <button onClick={() => router.push(`/online-shop/dispatch`)}>
                 {dispatchDate && dispatchTime ? (
@@ -97,13 +97,13 @@ export default function OnlineShopPage() {
             )}
           </div>
 
-          <div className="flex border-b mb-8">
-            <div className="w-1/2 pb-2 border-b-2">
+          <div className="flex border-b sm:border-b-0  max-w-4xl mx-auto ">
+            <div className=" border-b-2 pl-4">
               <button className="font-medium text-2xl text-gray-400">BAGEL</button>
             </div>
           </div>
 
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <BagelMenu bagels={convertToBagels(products)} />
           </div>
         </div>

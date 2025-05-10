@@ -108,8 +108,12 @@ export default function BagelModalPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-500">
-        読み込み中...
+      <div className="fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center">
+        <div className="relative mx-auto w-full max-w-md md:max-w-[500px] bg-white">
+          <div className="flex items-center justify-center h-[500px] text-gray-500">
+            読み込み中...
+          </div>
+        </div>
       </div>
     );
   }
@@ -129,7 +133,7 @@ export default function BagelModalPage() {
       onClick={handleBackgroundClick}
     >
     <div
-      className="relative  mx-auto w-full max-w-md md:max-w-[500px] bg-white md:mt-20 md:mb-10 min-h-full "
+      className="relative  mx-auto w-full max-w-md md:max-w-[500px] bg-white   "
       onClick={(e) => e.stopPropagation()}
     >
         {/* ✕ボタン（スマホのみ表示） */}
@@ -142,8 +146,8 @@ export default function BagelModalPage() {
         </button>
 
         {/* 画像 */}
-        <div className="mt-12 flex justify-center">
-          <div className="relative w-80 h-50 rounded-full overflow-hidden">
+        <div className=" flex justify-center">
+          <div className="relative w-80 h-65 rounded-full overflow-hidden">
             <Image
               src={product.image ?? "/placeholder.svg"}
               alt={product.name}
@@ -171,7 +175,7 @@ export default function BagelModalPage() {
           <p className="text-xl text-gray-400 mb-6">{product.long_description}</p>
 
           {/* 数量 & 注文ボタン */}
-          <div className="my-8 pb-30 bg-white">
+          <div className="my-8 pb-25 sm:pb-5 bg-white">
             <p className="mb-2 text-gray-400 ">数量</p>
             <div className="flex items-center space-x-4 ">
               <div className="flex items-center border-2 border-gray-300 w-44 h-15">

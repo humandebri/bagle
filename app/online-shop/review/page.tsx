@@ -210,27 +210,31 @@ export default function ReviewPage() {
       {/* 商品リスト */}
       <div className="text-gray-700 mb-4 ">
         <h3 className=" mb-2">▪️注文商品</h3>
-      <div className="mb-6 space-y-4">
-        {items.map((item) => (
-          <div key={item.id} className="flex justify-between text-sm border-b pb-2">
-            <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-gray-500">¥{item.price.toLocaleString()} × {item.quantity}</p>
+      {!loading && (
+        <div className="mb-6 space-y-4">
+          {items.map((item) => (
+            <div key={item.id} className="flex justify-between text-sm border-b pb-2">
+              <div>
+                <p className="font-medium">{item.name}</p>
+                <p className="text-gray-500">¥{item.price.toLocaleString()} × {item.quantity}</p>
+              </div>
+              <p className="self-end">¥{(item.price * item.quantity).toLocaleString()}</p>
             </div>
-            <p className="self-end">¥{(item.price * item.quantity).toLocaleString()}</p>
+          ))}
+          <div className="flex justify-between text-sm border-b pb-2">
+            <p className="font-medium">袋代</p>
+            <p>¥{bagFee}</p>
           </div>
-        ))}
-        <div className="flex justify-between text-sm border-b pb-2">
-          <p className="font-medium">袋代</p>
-          <p>¥{bagFee}</p>
         </div>
-      </div>
+      )}
       </div>
       {/* 合計 */}
-      <div className="flex justify-between text-lg mb-4">
-        <p>合計</p>
-        <p>¥{total.toLocaleString()}</p>
-      </div>
+      {!loading && (
+        <div className="flex justify-between text-lg mb-4">
+          <p>合計</p>
+          <p>¥{total.toLocaleString()}</p>
+        </div>
+      )}
       {/* キャンセルポリシーの案内 */}
       <div className="text-xs text-gray-600 mt-4 pb-5 leading-relaxed space-y-1">
         <p>・キャンセルは <strong>2日前まで無料</strong> でマイページから可能です。</p>
