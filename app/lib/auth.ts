@@ -1,8 +1,13 @@
 // app/lib/auth.ts
 import GoogleProvider from 'next-auth/providers/google';
 import { AuthOptions } from 'next-auth';
+import { createClient } from '@supabase/supabase-js';
 
-const ADMIN_EMAILS = ['qwertyuiop123456@gmail.com'];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -30,12 +35,21 @@ export const authOptions: AuthOptions = {
       if (account) {
         token.accessToken = account.access_token;
         token.id = account.providerAccountId;
+  
+        // 🔽 Supabaseのprofilesテーブルからis_adminを取得
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('user_id', account.providerAccountId)
+          .single();
+  
+        if (data?.is_admin) {
+          token.role = 'admin';
+        } else {
+          token.role = 'user';
+        }
       }
-
-      if (token.email && ADMIN_EMAILS.includes(token.email)) {
-        token.role = 'admin';
-      }
-
+  
       return token;
     },
     async session({ session, token }) {
