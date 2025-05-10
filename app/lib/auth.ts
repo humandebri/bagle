@@ -37,7 +37,7 @@ export const authOptions: AuthOptions = {
         token.id = account.providerAccountId;
   
         // 🔽 Supabaseのprofilesテーブルからis_adminを取得
-        const { data, error } = await supabase
+        const { data} = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('user_id', account.providerAccountId)
