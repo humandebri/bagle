@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { TIME_RANGE_MAP, formatDate, formatTimeRange } from "@/components/DateTimeDisplay";
 
 interface TimeSlot {
@@ -136,8 +136,8 @@ export default function TimeSlotsPage() {
     }
   }
 
-  // 実データに基づく削除対象枠数カウント
-  function countTargetSlotsByActualData(start: string, end: string, days: number[], times: string[]) {
+  // countTargetSlotsByActualDataをuseCallbackでラップ
+  const countTargetSlotsByActualData = useCallback((start: string, end: string, days: number[], times: string[]) => {
     const s = new Date(start);
     const e = new Date(end);
     let count = 0;
@@ -152,7 +152,7 @@ export default function TimeSlotsPage() {
       }
     }
     return count;
-  }
+  }, [timeSlots]);
 
   // 一括作成対象枠数カウント
   function countBulkCreateSlots(start: string, end: string, days: number[], times: string[]) {
@@ -201,7 +201,7 @@ export default function TimeSlotsPage() {
       setShowModal(false);
       if (formRef.current) formRef.current.reset();
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       setBulkError("作成に失敗しました");
     } finally {
       setBulkLoading(false);
@@ -241,7 +241,7 @@ export default function TimeSlotsPage() {
       setShowEditModal(false);
       if (editFormRef.current) editFormRef.current.reset();
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       setEditError("編集に失敗しました");
     } finally {
       setEditLoading(false);
@@ -277,7 +277,7 @@ export default function TimeSlotsPage() {
       setShowDeleteModal(false);
       if (deleteFormRef.current) deleteFormRef.current.reset();
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       setDeleteError("削除に失敗しました");
     } finally {
       setDeleteLoading(false);
@@ -288,13 +288,13 @@ export default function TimeSlotsPage() {
     setDeleteCount(
       countTargetSlotsByActualData(deleteStart, deleteEnd, deleteDays, deleteTimeSlots)
     );
-  }, [deleteStart, deleteEnd, deleteDays, deleteTimeSlots, timeSlots]);
+  }, [deleteStart, deleteEnd, deleteDays, deleteTimeSlots, timeSlots, countTargetSlotsByActualData]);
 
   useEffect(() => {
     setEditCount(
       countTargetSlotsByActualData(editStart, editEnd, editDays, editTimeSlots)
     );
-  }, [editStart, editEnd, editDays, editTimeSlots, timeSlots]);
+  }, [editStart, editEnd, editDays, editTimeSlots, timeSlots, countTargetSlotsByActualData]);
 
   // 詳細モーダルの編集用state
   const [editDetailMax, setEditDetailMax] = useState<number | null>(null);
@@ -307,12 +307,6 @@ export default function TimeSlotsPage() {
       setEditDetailError("");
     }
   }, [detailSlot]);
-
-  function toTimeString(t: string) {
-    if (/^\d{2}:\d{2}:\d{2}$/.test(t)) return t;
-    if (/^\d{2}:\d{2}$/.test(t)) return t + ':00';
-    return t;
-  }
 
   async function handleDetailEditSave() {
     if (!detailSlot) return;

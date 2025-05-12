@@ -41,8 +41,8 @@ export default function OrdersAdminPage() {
         if (!res.ok) throw new Error("注文一覧の取得に失敗しました");
         const data = await res.json();
         setOrders(data);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }

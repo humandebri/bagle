@@ -105,8 +105,6 @@ export default function BagelModalPage() {
       return;
     }
 
-    // 既存の商品を削除してから新しい個数で追加
-    const updatedItems = cartItems.filter(item => item.id !== product.id);
     addToCart(
       { id: product.id, name: product.name, price: product.price, quantity }
     );

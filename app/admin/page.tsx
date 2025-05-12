@@ -1,14 +1,6 @@
 'use client';
 
-import { 
-  CubeIcon, 
-  TagIcon, 
-  FolderIcon, 
-  ShoppingCartIcon,
-  CalendarIcon
-} from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // KPIデータ型
@@ -25,7 +17,7 @@ interface Order {
   id: string;
   user_id: string;
   created_at: string;
-  items: any[];
+  items: OrderItem[];
   dispatch_date: string;
   dispatch_time: string;
   total_price: number;
@@ -33,6 +25,17 @@ interface Order {
   shipped: boolean;
   customer_name?: string;
   phone?: string;
+}
+
+// OrderItem型を定義
+type OrderItem = unknown;
+
+// Product型を定義
+interface Product {
+  category?: {
+    name?: string;
+  };
+  // 必要に応じて他のフィールドも追加
 }
 
 const ORDER_STATUS_OPTIONS = [
@@ -64,7 +67,7 @@ export default function AdminDashboard() {
   const PAGE_SIZE = 10;
 
   // 売上グラフ
-  const [salesStats, setSalesStats] = useState<any[]>([]);
+  const [salesStats, setSalesStats] = useState<unknown[]>([]);
   const [salesLoading, setSalesLoading] = useState(true);
   const [salesError, setSalesError] = useState<string | null>(null);
   const [salesPeriod, setSalesPeriod] = useState<'daily' | 'monthly'>('daily');
@@ -85,7 +88,9 @@ export default function AdminDashboard() {
     // カテゴリー数（重複除外）
     const categorySet = new Set(
       Array.isArray(products)
-        ? products.map((p: any) => p.category?.name).filter((v: string | undefined) => !!v)
+        ? (products as Product[])
+            .map((p: Product): string | undefined => p.category?.name)
+            .filter((v): v is string => typeof v === 'string')
         : []
     );
     setCategoryCount(categorySet.size);
@@ -120,7 +125,7 @@ export default function AdminDashboard() {
       setSalesFrom(prior.toISOString().slice(0, 10));
       setSalesTo(today.toISOString().slice(0, 10));
     }
-  }, []);
+  }, [from, to, salesFrom, salesTo]);
 
   useEffect(() => {
     const fetchKpi = async () => {
@@ -134,8 +139,8 @@ export default function AdminDashboard() {
         if (!res.ok) throw new Error('KPI取得に失敗しました');
         const data = await res.json();
         setKpi(data);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'KPI取得に失敗しました');
       } finally {
         setLoading(false);
       }
@@ -162,8 +167,8 @@ export default function AdminDashboard() {
         } else {
           setOrders(data);
         }
-      } catch (e: any) {
-        setOrderError(e.message);
+      } catch (e: unknown) {
+        setOrderError(e instanceof Error ? e.message : '注文一覧の取得に失敗しました');
       } finally {
         setOrderLoading(false);
       }
@@ -184,8 +189,8 @@ export default function AdminDashboard() {
         if (!res.ok) throw new Error('売上グラフの取得に失敗しました');
         const data = await res.json();
         setSalesStats(data);
-      } catch (e: any) {
-        setSalesError(e.message);
+      } catch (e: unknown) {
+        setSalesError(e instanceof Error ? e.message : '売上グラフの取得に失敗しました');
       } finally {
         setSalesLoading(false);
       }

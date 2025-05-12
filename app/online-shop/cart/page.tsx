@@ -4,7 +4,7 @@ import { useCartStore } from '@/store/cart-store';
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
-import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
+import { MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 
 
 
@@ -12,8 +12,6 @@ import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 export default function CartPage() {
     
   const items = useCartStore((state) => state.items); 
-  const dispatchDate = useCartStore((state) => state.dispatchDate);
-  const dispatchTime = useCartStore((state) => state.dispatchTime);
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const finalAmount = totalAmount + 10; 
   const updateQuantity = useCartStore((state) => state.updateQuantity);

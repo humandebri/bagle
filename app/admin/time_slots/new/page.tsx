@@ -34,8 +34,8 @@ export default function NewTimeSlotPage() {
       });
       if (!res.ok) throw new Error("作成に失敗しました");
       router.push("/admin/time_slots");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }

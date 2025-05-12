@@ -2,6 +2,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+type OrderItem = {
+  name: string;
+  price: number;
+  quantity: number;
+};
+
 interface Order {
   id: string;
   user_id: string;
@@ -12,7 +18,7 @@ interface Order {
   customer_name?: string;
   dispatch_date?: string;
   dispatch_time?: string;
-  items?: any[];
+  items?: OrderItem[];
 }
 
 function formatYen(num: number) {
@@ -35,8 +41,8 @@ export default function OrderDetailPage() {
         if (!res.ok) throw new Error("注文詳細の取得に失敗しました");
         const data = await res.json();
         setOrder(Array.isArray(data) ? data[0] : data);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : '不明なエラーが発生しました');
       } finally {
         setLoading(false);
       }
@@ -83,7 +89,7 @@ export default function OrderDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {order.items.map((item: any, idx: number) => (
+                  {order.items.map((item: OrderItem, idx: number) => (
                     <tr key={idx} className="border-b">
                       <td className="px-2 py-1 text-left">{item.name}</td>
                       <td className="px-2 py-1 text-left">{item.quantity}</td>

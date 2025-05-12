@@ -22,10 +22,7 @@ export default function Menu() {
       if (error) {
         setError('商品の取得に失敗しました');
       } else {
-        const bagels = (data as any[]).map((b) => ({
-          ...b,
-          longDescription: b.long_description,
-        }));
+        const bagels = (data as unknown[]) as Bagel[];
         setBagels(bagels);
       }
       setLoading(false);
