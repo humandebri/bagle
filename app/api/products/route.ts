@@ -19,6 +19,7 @@ export async function GET() {
         start_date,
         end_date,
         category:categories (
+          id,
           name
         )
       `)

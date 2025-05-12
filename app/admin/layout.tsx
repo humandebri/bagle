@@ -8,7 +8,8 @@ import {
   HomeIcon, 
   FolderIcon, 
   CubeIcon,
-  CalendarIcon
+  CalendarIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({
@@ -37,6 +38,7 @@ export default function AdminLayout({
     { name: 'ダッシュボード', href: '/admin', icon: HomeIcon },
     { name: '商品管理', href: '/admin/products', icon: CubeIcon },
     { name: 'カテゴリー管理', href: '/admin/categories', icon: FolderIcon },
+    { name: '注文管理', href: '/admin/orders', icon: ShoppingCartIcon },
     // { name: 'タグ管理', href: '/admin/tags', icon: TagIcon },
     { name: '予約管理', href: '/admin/reservations', icon: CalendarIcon },
     { name: '時間枠管理', href: '/admin/time_slots', icon: CalendarIcon },

@@ -46,6 +46,10 @@ export async function GET(req: Request) {
   const start = searchParams.get('startDate');
   const end   = searchParams.get('endDate');
   const st    = searchParams.get('status');
+  const limit = searchParams.get('limit');
+  const offset = searchParams.get('offset');
+  const order = searchParams.get('order');
+  const id = searchParams.get('id');
 
   try {
     let q = supabase
@@ -54,15 +58,19 @@ export async function GET(req: Request) {
         id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
         payment_status, profiles(first_name,last_name,phone), shipped
       `)
-      .order('dispatch_date', { ascending: true });
+      .order('created_at', { ascending: order !== 'desc' });
+
+    if (id) q = q.eq('id', id);
 
     if (start && end) q = q.gte('dispatch_date', start).lte('dispatch_date', end);
     if (st)           q = q.eq('payment_status', st);
+    if (limit)        q = q.limit(Number(limit));
+    if (offset)       q = q.range(Number(offset), Number(offset) + Number(limit) - 1);
 
-    const { data, error } = await q;
-    if (error) throw error;
-
-    const formatted = (data ?? []).map((o) => {
+    if (id) {
+      const { data, error } = await q.single();
+      if (error) throw error;
+      const o = data;
       const p = Array.isArray(o.profiles)
         ? o.profiles[0] ?? null
         : (o.profiles as {
@@ -70,16 +78,33 @@ export async function GET(req: Request) {
             last_name: string | null;
             phone: string | null;
           } | null);
-
-      return {
+      const formatted = {
         ...o,
         status: o.payment_status,
         customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
         phone: p?.phone ?? null,
       };
-    });
-
-    return NextResponse.json(formatted);
+      return NextResponse.json(formatted);
+    } else {
+      const { data, error } = await q;
+      if (error) throw error;
+      const formatted = (data ?? []).map((o) => {
+        const p = Array.isArray(o.profiles)
+          ? o.profiles[0] ?? null
+          : (o.profiles as {
+              first_name: string | null;
+              last_name: string | null;
+              phone: string | null;
+            } | null);
+        return {
+          ...o,
+          status: o.payment_status,
+          customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
+          phone: p?.phone ?? null,
+        };
+      });
+      return NextResponse.json(formatted);
+    }
   } catch (err) {
     console.error('予約取得エラー:', err);
     return NextResponse.json({ error: '予約の取得に失敗しました' }, { status: 500 });

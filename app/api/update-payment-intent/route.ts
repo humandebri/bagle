@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const paymentIntent = await stripe.paymentIntents.update(
       order.payment_intent_id,
       {
-        amount: newAmount * 100, // セント単位に変換
+        amount: newAmount
       }
     );
 

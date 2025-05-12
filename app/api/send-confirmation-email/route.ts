@@ -84,7 +84,7 @@ export async function POST(request: Request) {
             <p>ご予約商品のお受け取りの際の路上駐車は、絶対にできません<br>コインパーキングをご利用頂きますようによろしくお願い致します</p>
 
             <p style="margin-bottom: 15px;">ご不明な点がございましたら、お気軽にお問い合わせください。</p>
-            <p>お電話：{STORE_PHONE_NUMBER}</p>
+            <p>お電話：089-904-2666</p>
           </div>
         </div>
       `,

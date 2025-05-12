@@ -24,8 +24,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
         <p className=" text-gray-400 mb-4 leading-relaxed flex-grow">
           {bagel.description}
         </p>
-
-        {/* タグ */}
+{/* 
         <div className="flex space-x-1 mb-2">
           {bagel.tags.includes('vegetarian') && (
             <Tag label="VG" color="lime-500" tooltip="ベジタリアン" />
@@ -33,7 +32,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
           {bagel.tags.includes('vegan') && (
             <Tag label="V" color="green-500" tooltip="ヴィーガン" />
           )}
-        </div>
+        </div> */}
 
         <p className="text-xl text-gray-400">
           ¥ {bagel.price.toLocaleString()}
