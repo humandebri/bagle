@@ -86,7 +86,12 @@ export default function BagelModalPage() {
   const add = () => {
     if (!product) return;
     
-    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalQuantity = cartItems.reduce((sum, item) => {
+      // 現在の商品以外の合計を計算
+      if (item.id === product.id) return sum;
+      return sum + item.quantity;
+    }, 0);
+
     if (totalQuantity + quantity > MAX_BAGEL_PER_ORDER) {
       toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
         description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
@@ -94,6 +99,8 @@ export default function BagelModalPage() {
       return;
     }
 
+    // 既存の商品を削除してから新しい個数で追加
+    const updatedItems = cartItems.filter(item => item.id !== product.id);
     addToCart(
       { id: product.id, name: product.name, price: product.price, quantity }
     );
@@ -147,7 +154,7 @@ export default function BagelModalPage() {
 
         {/* 画像 */}
         <div className=" flex justify-center">
-          <div className="relative w-80 h-65 rounded-full overflow-hidden">
+          <div className="relative w-80 h-70  overflow-hidden">
             <Image
               src={product.image ?? "/placeholder.svg"}
               alt={product.name}
@@ -172,7 +179,7 @@ export default function BagelModalPage() {
             )}
           </div>
 
-          <p className="text-xl text-gray-400 mb-6">{product.long_description}</p>
+          <p className="text-xl text-gray-400 mb-3">{product.long_description}</p>
 
           {/* 数量 & 注文ボタン */}
           <div className="my-8 pb-25 sm:pb-5 bg-white">

@@ -33,12 +33,13 @@ export default function CartPage() {
       return;
     }
 
-    if (!dispatchDate || !dispatchTime) {
-      toast.error("受け取り日時を選択してください", {
-        description: "商品を受け取る日時を選択してください。",
+    if (totalQuantity === 0) {
+      toast.error("カートに商品がありません。", {
+        description: "商品を追加してください。",
       });
       return;
     }
+
 
     router.push('/online-shop/checkout');
   };
@@ -58,7 +59,7 @@ export default function CartPage() {
       {/* 商品リスト */}
       {items.length > 0 ? (
         <div className="space-y-6">
-          {items.map((item) => (
+          {items.filter(item => item.quantity > 0).map((item) => (
             <div key={item.id} className="flex justify-between border-b border-[#887c5d]/60  pb-4">
                 {/* 左側：商品情報 */}
                 <div>
