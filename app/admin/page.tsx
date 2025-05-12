@@ -4,7 +4,8 @@ import {
   CubeIcon, 
   TagIcon, 
   FolderIcon, 
-  ShoppingCartIcon 
+  ShoppingCartIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
@@ -33,6 +34,12 @@ export default function AdminDashboard() {
       value: '25',
       icon: ShoppingCartIcon,
       href: '/admin/orders',
+    },
+    {
+      name: '時間枠数',
+      value: '0',
+      icon: CalendarIcon,
+      href: '/admin/time_slots',
     },
   ];
 

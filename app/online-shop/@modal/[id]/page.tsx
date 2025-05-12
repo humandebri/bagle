@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
-import { MAX_BAGEL_PER_ORDER } from "@/lib/constants";
+import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 import { toast } from "sonner";
 
 type Product = {
@@ -80,7 +80,13 @@ export default function BagelModalPage() {
       });
       return;
     }
-    setQuantity((q) => (q < 3 ? q + 1 : q));
+    if (quantity >= MAX_BAGEL_PER_ITEM) {
+      toast.error(`1つの商品は最大${MAX_BAGEL_PER_ITEM}個までです！`, {
+        description: `お一人様1つの商品につき${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+      });
+      return;
+    }
+    setQuantity((q) => q + 1);
   };
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {

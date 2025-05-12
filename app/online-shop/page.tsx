@@ -83,7 +83,7 @@ export default function OnlineShopPage() {
 
   return (
     <>
-      <main className="min-h-[calc(100vh-7rem)] pb-15">
+      <main className="min-h-[calc(100vh-7rem)] pb-15 md:pb-5">
         <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
           <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
             {mounted && (

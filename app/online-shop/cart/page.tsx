@@ -4,6 +4,7 @@ import { useCartStore } from '@/store/cart-store';
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
+import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 
 
 
@@ -46,7 +47,7 @@ export default function CartPage() {
 
   return (
     <>
-    <main className="min-h-[calc(100vh-7rem)] pb-20 px-6 py-10 bg-white">
+    <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-5 px-6 py-10 bg-white">
       <h1 className="text-3xl  mb-8">Cart </h1>
       <button
           onClick={close}
@@ -84,7 +85,15 @@ export default function CartPage() {
 
                 <span className="flex-1 text-center text-xl text-gray-400">{item.quantity}</span>
 
-                <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="flex-1 flex justify-center items-center">
+                <button onClick={() => {
+                  if (item.quantity >= MAX_BAGEL_PER_ITEM) {
+                    toast.error(`1つの商品は最大${MAX_BAGEL_PER_ITEM}個までです！`, {
+                      description: `お一人様1つの商品につき${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+                    });
+                    return;
+                  }
+                  updateQuantity(item.id, item.quantity + 1);
+                }} className="flex-1 flex justify-center items-center">
                 <Plus className="w-5 h-5" />
                 </button>
                 </div>
