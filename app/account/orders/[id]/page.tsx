@@ -107,6 +107,24 @@ export default function OrderDetailPage() {
       <p className="text-right font-bold">
         合計: ¥{order.total_price.toLocaleString()}
       </p>
+      {/* PC用フッター */}
+      <div className="hidden md:flex w-full max-w-lg px-6 py-7 border-t border-gray-300 bg-white space-x-4 justify-center">
+        <button
+          className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
+          onClick={() => router.push(`/account/orders`)}
+        >
+          戻る
+        </button>
+        <button
+          className={`flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg ${isEditable ? 'hover:bg-gray-600' : 'opacity-50 cursor-not-allowed'}`}
+          onClick={() => isEditable && router.push(`/account/orders/${order.id}/edit`)}
+          disabled={!isEditable}
+        >
+          変更
+        </button>
+      </div>
+
+      {/* スマホ用固定フッター */}
     </main>
     {/* スマホ用固定フッター */}
     <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-50">
@@ -125,22 +143,7 @@ export default function OrderDetailPage() {
     </button>
   </div>
 
-  {/* PC用フッター */}
-  <div className="hidden md:flex w-full max-w-lg px-6 py-7 border-t border-gray-300 bg-white space-x-4">
-    <button
-      className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
-      onClick={() => router.push(`/account/orders`)}
-    >
-      戻る
-    </button>
-    <button
-      className={`flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg ${isEditable ? 'hover:bg-gray-600' : 'opacity-50 cursor-not-allowed'}`}
-      onClick={() => isEditable && router.push(`/account/orders/${order.id}/edit`)}
-      disabled={!isEditable}
-    >
-      変更
-    </button>
-  </div>
+
   </>
   );
 }

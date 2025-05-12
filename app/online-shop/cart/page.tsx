@@ -4,6 +4,7 @@ import { useCartStore } from '@/store/cart-store';
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
+import { MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 
 
 
@@ -11,8 +12,6 @@ import { toast } from "sonner";
 export default function CartPage() {
     
   const items = useCartStore((state) => state.items); 
-  const dispatchDate = useCartStore((state) => state.dispatchDate);
-  const dispatchTime = useCartStore((state) => state.dispatchTime);
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const finalAmount = totalAmount + 10; 
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -33,19 +32,20 @@ export default function CartPage() {
       return;
     }
 
-    if (!dispatchDate || !dispatchTime) {
-      toast.error("受け取り日時を選択してください", {
-        description: "商品を受け取る日時を選択してください。",
+    if (totalQuantity === 0) {
+      toast.error("カートに商品がありません。", {
+        description: "商品を追加してください。",
       });
       return;
     }
+
 
     router.push('/online-shop/checkout');
   };
 
   return (
     <>
-    <main className="min-h-[calc(100vh-7rem)] pb-20 px-6 py-10 bg-white">
+    <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-5 px-6 py-10 bg-white">
       <h1 className="text-3xl  mb-8">Cart </h1>
       <button
           onClick={close}
@@ -58,7 +58,7 @@ export default function CartPage() {
       {/* 商品リスト */}
       {items.length > 0 ? (
         <div className="space-y-6">
-          {items.map((item) => (
+          {items.filter(item => item.quantity > 0).map((item) => (
             <div key={item.id} className="flex justify-between border-b border-[#887c5d]/60  pb-4">
                 {/* 左側：商品情報 */}
                 <div>
@@ -83,7 +83,15 @@ export default function CartPage() {
 
                 <span className="flex-1 text-center text-xl text-gray-400">{item.quantity}</span>
 
-                <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="flex-1 flex justify-center items-center">
+                <button onClick={() => {
+                  if (item.quantity >= MAX_BAGEL_PER_ITEM) {
+                    toast.error(`1つの商品は最大${MAX_BAGEL_PER_ITEM}個までです！`, {
+                      description: `お一人様1つの商品につき${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+                    });
+                    return;
+                  }
+                  updateQuantity(item.id, item.quantity + 1);
+                }} className="flex-1 flex justify-center items-center">
                 <Plus className="w-5 h-5" />
                 </button>
                 </div>

@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useCartStore } from '@/store/cart-store';
 
 type OrderItem = {
   name: string;
@@ -171,7 +172,6 @@ export default function EditOrderPage() {
 
   const save = async () => {
     const newTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 10;
-
     try {
       // 1. 古いタイムスロットを解放
       const { data: oldSlot, error: oldSlotError } = await supabase
@@ -221,45 +221,76 @@ export default function EditOrderPage() {
         throw new Error('新しいタイムスロットの予約に失敗しました');
       }
 
-      // 3. 注文情報を更新
-      const { error: orderError } = await supabase
-        .from('orders')
-        .update({
-          items,
-          dispatch_date: dispatchDate,
-          dispatch_time: dispatchTime,
-          total_price: newTotal,
-        })
-        .eq('id', id);
-
-      if (orderError) {
-        console.error('注文情報の更新に失敗:', orderError);
-        throw new Error('注文情報の更新に失敗しました');
-      }
-
-      // 4. 金額が変更された場合はStripeの支払い意図を更新
+      // 3. 金額が変更された場合はStripeの注文をキャンセルし新規発行
       if (newTotal !== originalTotal) {
-        try {
-          const response = await fetch('/api/update-payment-intent', {
+        // 3-1. 既存PaymentIntentをキャンセル
+        if (paymentIntentId) {
+          const cancelRes = await fetch('/api/cancel-payment-intent', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: id,
-              newAmount: newTotal,
-            }),
+            body: JSON.stringify({ paymentIntentId }),
           });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Stripe更新エラー:', errorData);
-            throw new Error(errorData.error || '支払い金額の更新に失敗しました');
+          if (!cancelRes.ok) {
+            const err = await cancelRes.json();
+            throw new Error(err.error || '支払いのキャンセルに失敗しました');
           }
-        } catch (stripeError) {
-          console.error('Stripe更新処理でエラー:', stripeError);
-          throw new Error('支払い金額の更新に失敗しました');
         }
+        // 3-2. customerId取得
+        const customerRes = await fetch('/api/create-or-get-customer', { method: 'POST' });
+        const { customerId, error: customerError } = await customerRes.json();
+        if (!customerId) throw new Error(customerError || 'カスタマー情報の取得に失敗しました');
+        // 3-3. paymentMethodId取得（Zustandストアから or Stripeから取得）
+        let paymentMethodId = useCartStore.getState().paymentMethodId;
+        if (!paymentMethodId) {
+          // StripeのAPIから取得
+          const pmRes = await fetch('/api/get-payment-method', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentIntentId }),
+          });
+          const pmData = await pmRes.json();
+          if (!pmRes.ok || !pmData.paymentMethodId) {
+            throw new Error(pmData.error || '支払い方法の取得に失敗しました');
+          }
+          paymentMethodId = pmData.paymentMethodId;
+        }
+        // 3-4. 新しいPaymentIntent作成
+        const createRes = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: newTotal,
+            customerId,
+            paymentMethodId,
+          }),
+        });
+        const { paymentIntent, error: createError } = await createRes.json();
+        if (!paymentIntent?.id) throw new Error(createError || '新しい支払いの作成に失敗しました');
+        // 3-5. DB更新（新しいpayment_intent_idで）
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({
+            items,
+            dispatch_date: dispatchDate,
+            dispatch_time: dispatchTime,
+            total_price: newTotal,
+            payment_intent_id: paymentIntent.id,
+          })
+          .eq('id', id);
+        if (orderError) throw new Error('注文情報の更新に失敗しました');
+      } else {
+        // 金額が変わらない場合は従来通り
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({
+            items,
+            dispatch_date: dispatchDate,
+            dispatch_time: dispatchTime,
+            total_price: newTotal,
+          })
+          .eq('id', id);
+        if (orderError) throw new Error('注文情報の更新に失敗しました');
       }
-
       router.push(`/account/orders/${id}`);
     } catch (error) {
       console.error('注文更新エラーの詳細:', error);
@@ -432,14 +463,20 @@ export default function EditOrderPage() {
 
             <div className="hidden md:flex justify-end mt-8 space-x-4">
               <button
+                onClick={() => router.push(`/account/orders/${id}`)}
+                className="w-40 py-4 px-6 border border-[#887c5d] text-[#887c5d] bg-white hover:bg-[#f5f2ea] text-lg rounded"
+              >
+                戻る
+              </button>
+              <button
                 onClick={cancelOrder}
-                className="w-32 py-4 px-6  text-white text-lg hover:bg-red-700"
+                className="w-40 py-4 px-6 bg-red-200 text-red-700 text-lg rounded hover:bg-red-300 border border-red-300"
               >
                 キャンセル
               </button>
               <button
                 onClick={save}
-                className="w-64 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+                className="w-56 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg rounded hover:bg-gray-600"
               >
                 保存 ¥{total.toLocaleString()}
               </button>
@@ -456,13 +493,13 @@ export default function EditOrderPage() {
                 className="flex-1 border-[#887c5d] text-[#887c5d] hover:bg-[#f5f2ea]"
                 onClick={cancelOrder}
               >
-                キャンセル
+                注文をキャンセル
               </Button>
               <Button
                 className="flex-1 bg-[#887c5d] text-white hover:bg-[#6e634b]"
                 onClick={save}
               >
-                確定
+                変更を確定
               </Button>
             </div>
 

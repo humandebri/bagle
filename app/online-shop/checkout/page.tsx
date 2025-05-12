@@ -6,6 +6,8 @@ import { useSession, signIn } from 'next-auth/react';
 import { FcGoogle } from 'react-icons/fc';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import {  DateTimeDisplay_order } from '@/components/DateTimeDisplay';
+import { toast } from 'sonner';
 
 export default function CheckoutPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
@@ -81,6 +83,11 @@ export default function CheckoutPage() {
   const handleSubmit = async () => {
     if (!validate()) return;
   
+    if (!dispatchDate || !dispatchTime) {
+      toast.error('日時を選択してください');
+      return;
+    }
+  
     const userId = (session?.user as { id: string })?.id;
     const userMail = session?.user?.email;
   
@@ -127,16 +134,26 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <main className="pb-20 min-h-[calc(100vh-7rem)] px-6 py-10 bg-white">
-        <h1 className="text-3xl mb-8">注文手続き</h1>
+      <main className="pb-20 md:pb-5 min-h-[calc(100vh-7rem)] px-6 py-5 bg-white">
+        <h1 className="text-3xl pb-4">注文手続き</h1>
 
-        <section className="mb-10 text-gray-700 space-y-2">
-          <p>受取場所 : 店舗</p>
-          <p>日時 : {dispatchDate} {dispatchTime}</p>
+        <section className="pb-5 text-gray-700 space-y-2">
+          <p className="text-lg">受取場所 : </p>
+          <p>店舗</p>
+          <p className="text-lg">受取日時 : </p>
+          <div className="border-2 p-3 text-center">
+            <button onClick={() => router.push(`/online-shop/dispatch`)}>
+              {dispatchDate && dispatchTime ? (
+                <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+              ) : (
+                "日時を選択してください"
+              )}
+            </button>
+          </div>
         </section>
 
-        <section className="mb-10">
-          <h2 className="text-xl mb-4">連絡先情報</h2>
+        <section className="pb-5">
+          <h2 className="text-lg pb-5">連絡先情報</h2>
           <div className="space-y-6">
             <InputField label="姓" value={lastName} onChange={setLastName} error={errors.lastName} placeholder="例：山田" />
             <InputField label="名" value={firstName} onChange={setFirstName} error={errors.firstName} placeholder="例：太郎" />

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
-import { MAX_BAGEL_PER_ORDER } from "@/lib/constants";
+import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 import { toast } from "sonner";
 
 type Product = {
@@ -80,13 +80,24 @@ export default function BagelModalPage() {
       });
       return;
     }
-    setQuantity((q) => (q < 3 ? q + 1 : q));
+    if (quantity >= MAX_BAGEL_PER_ITEM) {
+      toast.error(`1つの商品は最大${MAX_BAGEL_PER_ITEM}個までです！`, {
+        description: `お一人様1つの商品につき${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+      });
+      return;
+    }
+    setQuantity((q) => q + 1);
   };
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
     if (!product) return;
     
-    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalQuantity = cartItems.reduce((sum, item) => {
+      // 現在の商品以外の合計を計算
+      if (item.id === product.id) return sum;
+      return sum + item.quantity;
+    }, 0);
+
     if (totalQuantity + quantity > MAX_BAGEL_PER_ORDER) {
       toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
         description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
@@ -147,7 +158,7 @@ export default function BagelModalPage() {
 
         {/* 画像 */}
         <div className=" flex justify-center">
-          <div className="relative w-80 h-65 rounded-full overflow-hidden">
+          <div className="relative w-80 h-70  overflow-hidden">
             <Image
               src={product.image ?? "/placeholder.svg"}
               alt={product.name}
@@ -172,7 +183,7 @@ export default function BagelModalPage() {
             )}
           </div>
 
-          <p className="text-xl text-gray-400 mb-6">{product.long_description}</p>
+          <p className="text-xl text-gray-400 mb-3">{product.long_description}</p>
 
           {/* 数量 & 注文ボタン */}
           <div className="my-8 pb-25 sm:pb-5 bg-white">

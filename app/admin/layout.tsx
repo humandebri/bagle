@@ -8,7 +8,8 @@ import {
   HomeIcon, 
   FolderIcon, 
   CubeIcon,
-  CalendarIcon
+  CalendarIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({
@@ -37,8 +38,10 @@ export default function AdminLayout({
     { name: 'ダッシュボード', href: '/admin', icon: HomeIcon },
     { name: '商品管理', href: '/admin/products', icon: CubeIcon },
     { name: 'カテゴリー管理', href: '/admin/categories', icon: FolderIcon },
+    { name: '注文管理', href: '/admin/orders', icon: ShoppingCartIcon },
     // { name: 'タグ管理', href: '/admin/tags', icon: TagIcon },
     { name: '予約管理', href: '/admin/reservations', icon: CalendarIcon },
+    { name: '時間枠管理', href: '/admin/time_slots', icon: CalendarIcon },
   ];
 
   
@@ -47,9 +50,9 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-100">
       <div className="flex">
         {/* サイドバー */}
-        <div className="w-64 min-h-screen bg-white shadow-sm">
+        <div className="w-16 md:w-64 min-h-screen bg-white shadow-sm">
           <div className="p-4">
-            <h1 className="text-xl font-bold text-gray-800">管理画面</h1>
+            <h1 className="text-xl font-bold text-gray-800 hidden md:block">管理画面</h1>
           </div>
           <nav className="mt-4">
             {menuItems.map((item) => (
@@ -58,8 +61,8 @@ export default function AdminLayout({
                 href={item.href}
                 className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               >
-                <item.icon className="w-5 h-5 mr-3" />
-                {item.name}
+                <item.icon className="w-5 h-5 md:mr-3" />
+                <span className="hidden md:inline">{item.name}</span>
               </Link>
             ))}
           </nav>
