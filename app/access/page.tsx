@@ -10,14 +10,14 @@ export default function Access() {
     return (
       <>
         <main className="relative z-10 flex-grow flex justify-center items-center">
-          <div className="bg-white max-w-2xl w-full pt-13">
+          <div className="bg-white max-w-2xl w-full pt-8">
             <div className="flex flex-col md:flex-row gap-8">
               <div className="md:w-1/2">
               <Image
                 src="/images/Rakuda Picnic_storefront.png"
                 alt="Rakuda Picnic storefront"
-                width={220}
-                height={220}
+                width={400}
+                height={4000}
                 className="w-full"
               />
               </div>

@@ -256,7 +256,23 @@ export default function ReservationsPage() {
 
     setIsProcessing(true);
     try {
-      // 1. タイムスロットを解放
+      // 1. Stripeの支払いIntentをキャンセル
+      const paymentIntentId = selectedOrder?.payment_intent_id;
+      if (!paymentIntentId) {
+        throw new Error('payment_intent_idが存在しません。Stripeキャンセル処理を実行できません');
+      }
+      const stripeRes = await fetch('/api/cancel-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId }),
+      });
+      const stripeData = await stripeRes.json();
+
+      if (!stripeRes.ok || !stripeData.success) {
+        throw new Error(stripeData.error || 'Stripeのキャンセルに失敗しました');
+      }
+
+      // 2. タイムスロットを解放
       const { data: slot, error: slotError } = await supabase
         .from('time_slots')
         .select('current_bookings')
@@ -274,7 +290,7 @@ export default function ReservationsPage() {
         .eq('date', selectedOrder?.dispatch_date)
         .eq('time', selectedOrder?.dispatch_time);
 
-      // 2. 注文をキャンセル状態に更新
+      // 3. 注文をキャンセル状態に更新
       const { error: orderError } = await supabase
         .from('orders')
         .update({ 
