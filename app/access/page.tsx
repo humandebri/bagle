@@ -8,41 +8,52 @@ export const metadata = {
 
 export default function Access() {
     return (
-
-      <main className="relative z-10 flex-grow flex justify-center items-center p-6">
-        <div className="bg-white max-w-3xl w-full p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="md:w-1/2">
+      <>
+        <main className="relative z-10 flex-grow flex justify-center items-center">
+          <div className="bg-white max-w-2xl w-full pt-13">
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="md:w-1/2">
               <Image
-                src="/placeholder.svg?height=400&width=400"
+                src="/images/Rakuda Picnic_storefront.png"
                 alt="Rakuda Picnic storefront"
-                width={400}
-                height={400}
+                width={220}
+                height={220}
                 className="w-full"
               />
-            </div>
-            <div className="md:w-1/2">
-              <h2 className="text-[#8B7355] text-xl mb-4">ADDRESS</h2>
+              </div>
+              <div className="md:w-1/2">
+                <h2 className="text-[#8B7355] text-xl mb-4">ADDRESS</h2>
 
-              <p className="mb-2">東京都港区新橋 5-23-10 1F</p>
+                <p className="mb-2"> 愛媛県松山市大街道3丁目 7-3 1F</p>
 
-              <p className="mb-1">御成門駅（三田線）A4出口より徒歩4分</p>
-              <p className="mb-1">A4出口よりエスカレーター</p>
-              <p className="mb-1">A4出口よりエレベーター</p>
+                <p className="mb-1">ロープウェイ乗り場から徒歩1分</p>
 
-              <p className="mb-1">新橋駅　A1出口より徒歩15分</p>
-              <p className="mb-1">虎ノ門駅（銀座線）B2出口より徒歩12分</p>
-              <p className="mb-1">虎ノ門ヒルズ駅（日比谷線）A2出口より徒歩12分</p>
 
-              <p className="mt-4 mb-2">5-23-10 SHINBASHI MINATO-KU TOKYO</p>
+                <p className="mb-1">駅　A1出口より徒歩15分</p>
+                <p className="mb-1">駅）B2出口より徒歩12分</p>
 
-              <p className="mb-1">Onarimon station (Mita line )</p>
-              <p className="mb-1">4min walk from Exit A4</p>
-              <p className="mb-1">*写真は日曜1丁目の時のものです。</p>
+
+                {/* <p className="mb-1">*写真は旧店舗のものです。</p> */}
+              </div>
             </div>
           </div>
+        </main>
+        {/* Google Map埋め込み（ページ下部） */}
+        <div className="w-full flex justify-center mb-4">
+          <div className="max-w-2xl w-full">
+            <iframe
+              src="https://maps.google.com/maps?q=33.8436464,132.7715819&z=17&output=embed"
+              width="100%"
+              height="350"
+              style={{ border: 0, borderRadius: '8px' }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Google Map"
+            ></iframe>
+          </div>
         </div>
-      </main>
+      </>
     );
   }
   
