@@ -43,7 +43,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
       <div className="flex items-center ">
         <div className="relative w-full aspect-square rounded-full overflow-hidden">
           <Image
-            src={bagel.image ?? '/placeholder.svg'}
+            src={bagel.image && bagel.image !== '' ? bagel.image : '/placeholder.svg'}
             alt={bagel.name}
             fill
             className="object-cover"

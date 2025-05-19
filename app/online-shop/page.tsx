@@ -68,8 +68,8 @@ export default function OnlineShopPage() {
       description: product.description,
       longDescription: product.long_description,
       price: product.price,
-      image: product.image,
-      tags: [],
+      image: product.image && product.image !== '' ? product.image : undefined,
+      tags: product.is_available ? [] : ['販売停止中'],
     }));
   };
 

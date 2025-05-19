@@ -23,7 +23,6 @@ export async function GET() {
           name
         )
       `)
-      .eq('is_available', true)
       .order('created_at', { ascending: false });
 
     if (error) {
