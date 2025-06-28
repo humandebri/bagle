@@ -239,7 +239,7 @@ export default function ReviewPage() {
       <div className="text-xs text-gray-600 mt-4 pb-5 leading-relaxed space-y-1">
         <p>・キャンセルは <strong>2日前まで無料</strong> でマイページから可能です。</p>
         <p>・前日のキャンセルはお電話（📞{STORE_PHONE_NUMBER}）でご連絡ください。</p>
-        <p><strong>・当日以降のキャンセル・無断キャンセルには、キャンセル料（商品代金の100%）を頂戴します。</strong></p>
+        <p><strong>・当日以降のキャンセルには、キャンセル料（商品代金の100%）を頂戴します。</strong></p>
       </div>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
