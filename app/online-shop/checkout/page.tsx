@@ -109,7 +109,7 @@ export default function CheckoutPage() {
       return;
     }
   
-    router.push('/online-shop/payment');
+    router.push('/online-shop/review');
   };
   
 

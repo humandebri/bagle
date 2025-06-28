@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 type Category = {
   id: string
@@ -59,6 +60,33 @@ export default function NewProductPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append('file', file);
+  
+    try {
+      const response = await fetch('/api/upload-new', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+  
+      if (!response.ok) {
+        throw new Error('アップロードに失敗しました');
+      }
+  
+      const data = await response.json();
+      setProduct({ ...product, image: data.url });
+  
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('画像のアップロードに失敗しました');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,6 +180,34 @@ export default function NewProductPage() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            商品画像
+          </label>
+          <div className="mt-1 flex items-center space-x-4">
+            {product.image && (
+              <Image
+                src={product.image}
+                alt={product.name || '商品画像'}
+                width={128}
+                height={128}
+                className="object-cover rounded"
+              />
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-[#887c5d] file:text-white
+                hover:file:bg-gray-600"
+            />
+          </div>
         </div>
 
         <div>

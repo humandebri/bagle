@@ -5,10 +5,11 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model categories {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   description String?
   created_at  DateTime   @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
@@ -27,9 +28,6 @@ model orders {
   customer_name     String?
   phone             String?
   shipped           Boolean?
-  payment_intent_id String?
-  payment_status    String?   @default("pending")
-  captured_at       DateTime? @db.Timestamptz(6)
   profiles          profiles  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_profile")
 }
 
@@ -43,7 +41,7 @@ model product_tags {
 }
 
 model products {
-  id               String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
   description      String
   long_description String?
@@ -66,13 +64,12 @@ model profiles {
   first_name  String?
   last_name   String?
   phone       String?
-  customer_id String?
   is_admin    Boolean? @default(false)
   orders      orders[]
 }
 
 model time_slots {
-  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   date             DateTime @db.Date
   time             DateTime @db.Time(6)
   max_capacity     Int
@@ -81,4 +78,36 @@ model time_slots {
   created_at       DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
 
   @@unique([date, time], map: "uniq_date_time")
+}
+
+model business_days {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date         DateTime  @unique @db.Date
+  is_open      Boolean   @default(true)
+  is_special   Boolean   @default(false) // 特別営業日（祝日営業など）
+  notes        String?   // 備考（臨時休業理由など）
+  created_at   DateTime  @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+  updated_at   DateTime  @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+}
+
+model business_hours {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  day_of_week  Int       // 0=日曜, 1=月曜, ..., 6=土曜
+  open_time    DateTime? @db.Time(6)
+  close_time   DateTime? @db.Time(6)
+  is_closed    Boolean   @default(false) // 定休日
+  created_at   DateTime  @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+  updated_at   DateTime  @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+  
+  @@unique([day_of_week])
+}
+
+model recurring_holidays {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   // 例：「第4日曜日」
+  type         String   // "weekly", "monthly"
+  pattern      Json     // {"week": 4, "dayOfWeek": 0} など
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+  updated_at   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
 }

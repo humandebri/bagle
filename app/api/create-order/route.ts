@@ -10,30 +10,26 @@ type OrderItem = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, dispatch_date, dispatch_time, user_id, paymentIntentId } = await req.json();
+    const { items, dispatch_date, dispatch_time, user_id, total_price } = await req.json();
 
-    if (!user_id || !items?.length || !paymentIntentId) {
+    if (!user_id || !items?.length) {
       return NextResponse.json({ 
         error: '不正なリクエスト',
         details: {
           user_id: !user_id ? '必須' : 'OK',
-          items: !items?.length ? '必須' : 'OK',
-          paymentIntentId: !paymentIntentId ? '必須' : 'OK'
+          items: !items?.length ? '必須' : 'OK'
         }
       }, { status: 400 });
     }
 
-    const total_price =
-      items.reduce((s: number, i: OrderItem) => s + i.price * i.quantity, 0) + 10;
+    const calculatedTotalPrice = total_price || items.reduce((s: number, i: OrderItem) => s + i.price * i.quantity, 0) + 10;
 
     const { data, error } = await supabaseAdmin.from('orders').insert({
       user_id,
       items,
       dispatch_date,
       dispatch_time,
-      total_price,
-      payment_intent_id: paymentIntentId,
-      payment_status: 'pending',
+      total_price: calculatedTotalPrice,
       shipped: false,
     }).select();
 

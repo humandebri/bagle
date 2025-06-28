@@ -21,7 +21,6 @@ interface Order {
   dispatch_date: string;
   dispatch_time: string;
   total_price: number;
-  payment_status: string;
   shipped: boolean;
   customer_name?: string;
   phone?: string;
@@ -288,12 +287,11 @@ export default function AdminDashboard() {
                     <th className="px-2 py-1 text-left">配送日</th>
                     <th className="px-2 py-1 text-left">配送時間</th>
                     <th className="px-2 py-1 text-left">発送状況</th>
-                    <th className="px-2 py-1 text-left">決済状況</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.length === 0 ? (
-                    <tr><td colSpan={9} className="text-center py-4">注文がありません</td></tr>
+                    <tr><td colSpan={8} className="text-center py-4">注文がありません</td></tr>
                   ) : orders.map(order => (
                     <tr key={order.id} className="border-b">
                       <td className="px-2 py-1 text-left">{order.id.slice(0, 8)}...</td>
@@ -304,13 +302,6 @@ export default function AdminDashboard() {
                       <td className="px-2 py-1 text-left">{order.dispatch_date || '-'}</td>
                       <td className="px-2 py-1 text-left">{order.dispatch_time || '-'}</td>
                       <td className="px-2 py-1 text-left">{order.shipped ? '発送済み' : '未発送'}</td>
-                      <td className="px-2 py-1 text-left">{
-                        order.payment_status === 'confirmed'
-                          ? '成功'
-                          : (order.payment_status === 'canceled' || order.payment_status === 'cancelled')
-                            ? 'キャンセル'
-                            : '未決済'
-                      }</td>
                     </tr>
                   ))}
                 </tbody>

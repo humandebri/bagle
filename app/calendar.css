@@ -94,3 +94,16 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* 管理画面のカレンダースタイル */
+.fc-admin-wrapper .fc-event {
+  cursor: pointer;
+}
+
+.fc-admin-wrapper .fc-daygrid-day {
+  cursor: pointer;
+}
+
+.fc-admin-wrapper .fc-daygrid-day:hover {
+  background-color: #f3f4f6;
+}

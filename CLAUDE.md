@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 15.3.1 e-commerce application for a bagel shop (Rakuda Picnic) in Matsuyama, Japan. The app uses TypeScript, App Router, and integrates with Supabase for the database and Stripe for payments.
+This is a Next.js 15.3.1 e-commerce application for a bagel shop (Rakuda Picnic) in Matsuyama, Japan. The app uses TypeScript, App Router, and integrates with Supabase for the database. Orders are placed online for in-store pickup with cash payment.
 
 ## Core Commands
 
@@ -34,7 +34,7 @@ The codebase is transitioning from Supabase client to Prisma ORM:
 ### State Management Architecture
 1. **Client State**: Zustand store for shopping cart (`/store/cart-store.ts`)
    - Persisted to localStorage
-   - Manages items, quantities, dispatch date/time, payment method
+   - Manages items, quantities, dispatch date/time
    
 2. **Server State**: Supabase/Prisma for all other data
    - Products, orders, profiles, time slots
@@ -46,10 +46,10 @@ The codebase is transitioning from Supabase client to Prisma ORM:
 - Middleware protects `/account/*` and `/online-shop/*` routes
 
 ### Payment Processing
-Stripe integration with manual capture flow:
-1. Create Payment Intent when entering payment page
-2. Capture payment 30 minutes before dispatch time via cron job
-3. Payment states: `pending` → `succeeded`/`cancelled`
+Cash-only payment at store during pickup:
+1. Orders are placed online with customer information
+2. Payment is collected in cash when customers pick up their order
+3. Orders can be marked as `shipped` (picked up) in admin panel
 
 ### Key Business Constraints
 - `MAX_BAGEL_PER_ORDER = 8` - Maximum bagels per order
@@ -60,7 +60,7 @@ Stripe integration with manual capture flow:
 
 Key tables (via Prisma):
 - `products` - Product catalog with categories, availability dates
-- `orders` - Orders with JSON items array, payment/shipping status
+- `orders` - Orders with JSON items array, shipping status
 - `profiles` - User profiles linked to auth system
 - `time_slots` - Available pickup times with capacity limits
 - `categories` - Product categorization
@@ -71,8 +71,7 @@ Key tables (via Prisma):
 /api/
 ├── products/          # Product CRUD
 ├── orders/            # Order management
-├── create-payment-intent/  # Stripe payment initiation
-├── capture-payment/   # Manual payment capture
+├── create-order/      # Create new order
 ├── time_slots/        # Pickup time management
 ├── admin/             # Admin-only endpoints
 │   ├── summary/       # Dashboard KPIs
@@ -100,10 +99,6 @@ NEXTAUTH_SECRET
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
 
-# Stripe
-STRIPE_SECRET_KEY
-NEXT_PUBLIC_STRIPE_PUBLIC_KEY
-
 # Other
 RESEND_API_KEY
 CRON_SECRET
@@ -127,9 +122,10 @@ CRON_SECRET
 ### Shopping Cart Flow
 1. Browse products → Add to cart (Zustand store)
 2. Select dispatch date/time → Required before checkout
-3. Review order → Create order record
-4. Payment → Stripe checkout with saved cards option
+3. Checkout → Enter customer information
+4. Review order → Create order record
 5. Success → Order confirmation email
+6. Pay in cash at store during pickup
 
 ### Admin Dashboard
 - Located at `/admin/*` routes

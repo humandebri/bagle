@@ -134,13 +134,12 @@ export default function Home() {
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
               <Calendar className="w-10 sm:w-12 h-10 sm:h-12 text-[#887c5d] mx-auto mb-3 sm:mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">定休日</h3>
-              <p className="text-gray-600 font-medium text-sm sm:text-base">木・金・土<br className="sm:hidden" />第4日曜日</p>
+              <p className="text-gray-600 font-medium text-sm sm:text-base">木・金・土・<br className="sm:hidden" />第4日曜</p>
             </div>
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
               <Phone className="w-10 sm:w-12 h-10 sm:h-12 text-[#887c5d] mx-auto mb-3 sm:mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">電話番号</h3>
               <p className="text-gray-600 font-medium text-sm sm:text-base">089-904-2666</p>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">予約受付中</p>
             </div>
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
               <MapPin className="w-10 sm:w-12 h-10 sm:h-12 text-[#887c5d] mx-auto mb-3 sm:mb-4" />

@@ -20,7 +20,6 @@ const supabase = createClient(
 /* --- Zod スキーマ ---------------------------------------------- */
 const updateSchema = z.object({
   id: z.string().uuid(),
-  status: z.string(),
   dispatchDate: z.string().length(10),  // 'YYYY-MM-DD'
   dispatchTime: z.string().min(4),      // '11:00'
   items: z.array(
@@ -56,14 +55,15 @@ export async function GET(req: Request) {
       .from('orders')
       .select(`
         id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
-        payment_status, profiles(first_name,last_name,phone), shipped, payment_intent_id
+        profiles(first_name,last_name,phone), shipped
       `)
       .order('created_at', { ascending: order !== 'desc' });
 
     if (id) q = q.eq('id', id);
 
     if (start && end) q = q.gte('dispatch_date', start).lte('dispatch_date', end);
-    if (st)           q = q.eq('payment_status', st);
+    if (st && st === 'shipped') q = q.eq('shipped', true);
+    if (st && st === 'unshipped') q = q.eq('shipped', false);
     if (limit)        q = q.limit(Number(limit));
     if (offset)       q = q.range(Number(offset), Number(offset) + Number(limit) - 1);
 
@@ -80,7 +80,6 @@ export async function GET(req: Request) {
           } | null);
       const formatted = {
         ...o,
-        status: o.payment_status,
         customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
         phone: p?.phone ?? null,
       };
@@ -98,7 +97,6 @@ export async function GET(req: Request) {
             } | null);
         return {
           ...o,
-          status: o.payment_status,
           customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
           phone: p?.phone ?? null,
         };
@@ -121,13 +119,12 @@ export async function PUT(req: Request) {
   }
 
   try {
-    const { id, status, dispatchDate, dispatchTime, items } =
+    const { id, dispatchDate, dispatchTime, items } =
       updateSchema.parse(await req.json());
 
     const { data, error } = await supabase
       .from('orders')
       .update({
-        payment_status: status,
         dispatch_date:  dispatchDate,
         dispatch_time:  dispatchTime,
         items,

@@ -7,7 +7,6 @@ interface Order {
   user_id: string;
   created_at: string;
   total_price: number;
-  payment_status: string;
   shipped: boolean;
   customer_name?: string;
   dispatch_date?: string;
@@ -79,14 +78,13 @@ export default function OrdersAdminPage() {
                   <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('dispatch_date')}>配送日</th>
                   <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('dispatch_time')}>配送時間</th>
                   <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('total_price')}>合計金額</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('payment_status')}>決済状況</th>
                   <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('shipped')}>発送状況</th>
                   <th className="px-2 py-1 text-left">詳細</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 ? (
-                  <tr><td colSpan={9} className="text-center py-4">注文がありません</td></tr>
+                  <tr><td colSpan={8} className="text-center py-4">注文がありません</td></tr>
                 ) : orders.map(order => (
                   <tr key={order.id} className="border-b">
                     <td className="px-2 py-1 text-left">{order.id.slice(0, 8)}...</td>
@@ -95,13 +93,6 @@ export default function OrdersAdminPage() {
                     <td className="px-2 py-1 text-left">{order.dispatch_date || '-'}</td>
                     <td className="px-2 py-1 text-left">{order.dispatch_time || '-'}</td>
                     <td className="px-2 py-1 text-left">{formatYen(order.total_price)}</td>
-                    <td className="px-2 py-1 text-left">{
-                      order.payment_status === 'confirmed'
-                        ? '成功'
-                        : (order.payment_status === 'canceled' || order.payment_status === 'cancelled')
-                          ? 'キャンセル'
-                          : '未決済'
-                    }</td>
                     <td className="px-2 py-1 text-left">{order.shipped ? '発送済み' : '未発送'}</td>
                     <td className="px-2 py-1 text-left">
                       <Link href={`/admin/orders/${order.id}`} className="text-blue-600 underline">詳細</Link>

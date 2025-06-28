@@ -49,9 +49,6 @@ export default function ReviewPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
   const resetCart = useCartStore((s) => s.reset);
-  const paymentMethodId = useCartStore((s) => s.paymentMethodId);
-
-  const [customerId, setCustomerId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [dateError, setDateError] = useState('');
@@ -78,37 +75,10 @@ export default function ReviewPage() {
     }
   }, [dispatchDate]);
 
-  // SupabaseからcustomerIdを取得
-  useEffect(() => {
-    const fetchCustomerId = async () => {
-      const userId = session?.user?.id;
-      if (!userId) return;
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('customer_id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('customerId取得エラー:', error.message);
-        setError('お支払い情報の取得に失敗しました');
-        return;
-      }
-
-      if (data?.customer_id) {
-        setCustomerId(data.customer_id);
-      } else {
-        setError('お支払い情報が見つかりませんでした');
-      }
-    };
-
-    fetchCustomerId();
-  }, [session]);
-
-  const pay = async () => {
-    if (!customerId || !paymentMethodId) {
-      setError('支払い情報が設定されていません');
+  const confirmOrder = async () => {
+    if (!session?.user?.id) {
+      setError('ログインが必要です');
       return;
     }
 
@@ -116,28 +86,6 @@ export default function ReviewPage() {
     setLoading(true);
 
     try {
-      // 支払いIntentを作成
-      const res = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          amount: total,
-          customerId,
-          paymentMethodId
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        console.error('PaymentIntent作成エラー:', data);
-        setError(data.details || data.error || '支払いIntentの作成に失敗しました');
-        setLoading(false);
-        return;
-      }
-
-      const { paymentIntent } = data;
-
       // 注文情報を保存
       const orderRes = await fetch('/api/create-order', {
         method: 'POST',
@@ -147,7 +95,7 @@ export default function ReviewPage() {
           dispatch_date: dispatchDate,
           dispatch_time: dispatchTime,
           user_id: session?.user?.id,
-          paymentIntentId: paymentIntent.id
+          total_price: total
         }),
       });
 
@@ -184,8 +132,8 @@ export default function ReviewPage() {
 
       router.push('/online-shop/success');
     } catch (error) {
-      console.error('決済処理エラー:', error);
-      setError('決済処理中にエラーが発生しました');
+      console.error('注文処理エラー:', error);
+      setError('注文処理中にエラーが発生しました');
       setLoading(false);
     }
   };
@@ -201,10 +149,16 @@ export default function ReviewPage() {
         {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
       </div>
 
-      {/* 受取日時 */}
+      {/* 受取場所 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お持ち帰り場所</h3>
         店舗住所
+      </div>
+
+      {/* 支払い方法 */}
+      <div className="text-gray-700 mb-4">
+        <h3 className=" mb-2">▪️お支払い方法</h3>
+        <p className="text-sm">店頭にて現金でお支払いください</p>
       </div>
 
       {/* 商品リスト */}
@@ -245,11 +199,11 @@ export default function ReviewPage() {
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       <button
-        onClick={pay}
+        onClick={confirmOrder}
         className="w-full bg-[#887c5d] text-white py-3 rounded hover:bg-[#6e624a] disabled:opacity-50"
-        disabled={loading || !customerId || !paymentMethodId || !!dateError}
+        disabled={loading || !session || !!dateError}
       >
-        {loading ? '処理中...' : '支払う'}
+        {loading ? '処理中...' : '注文を確定する'}
       </button>
     </main>
   );
