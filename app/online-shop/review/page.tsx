@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthSession } from '@/lib/auth-compat';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DateTimeDisplay_order } from '@/components/DateTimeDisplay';
@@ -43,7 +43,7 @@ const formatTimeRange = (startTime: string): string => {
 
 export default function ReviewPage() {
   const router = useRouter();
-  const { data: session } = useAuth();
+  const { data: session } = useAuthSession();
 
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);

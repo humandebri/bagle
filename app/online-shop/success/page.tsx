@@ -4,11 +4,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthSession } from '@/lib/auth-compat';
 
 export default function SuccessPage() {
   const router = useRouter();
-  const { data: session } = useAuth();
+  const { data: session } = useAuthSession();
 
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthSession } from '@/lib/auth-compat';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { formatDate, formatTimeRange } from '@/components/DateTimeDisplay';
@@ -24,7 +24,7 @@ type Order = {
 };
 
 export default function OrdersPage() {
-  const { data: session, status } = useAuth();
+  const { data: session, status } = useAuthSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,7 +32,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const userId = (session?.user as { id: string })?.id;
+      const userId = session?.user?.id;
       if (!userId) return;
 
       const { data, error } = await supabase

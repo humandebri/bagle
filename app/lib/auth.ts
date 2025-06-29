@@ -10,6 +10,10 @@ const supabase = createClient(
 
 
 export const authOptions: AuthOptions = {
+  pages: {
+    signIn: '/auth/signin', // Custom signin page that auto-redirects to Google
+    signOut: '/auth/signout', // Custom signout page that auto-signouts
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -28,6 +32,13 @@ export const authOptions: AuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // サインインページへのリダイレクトを防ぐ
+      if (url.includes('/api/auth/signin') && !url.includes('?')) {
+        return baseUrl;
+      }
+      return url;
+    },
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token;

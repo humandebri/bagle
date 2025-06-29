@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthSession } from '@/lib/auth-compat';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
@@ -18,11 +18,11 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useAuth();
+  const { data: session, status } = useAuthSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'authenticated' && (session?.user as { role?: string })?.role !== 'admin') {
+    if (status === 'authenticated' && session?.user?.role !== 'admin') {
       router.push('/account');
     }
   }, [session, status, router]);
@@ -31,7 +31,7 @@ export default function AdminLayout({
     return <div className="p-8 text-center">ロード中...</div>;
   }
 
-  if (status === 'authenticated' && (session?.user as { role?: string })?.role !== 'admin') {
+  if (status === 'authenticated' && session?.user?.role !== 'admin') {
     return null;
   }
 

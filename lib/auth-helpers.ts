@@ -5,21 +5,36 @@ import { useState, useEffect } from 'react';
 import { Session } from 'next-auth';
 
 export const customSignIn = (provider: string = 'google') => {
-  window.location.href = `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+  // Directly redirect to the provider's signin endpoint
+  const callbackUrl = encodeURIComponent(window.location.pathname);
+  window.location.href = `/api/auth/signin/${provider}?callbackUrl=${callbackUrl}`;
 };
 
 export const customSignOut = async () => {
   try {
-    const response = await fetch('/api/auth/signout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Get CSRF token
+    const csrfResponse = await fetch('/api/auth/csrf');
+    const { csrfToken } = await csrfResponse.json();
     
-    if (response.ok) {
-      window.location.href = '/';
-    }
+    // Create form and submit to sign out without showing the page
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/api/auth/signout';
+    
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfToken';
+    csrfInput.value = csrfToken;
+    
+    const callbackInput = document.createElement('input');
+    callbackInput.type = 'hidden';
+    callbackInput.name = 'callbackUrl';
+    callbackInput.value = '/';
+    
+    form.appendChild(csrfInput);
+    form.appendChild(callbackInput);
+    document.body.appendChild(form);
+    form.submit();
   } catch (error) {
     console.error('Sign out error:', error);
   }

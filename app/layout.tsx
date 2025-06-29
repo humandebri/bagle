@@ -2,9 +2,9 @@ import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
 import {Shippori_Mincho , Montserrat} from 'next/font/google'
-import { ThemeProvider } from "next-themes"
 import Navbar from "@/components/navbar"
 import { Toaster } from "@/components/ui/sonner"
+import { Providers } from './providers'
 
 
 const montserrat = Montserrat({ 
@@ -42,11 +42,11 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning className={`${montserrat.variable} ${shipporiMincho.variable}`}>
       <body className={`${montserrat.className} text-gray-500`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <Providers>
           <Navbar />
           {children}
           <Toaster />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )
