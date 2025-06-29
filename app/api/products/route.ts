@@ -31,7 +31,13 @@ export async function GET() {
       return NextResponse.json({ error: '商品データの取得に失敗しました' }, { status: 500 });
     }
 
-    return NextResponse.json(products);
+    // Ensure empty image strings or undefined are converted to null
+    const sanitizedProducts = products?.map(product => ({
+      ...product,
+      image: (!product.image || product.image === '') ? null : product.image
+    })) || [];
+
+    return NextResponse.json(sanitizedProducts);
   } catch (error) {
     console.error('Error in products API:', error);
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });

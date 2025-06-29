@@ -25,14 +25,38 @@ async function main() {
   }
 
   // 定期休業日の初期データ
-  await prisma.recurring_holidays.create({
-    data: {
+  const recurringHolidays = [
+    {
+      name: '毎週木曜日',
+      type: 'weekly' as const,
+      pattern: { dayOfWeek: 4 },
+      is_active: true,
+    },
+    {
+      name: '毎週金曜日',
+      type: 'weekly' as const,
+      pattern: { dayOfWeek: 5 },
+      is_active: true,
+    },
+    {
+      name: '毎週土曜日',
+      type: 'weekly' as const,
+      pattern: { dayOfWeek: 6 },
+      is_active: true,
+    },
+    {
       name: '第4日曜日',
-      type: 'monthly',
+      type: 'monthly' as const,
       pattern: { week: 4, dayOfWeek: 0 },
       is_active: true,
     },
-  });
+  ];
+
+  for (const holiday of recurringHolidays) {
+    await prisma.recurring_holidays.create({
+      data: holiday,
+    });
+  }
 
   // サンプル営業日データ（今月分）
   const today = new Date();

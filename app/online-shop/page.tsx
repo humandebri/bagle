@@ -8,22 +8,6 @@ import BagelMenu from '@/components/BagelMenu';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
 import { Bagel } from '@/components/BagelCard';
 
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  long_description: string;
-  price: number;
-  image: string;
-  is_available: boolean;
-  is_limited: boolean;
-  start_date: string | null;
-  end_date: string | null;
-  category: {
-    name: string;
-  };
-};
-
 export default function OnlineShopPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -38,8 +22,17 @@ export default function OnlineShopPage() {
 
   const setSelectedProduct = useCartStore((s) => s.setSelectedProduct);
 
-  const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product);
+  const handleProductSelect = (bagel: Bagel) => {
+    // Find the original product from the products array
+    const product = products.find(p => p.id === bagel.id);
+    if (product) {
+      // Ensure image is null instead of empty string or undefined
+      const sanitizedProduct = {
+        ...product,
+        image: (!product.image || product.image === '') ? null : product.image
+      };
+      setSelectedProduct(sanitizedProduct);
+    }
   };
 
   useEffect(() => {
@@ -49,6 +42,39 @@ export default function OnlineShopPage() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      const data = await response.json();
+      
+      // Filter only available products
+      const availableProducts = data.filter((product: Product) => {
+        if (!product.is_available) return false;
+        
+        const now = new Date();
+        if (product.start_date) {
+          const start = new Date(product.start_date);
+          if (now < start) return false;
+        }
+        if (product.end_date) {
+          const end = new Date(product.end_date);
+          if (now > end) return false;
+        }
+        
+        return true;
+      });
+      
+      setProducts(availableProducts);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const convertToBagels = (products: Product[]): Bagel[] => {
     return products.map(product => ({

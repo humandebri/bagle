@@ -30,6 +30,15 @@ export default function PatternEditModal({ isOpen, onClose, pattern, onSave }: P
   const [dayOfWeek, setDayOfWeek] = useState(0);
   const [isActive, setIsActive] = useState(true);
 
+  // 名前を自動生成
+  const generateName = (patternType: 'weekly' | 'monthly', patternWeek: number, patternDayOfWeek: number) => {
+    if (patternType === 'weekly') {
+      return `毎週${DAY_NAMES[patternDayOfWeek]}`;
+    } else {
+      return `第${patternWeek}${DAY_NAMES[patternDayOfWeek]}`;
+    }
+  };
+
   useEffect(() => {
     if (pattern) {
       setName(pattern.name);
@@ -39,11 +48,11 @@ export default function PatternEditModal({ isOpen, onClose, pattern, onSave }: P
       setIsActive(pattern.is_active);
     } else {
       // 新規作成時のデフォルト値
-      setName('第4日曜日');
-      setType('monthly');
+      setType('weekly');
       setWeek(4);
       setDayOfWeek(0);
       setIsActive(true);
+      setName(generateName('weekly', 4, 0));
     }
   }, [pattern]);
 
@@ -100,41 +109,69 @@ export default function PatternEditModal({ isOpen, onClose, pattern, onSave }: P
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 タイプ
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={type === 'monthly'}
-                  onChange={() => setType('monthly')}
-                  className="mr-2"
-                />
-                <span>毎月</span>
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={type === 'weekly'}
+                    onChange={() => {
+                      setType('weekly');
+                      setName(generateName('weekly', week, dayOfWeek));
+                    }}
+                    className="mr-2"
+                  />
+                  <span>毎週</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={type === 'monthly'}
+                    onChange={() => {
+                      setType('monthly');
+                      setName(generateName('monthly', week, dayOfWeek));
+                    }}
+                    className="mr-2"
+                  />
+                  <span>毎月</span>
+                </label>
+              </div>
             </div>
 
-            {type === 'monthly' && (
-              <div className="flex gap-2 items-center">
-                <span>第</span>
-                <select
-                  value={week}
-                  onChange={(e) => setWeek(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#887c5d]"
-                >
-                  {[1, 2, 3, 4, 5].map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
-                <span>週の</span>
-                <select
-                  value={dayOfWeek}
-                  onChange={(e) => setDayOfWeek(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#887c5d]"
-                >
-                  {DAY_NAMES.map((day, i) => (
-                    <option key={i} value={i}>{day}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div className="flex gap-2 items-center">
+              {type === 'monthly' && (
+                <>
+                  <span>第</span>
+                  <select
+                    value={week}
+                    onChange={(e) => {
+                      const newWeek = Number(e.target.value);
+                      setWeek(newWeek);
+                      setName(generateName(type, newWeek, dayOfWeek));
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#887c5d]"
+                  >
+                    {[1, 2, 3, 4, 5].map((w) => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                  <span>週の</span>
+                </>
+              )}
+              {type === 'weekly' && <span>毎週</span>}
+              <select
+                value={dayOfWeek}
+                onChange={(e) => {
+                  const newDayOfWeek = Number(e.target.value);
+                  setDayOfWeek(newDayOfWeek);
+                  setName(generateName(type, week, newDayOfWeek));
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#887c5d]"
+              >
+                {DAY_NAMES.map((day, i) => (
+                  <option key={i} value={i}>{day}</option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <label className="flex items-center">

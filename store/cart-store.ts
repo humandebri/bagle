@@ -9,7 +9,7 @@ export type Product = {
   description: string;
   long_description: string;
   price: number;
-  image: string;
+  image: string | null;
   is_available: boolean;
   is_limited: boolean;
   start_date: string | null;
@@ -83,7 +83,12 @@ export const useCartStore = create<CartState>()(
 
       setDispatchTime: (time) => set({ dispatchTime: time }),
       
-      setSelectedProduct: (product) => set({ selectedProduct: product }),
+      setSelectedProduct: (product) => set({ 
+        selectedProduct: product ? {
+          ...product,
+          image: (!product.image || product.image === '') ? null : product.image
+        } : null 
+      }),
 
       reset: () =>
         set({

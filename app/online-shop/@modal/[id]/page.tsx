@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
-import { useCartStore, Product } from "@/store/cart-store";
+import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
 import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 import { toast } from "sonner";
@@ -103,14 +103,20 @@ export default function BagelModalPage() {
 
           <div className="flex justify-center">
             <div className="relative w-80 h-70 overflow-hidden">
-              <Image
-                src={product.image ? product.image : "/placeholder.svg"}
-                alt={product.name}
-                fill
-                className={`object-cover transition-all duration-700 ${
-                  loaded ? "opacity-100 blur-0 scale-100" : "opacity-70 blur-sm scale-105"
-                }`}
-              />
+              {product.image && product.image !== '' && product.image !== null ? (
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  className={`object-cover transition-all duration-700 ${
+                    loaded ? "opacity-100 blur-0 scale-100" : "opacity-70 blur-sm scale-105"
+                  }`}
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-400">No image</span>
+                </div>
+              )}
             </div>
           </div>
 
