@@ -23,7 +23,8 @@ export async function GET() {
           name
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .eq('is_available', true);
 
     if (error) {
       console.error('Error fetching products:', error);

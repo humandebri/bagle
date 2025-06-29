@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/store/cart-store';
+import { useCartStore, Product } from '@/store/cart-store';
 import { ShoppingBag } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
@@ -36,21 +36,10 @@ export default function OnlineShopPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products');
-      if (!response.ok) {
-        throw new Error('商品データの取得に失敗しました');
-      }
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
-      console.error('商品データの取得に失敗しました:', error);
-      setError('商品データの取得に失敗しました');
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
+  const setSelectedProduct = useCartStore((s) => s.setSelectedProduct);
+
+  const handleProductSelect = (product: Product) => {
+    setSelectedProduct(product);
   };
 
   useEffect(() => {
@@ -83,7 +72,7 @@ export default function OnlineShopPage() {
 
   return (
     <>
-      <main className="min-h-[calc(100vh-7rem)] pb-15 md:pb-5">
+      <main className="min-h-[calc(100vh-7rem)] pb-28 md:pb-20">
         <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
           <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
             {mounted && (
@@ -104,7 +93,7 @@ export default function OnlineShopPage() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <BagelMenu bagels={convertToBagels(products)} />
+            <BagelMenu bagels={convertToBagels(products)} onProductSelect={handleProductSelect} />
           </div>
         </div>
       </main>

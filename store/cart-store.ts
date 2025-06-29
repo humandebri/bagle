@@ -1,7 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { toast } from "sonner";
-import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
+
+// 商品の型定義
+// 本来はtypes/index.tsなどに定義すべきだが、一時的にここに置く
+export type Product = {
+  id: string;
+  name: string;
+  description: string;
+  long_description: string;
+  price: number;
+  image: string;
+  is_available: boolean;
+  is_limited: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  category: {
+    name: string;
+  };
+};
 
 // カートアイテム型
 export type CartItem = {
@@ -16,12 +32,14 @@ type CartState = {
   items: CartItem[];
   dispatchDate: string | null;
   dispatchTime: string | null;
+  selectedProduct: Product | null; // 選択中の商品を保持
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   setDispatchDate: (date: string | null) => void;
   setDispatchTime: (time: string | null) => void;
+  setSelectedProduct: (product: Product | null) => void; // 選択中の商品をセット
   reset: () => void;
 };
 
@@ -36,6 +54,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       dispatchDate: initialDispatchDate,
       dispatchTime: initialDispatchTime,
+      selectedProduct: null,
 
       addItem: (item) =>
         set((state) => {
@@ -63,16 +82,24 @@ export const useCartStore = create<CartState>()(
       setDispatchDate: (date) => set({ dispatchDate: date }),
 
       setDispatchTime: (time) => set({ dispatchTime: time }),
+      
+      setSelectedProduct: (product) => set({ selectedProduct: product }),
 
       reset: () =>
         set({
           items: [],
           dispatchDate: initialDispatchDate,
           dispatchTime: initialDispatchTime,
+          selectedProduct: null,
         }),
     }),
     {
       name: "cart-storage",
+      // selectedProductは永続化から除外
+      partialize: (state) =>
+        Object.fromEntries(
+          Object.entries(state).filter(([key]) => key !== 'selectedProduct')
+        ),
     }
   )
 );
