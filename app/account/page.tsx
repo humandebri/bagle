@@ -1,6 +1,7 @@
 'use client';
 
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
+import { customSignIn, customSignOut } from '@/lib/auth-helpers';
 import { FcGoogle } from 'react-icons/fc'; 
 import { PowerIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
@@ -9,7 +10,7 @@ import { useRouter } from 'next/navigation';
 export default function Account() {
   const router = useRouter();
 
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAuth();
 
   if (status === 'loading') {
     return <div className="p-8 text-center">ロード中...</div>;
@@ -21,7 +22,7 @@ export default function Account() {
         <h1 className="text-2xl text-gray-400 mb-6">マイページ</h1>
         <p className="mb-4">ログインして注文履歴を確認したり、アカウント情報を管理しましょう。</p>
         <button 
-          onClick={() => signIn('google')}
+          onClick={() => customSignIn('google')}
           className="w-full py-3 bg-white border border-gray-300 shadow-sm text-gray-700 flex items-center justify-center gap-3 hover:bg-gray-50"
         >
           <FcGoogle className="w-5 h-5" /> {/* ← react-iconsのカラーGoogleアイコン */}
@@ -40,7 +41,7 @@ export default function Account() {
   
         <button
           className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-sky-100 hover:text-[#887c5d]"
-          onClick={() => signOut()}
+          onClick={() => customSignOut()}
         >
           <PowerIcon className="w-6 h-6" />
         </button>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/store/cart-store';
-import { useSession, signIn } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
+import { customSignIn } from '@/lib/auth-helpers';
 import { FcGoogle } from 'react-icons/fc';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -13,7 +14,7 @@ export default function CheckoutPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
   const router       = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAuth();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -122,7 +123,7 @@ export default function CheckoutPage() {
       <main className="min-h-[calc(100vh-7rem)] px-6 py-10 bg-white">
         <h1 className="text-2xl text-gray-400 mb-6">ログインしてください</h1>
         <button
-          onClick={() => signIn('google')}
+          onClick={() => customSignIn('google')}
           className="w-full py-3 bg-white border border-gray-300 shadow-sm text-gray-700 flex items-center justify-center gap-3 hover:bg-gray-50"
         >
           <FcGoogle className="text-2xl" />

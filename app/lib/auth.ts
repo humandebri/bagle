@@ -27,9 +27,6 @@ export const authOptions: AuthOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: '/auth/signin', // ← ✅ ここを追加
-  },
   callbacks: {
     async jwt({ token, account }) {
       if (account) {

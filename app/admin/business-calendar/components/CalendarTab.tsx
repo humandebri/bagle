@@ -8,7 +8,11 @@ import jaLocale from '@fullcalendar/core/locales/ja';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import DateEditModal from './DateEditModal';
+import BulkOperationModal from './BulkOperationModal';
+import BulkDeleteModal from './BulkDeleteModal';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Calendar, Trash2 } from 'lucide-react';
 
 interface BusinessDay {
   id: string;
@@ -37,6 +41,8 @@ export default function CalendarTab() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<BusinessDay | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // 営業日データを取得
@@ -82,7 +88,7 @@ export default function CalendarTab() {
   }, [currentMonth, fetchBusinessDays]);
 
   // 日付をクリックしたとき
-  const handleDateClick = (info: any) => {
+  const handleDateClick = (info: { dateStr: string }) => {
     const clickedDate = info.dateStr;
     setSelectedDate(clickedDate);
     
@@ -142,6 +148,26 @@ export default function CalendarTab() {
 
   return (
     <>
+      <div className="mb-4 flex gap-2 justify-end">
+        <Button
+          onClick={() => setIsBulkModalOpen(true)}
+          variant="outline"
+          size="sm"
+        >
+          <Calendar className="w-4 h-4 mr-2" />
+          月の営業日を一括設定
+        </Button>
+        <Button
+          onClick={() => setIsDeleteModalOpen(true)}
+          variant="outline"
+          size="sm"
+          className="text-red-600 hover:text-red-700"
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          期間を選択して削除
+        </Button>
+      </div>
+      
       <div className="fc-admin-wrapper">
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
@@ -185,6 +211,31 @@ export default function CalendarTab() {
           onSave={handleSave}
         />
       )}
+      
+      <BulkOperationModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        onComplete={async () => {
+          const year = currentMonth.getFullYear();
+          const month = currentMonth.getMonth();
+          const start = new Date(year, month, 1);
+          const end = new Date(year, month + 1, 0);
+          await fetchBusinessDays(start, end);
+        }}
+        currentMonth={currentMonth}
+      />
+      
+      <BulkDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onComplete={async () => {
+          const year = currentMonth.getFullYear();
+          const month = currentMonth.getMonth();
+          const start = new Date(year, month, 1);
+          const end = new Date(year, month + 1, 0);
+          await fetchBusinessDays(start, end);
+        }}
+      />
     </>
   );
 }
