@@ -37,13 +37,16 @@ export const authOptions: AuthOptions = {
         token.id = account.providerAccountId;
   
         // 🔽 Supabaseのprofilesテーブルからis_adminを取得
-        const { data} = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('user_id', account.providerAccountId)
           .single();
   
-        if (data?.is_admin) {
+        if (error) {
+          console.error('Error fetching user role:', error);
+          token.role = 'user'; // デフォルトで一般ユーザー権限
+        } else if (data?.is_admin) {
           token.role = 'admin';
         } else {
           token.role = 'user';

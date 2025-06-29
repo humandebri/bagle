@@ -29,7 +29,7 @@ export default function OnlineShopPage() {
       // Ensure image is null instead of empty string or undefined
       const sanitizedProduct = {
         ...product,
-        image: (!product.image || product.image === '') ? null : product.image
+        image: (!product.image || product.image.trim() === '') ? null : product.image
       };
       setSelectedProduct(sanitizedProduct);
     }
@@ -83,7 +83,7 @@ export default function OnlineShopPage() {
       description: product.description,
       longDescription: product.long_description,
       price: product.price,
-      image: product.image && product.image !== '' ? product.image : undefined,
+      image: product.image && product.image.trim() !== '' ? product.image : undefined,
       tags: product.is_available ? [] : ['販売停止中'],
     }));
   };
@@ -98,8 +98,8 @@ export default function OnlineShopPage() {
 
   return (
     <>
-      <main className="min-h-[calc(100vh-7rem)] pb-28 md:pb-20">
-        <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+      <main className={`min-h-[calc(100vh-4rem)] pt-8 ${mounted && totalQuantity > 0 ? 'pb-36 md:pb-96 lg:pb-[32rem]' : 'pb-8'}`}>
+        <div className="relative mx-auto bg-white text-gray-400 p-6 rounded-sm">
           <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
             {mounted && (
               <button onClick={() => router.push(`/online-shop/dispatch`)}>
@@ -118,7 +118,7 @@ export default function OnlineShopPage() {
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto mb-8">
             <BagelMenu bagels={convertToBagels(products)} onProductSelect={handleProductSelect} />
           </div>
         </div>
@@ -142,11 +142,11 @@ function CartFooter({
   onClick: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 w-full bg-white flex justify-center z-20 border-t border-gray-300">
-      <div className="w-full max-w-md px-6 py-3">
+    <div className="fixed bottom-0 w-full bg-white flex justify-center z-20 border-t border-gray-300 shadow-lg">
+      <div className="w-full max-w-md px-6 py-4">
         <button
           onClick={onClick}
-          className="w-full relative py-3 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center"
+          className="w-full relative py-4 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center"
           aria-label="カートを見る"
         >
           カートを見る

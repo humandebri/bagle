@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    // 認証チェック
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as { role?: string }).role !== 'admin') {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
     const { orderId } = await req.json();
 
     if (!orderId) {

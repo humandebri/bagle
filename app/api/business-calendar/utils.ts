@@ -69,13 +69,21 @@ export function generateDateRange(start: Date, end: Date): Date[] {
   return dates;
 }
 
+// 営業日の型定義
+interface BusinessDay {
+  date: string;
+  is_open: boolean;
+  is_special: boolean;
+  notes: string | null;
+}
+
 // 営業日情報を生成
 export function generateBusinessDayInfo(
   date: Date,
-  businessDays: Map<string, any>,
+  businessDays: Map<string, BusinessDay>,
   businessHours: BusinessHours[],
   recurringPatterns: RecurringHolidayPattern[]
-) {
+): BusinessDay {
   const dateStr = date.toISOString().split('T')[0];
   const existingDay = businessDays.get(dateStr);
   

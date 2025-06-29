@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { formatDate, formatTimeRange } from '@/components/DateTimeDisplay';
@@ -24,7 +24,7 @@ type Order = {
 };
 
 export default function OrdersPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

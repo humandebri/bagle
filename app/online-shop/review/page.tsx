@@ -2,9 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { DateTimeDisplay_order } from '@/components/DateTimeDisplay';
 import { STORE_PHONE_NUMBER } from '@/lib/constants';
 
@@ -43,7 +42,7 @@ const formatTimeRange = (startTime: string): string => {
 
 export default function ReviewPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session } = useAuth();
 
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
@@ -86,8 +85,8 @@ export default function ReviewPage() {
     setLoading(true);
 
     try {
-      // 注文情報を保存
-      const orderRes = await fetch('/api/create-order', {
+      // 注文情報を保存（タイムスロット更新も同時に行う）
+      const orderRes = await fetch('/api/create-order-with-timeslot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

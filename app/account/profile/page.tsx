@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { data: session } = useAuth();
   const router = useRouter();
 
   const [firstName, setFirstName] = useState('');

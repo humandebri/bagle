@@ -17,7 +17,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="relative z-10 flex justify-center items-center h-16 px-4 text-gray-300 bg-[#887c5d]/70">
+    <nav className="sticky top-0 z-50 flex justify-center items-center h-16 px-4 text-gray-300 bg-[#887c5d]/70 backdrop-blur-sm">
       <div className="flex space-x-8 sm:text-[18px]">
         {links.map((link) => (
           <Link

@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import SafeImage from "@/components/SafeImage";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { Tag } from "@/components/BagelCard";
 import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -33,6 +32,7 @@ export default function BagelModalPage() {
 
     const t = setTimeout(() => setLoaded(true), 100);
     document.body.style.overflow = "hidden";
+    
     return () => {
       clearTimeout(t);
       document.body.style.overflow = "";
@@ -103,34 +103,21 @@ export default function BagelModalPage() {
 
           <div className="flex justify-center">
             <div className="relative w-80 h-70 overflow-hidden">
-              {product.image && product.image !== '' && product.image !== null ? (
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className={`object-cover transition-all duration-700 ${
-                    loaded ? "opacity-100 blur-0 scale-100" : "opacity-70 blur-sm scale-105"
-                  }`}
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <span className="text-gray-400">No image</span>
-                </div>
-              )}
+              <SafeImage
+                src={product.image}
+                alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className={`object-cover transition-all duration-700 ${
+                  loaded ? "opacity-100 blur-0 scale-100" : "opacity-70 blur-sm scale-105"
+                }`}
+              />
             </div>
           </div>
 
           <div className="p-6 pt-8">
             <h2 className="text-3xl text-gray-400 mb-1">{product.name}</h2>
 
-            <div className="flex space-x-1 py-5">
-              {product.category.name === "vegetarian" && (
-                <Tag label="VG" color="lime-500" tooltip="ベジタリアン" />
-              )}
-              {product.category.name === "vegan" && (
-                <Tag label="V" color="green-500" tooltip="ヴィーガン" />
-              )}
-            </div>
 
             <p className="text-xl text-gray-400 mb-3">{product.long_description}</p>
 

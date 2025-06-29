@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import jaLocale from '@fullcalendar/core/locales/ja';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
 
 interface CalendarEvent {
   title: string;
@@ -30,7 +28,14 @@ export default function BusinessCalendar() {
         const response = await fetch(`/api/business-calendar?start=${start}&end=${end}`);
         const data = await response.json();
 
-        const calendarEvents: CalendarEvent[] = data.days.map((day: any) => ({
+        interface BusinessDayResponse {
+          date: string;
+          is_open: boolean;
+          is_special: boolean;
+          notes: string | null;
+        }
+
+        const calendarEvents: CalendarEvent[] = data.days.map((day: BusinessDayResponse) => ({
           title: day.is_open ? (day.is_special ? '特別営業' : '営業日') : '休業日',
           date: day.date,
           backgroundColor: day.is_open ? (day.is_special ? '#3b82f6' : '#4ade80') : '#f87171',

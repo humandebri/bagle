@@ -60,6 +60,15 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           // 既存の商品を削除してから新しい個数で追加
           const filteredItems = state.items.filter((i) => i.id !== item.id);
+          const currentTotal = filteredItems.reduce((sum, i) => sum + i.quantity, 0);
+          
+          // 合計数量チェック（MAX_BAGEL_PER_ORDER = 8）
+          if (currentTotal + item.quantity > 8) {
+            // 制限を超える場合は追加しない
+            console.warn(`Cannot add item: would exceed maximum order limit of 8 bagels`);
+            return state;
+          }
+          
           return {
             items: [...filteredItems, item],
           };
@@ -86,7 +95,7 @@ export const useCartStore = create<CartState>()(
       setSelectedProduct: (product) => set({ 
         selectedProduct: product ? {
           ...product,
-          image: (!product.image || product.image === '') ? null : product.image
+          image: (!product.image || product.image.trim() === '') ? null : product.image
         } : null 
       }),
 
