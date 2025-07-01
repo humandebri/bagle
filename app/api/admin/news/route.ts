@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server-api';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -7,25 +6,21 @@ import { prisma } from '@/lib/prisma';
 // 管理者権限チェック
 async function checkAdminAuth() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  if (!session?.user) {
     return false;
   }
   
-  const supabase = await createServerSupabaseClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('email', session.user.email)
-    .single();
-    
-  return profile?.is_admin === true;
+  // session.user.role で管理者チェック
+  return (session.user as { role?: string }).role === 'admin';
 }
 
 // GET /api/admin/news - 管理用ニュース一覧（全て）
 export async function GET() {
   try {
     // 管理者権限チェック
-    if (!await checkAdminAuth()) {
+    const isAdmin = await checkAdminAuth();
+    if (!isAdmin) {
+      console.log('Admin check failed - no admin privileges');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -49,7 +44,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     // 管理者権限チェック
-    if (!await checkAdminAuth()) {
+    const isAdmin = await checkAdminAuth();
+    if (!isAdmin) {
+      console.log('Admin check failed - no admin privileges');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
