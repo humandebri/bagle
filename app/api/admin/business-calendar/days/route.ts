@@ -175,7 +175,13 @@ export async function PUT(request: NextRequest) {
 
     // 管理者用のSupabaseクライアントを使用（RLSをバイパス）
     // 一括upsert用のデータを準備
-    const businessDays = [];
+    const businessDays: {
+      date: string;
+      is_open: boolean;
+      is_special: boolean;
+      notes: string | null;
+      updated_at: string;
+    }[] = [];
 
     // 選択された曜日の日付を設定
     if (selectedDates.length > 0) {

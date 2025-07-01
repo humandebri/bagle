@@ -14,12 +14,16 @@ export async function POST(req: NextRequest) {
     // 注文が存在するか確認
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id')
+      .select('id, payment_status')
       .eq('id', orderId)
       .single();
 
     if (orderError || !order) {
       return NextResponse.json({ error: '注文が見つかりません' }, { status: 404 });
+    }
+
+    if (order.payment_status === 'cancelled') {
+      return NextResponse.json({ error: 'キャンセル済みの注文は完了できません' }, { status: 400 });
     }
 
     // 注文ステータスを更新

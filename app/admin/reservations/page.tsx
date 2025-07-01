@@ -182,6 +182,9 @@ export default function ReservationsPage() {
 
   // ステータスに応じた色を返す
   const getStatusColor = (order: Order) => {
+    if (order.payment_status === 'cancelled') {
+      return '#EF4444'; // 赤色（キャンセル）
+    }
     if (order.shipped) {
       return '#60A5FA'; // 青色（完了）
     }
@@ -191,6 +194,9 @@ export default function ReservationsPage() {
 
   // 受取ステータスの日本語表示
   const getShippedStatusLabel = (order: Order) => {
+    if (order.payment_status === 'cancelled') {
+      return 'キャンセル済';
+    }
     const shipped = order.shipped === true;
     return shipped ? '受取済' : '未受取';
   };
@@ -198,7 +204,13 @@ export default function ReservationsPage() {
 
   // カレンダーに表示するイベントデータを作成
   const events = orders
-    .filter(order => !filterStatus || (filterStatus === 'shipped' ? order.shipped : !order.shipped))
+    .filter(order => {
+      if (!filterStatus) return true;
+      if (filterStatus === 'shipped') return order.shipped;
+      if (filterStatus === 'unshipped') return !order.shipped && order.payment_status !== 'cancelled';
+      if (filterStatus === 'cancelled') return order.payment_status === 'cancelled';
+      return true;
+    })
     .map(order => {
       // 日付を正規化（YYYY-MM-DD形式に）
       const normalizedDate = order.dispatch_date.split('T')[0];
@@ -206,7 +218,7 @@ export default function ReservationsPage() {
       const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
       
       return {
-        title: `${formattedTime} - ${totalItems}個`,
+        title: `${formattedTime} - ${totalItems}個${order.payment_status === 'cancelled' ? ' (キャンセル)' : ''}`,
         date: normalizedDate,
         extendedProps: { 
           order,
@@ -215,6 +227,7 @@ export default function ReservationsPage() {
           customerName: order.customer_name || '未設定'
         },
         backgroundColor: getStatusColor(order),
+        textColor: order.payment_status === 'cancelled' ? '#ffffff' : '#000000',
       };
     });
   
@@ -251,10 +264,10 @@ export default function ReservationsPage() {
         .eq('date', selectedOrder?.dispatch_date)
         .eq('time', selectedOrder?.dispatch_time);
 
-      // 2. 注文を削除（ソフトデリート）
+      // 2. 注文をキャンセル状態に更新
       const { error: orderError } = await supabase
         .from('orders')
-        .delete()
+        .update({ payment_status: 'cancelled' })
         .eq('id', orderId);
 
       if (orderError) {
@@ -323,6 +336,10 @@ export default function ReservationsPage() {
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#60A5FA' }}></div>
               <span className="text-sm">受取済</span>
             </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EF4444' }}></div>
+              <span className="text-sm">キャンセル</span>
+            </div>
           </div>
           <select
             value={filterStatus}
@@ -332,6 +349,7 @@ export default function ReservationsPage() {
             <option value="">すべての注文</option>
             <option value="unshipped">未受取</option>
             <option value="shipped">受取済</option>
+            <option value="cancelled">キャンセル済</option>
           </select>
           <button
             // onClick={() => setIsEditing(true)}
@@ -362,12 +380,14 @@ export default function ReservationsPage() {
             height="auto"
             eventContent={(eventInfo) => (
               <div className="p-1 text-xs">
-                <div className="font-semibold">
+                <div className={`font-semibold ${eventInfo.event.extendedProps.order.payment_status === 'cancelled' ? 'line-through' : ''}`}>
                   {eventInfo.event.extendedProps.time}
                   <span className="mx-1" />
                   {eventInfo.event.extendedProps.totalItems}個
                 </div>
-                <div></div>
+                {eventInfo.event.extendedProps.order.payment_status === 'cancelled' && (
+                  <div className="text-xs">キャンセル</div>
+                )}
               </div>
             )}
           />
@@ -380,7 +400,8 @@ export default function ReservationsPage() {
               <div className="space-y-2">
                 {Object.entries(calculateTotals(orders
                   .filter(order => 
-                    order.dispatch_date.split('T')[0] === selectedDate
+                    order.dispatch_date.split('T')[0] === selectedDate &&
+                    order.payment_status !== 'cancelled'
                   )
                   .flatMap(order => order.items)))
                   .map(([name, quantity]) => (
@@ -402,7 +423,7 @@ export default function ReservationsPage() {
             </h2>
             {selectedOrder && (
               <div className="flex gap-2">
-                {!selectedOrder.shipped && (
+                {!selectedOrder.shipped && selectedOrder.payment_status !== 'cancelled' && (
                   <button
                     onClick={() => setShowConfirmModal(true)}
                     className="p-2 text-green-600 hover:text-green-700"
@@ -414,32 +435,36 @@ export default function ReservationsPage() {
                 <button
                   onClick={handleTimeEdit}
                   className={`p-2 ${
-                    selectedOrder.shipped
+                    selectedOrder.shipped || selectedOrder.payment_status === 'cancelled'
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                   title={
-                    selectedOrder.shipped
+                    selectedOrder.payment_status === 'cancelled'
+                      ? 'キャンセル済みの注文は編集できません'
+                      : selectedOrder.shipped
                       ? '受取済みの注文は編集できません'
                       : '受け取り時間の変更'
                   }
-                  disabled={selectedOrder.shipped}
+                  disabled={selectedOrder.shipped || selectedOrder.payment_status === 'cancelled'}
                 >
                   <PencilIcon className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => handleCancelOrder(selectedOrder.id)}
                   className={`p-2 ${
-                    selectedOrder.shipped
+                    selectedOrder.shipped || selectedOrder.payment_status === 'cancelled'
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-gray-600 hover:text-red-600'
                   }`}
                   title={
-                    selectedOrder.shipped
+                    selectedOrder.payment_status === 'cancelled'
+                      ? '既にキャンセル済みです'
+                      : selectedOrder.shipped
                       ? '受取済みの注文はキャンセルできません'
                       : '予約のキャンセル'
                   }
-                  disabled={selectedOrder.shipped}
+                  disabled={selectedOrder.shipped || selectedOrder.payment_status === 'cancelled'}
                 >
                   <TrashIcon className="h-5 w-5" />
                 </button>
@@ -472,8 +497,8 @@ export default function ReservationsPage() {
                           <span
                             className="text-xs px-2 py-0.5 rounded-full"
                             style={{
-                              backgroundColor: order.shipped ? '#60A5FA20' : '#FCD34D20',
-                              color: order.shipped ? '#60A5FA' : '#FCD34D',
+                              backgroundColor: order.payment_status === 'cancelled' ? '#EF444420' : order.shipped ? '#60A5FA20' : '#FCD34D20',
+                              color: order.payment_status === 'cancelled' ? '#EF4444' : order.shipped ? '#60A5FA' : '#FCD34D',
                             }}
                           >
                             {getShippedStatusLabel(order)}
@@ -498,7 +523,7 @@ export default function ReservationsPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">受取ステータス</span>
                     <span className="font-medium" style={{ 
-                      color: selectedOrder.shipped ? '#60A5FA' : '#FCD34D'
+                      color: selectedOrder.payment_status === 'cancelled' ? '#EF4444' : selectedOrder.shipped ? '#60A5FA' : '#FCD34D'
                     }}>
                       {getShippedStatusLabel(selectedOrder)}
                     </span>

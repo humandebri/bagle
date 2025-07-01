@@ -61,9 +61,6 @@ export async function GET(req: Request) {
 
     if (id) q = q.eq('id', id);
 
-    // Exclude cancelled orders
-    q = q.neq('payment_status', 'cancelled');
-
     if (start && end) q = q.gte('dispatch_date', start).lte('dispatch_date', end);
     if (st && st === 'shipped') q = q.eq('shipped', true);
     if (st && st === 'unshipped') q = q.eq('shipped', false);

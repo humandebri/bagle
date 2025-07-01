@@ -24,7 +24,8 @@ export async function GET(req: Request) {
   try {
     let q = supabase
       .from('orders')
-      .select('id, user_id, total_price, created_at');
+      .select('id, user_id, total_price, created_at, payment_status')
+      .neq('payment_status', 'cancelled');
     if (from && to) q = q.gte('created_at', from).lte('created_at', to);
 
     const { data, error } = await q;
