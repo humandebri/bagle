@@ -43,12 +43,14 @@ export const authOptions: AuthOptions = {
       if (account) {
         token.accessToken = account.access_token;
         token.id = account.providerAccountId;
+      }
   
-        // 🔽 Supabaseのprofilesテーブルからis_adminを取得
-        const { data} = await supabase
+      // 毎回のリクエストでis_adminをチェック（初回ログイン時以外も）
+      if (token.id) {
+        const { data } = await supabase
           .from('profiles')
           .select('is_admin')
-          .eq('user_id', account.providerAccountId)
+          .eq('user_id', token.id as string)
           .single();
   
         if (data?.is_admin) {
