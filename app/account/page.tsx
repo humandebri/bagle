@@ -20,7 +20,7 @@ export default function Account() {
         <h1 className="text-2xl text-gray-400 mb-6">マイページ</h1>
         <p className="mb-4">ログインして注文履歴を確認したり、アカウント情報を管理しましょう。</p>
         <button 
-          onClick={() => clientSignIn('google')}
+          onClick={() => clientSignIn()}
           className="w-full py-3 bg-white border border-gray-300 shadow-sm text-gray-700 flex items-center justify-center gap-3 hover:bg-gray-50"
         >
           <FcGoogle className="w-5 h-5" />
