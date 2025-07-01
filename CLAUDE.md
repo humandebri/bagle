@@ -63,23 +63,26 @@ Cash-only payment at store during pickup:
 1. Orders are placed online with customer information
 2. Payment is collected in cash when customers pick up their order
 3. Orders can be marked as `shipped` (picked up) in admin panel
+4. Cancelled orders have `payment_status='cancelled'`
 
 ### Key Business Constraints
 - `MAX_BAGEL_PER_ORDER = 8` - Maximum bagels per order
 - `MAX_BAGEL_PER_ITEM = 3` - Maximum quantity per product
 - `STORE_PHONE_NUMBER = '089-904-2666'`
+- No bag fee (previously ¥10, now removed)
 
 ## Database Schema
 
 Key tables (via Prisma):
 - `products` - Product catalog with categories, availability dates
-- `orders` - Orders with JSON items array, shipping status, payment info
+- `orders` - Orders with JSON items array, shipping status, payment_status
 - `profiles` - User profiles linked to auth system
 - `time_slots` - Available pickup times with capacity limits
 - `categories` - Product categorization
 - `business_days` - Store operating days configuration
 - `business_hours` - Store operating hours by day
 - `recurring_holidays` - Recurring holiday patterns
+- `news` - News/announcements with date, title, content
 
 ## API Route Structure
 
@@ -90,10 +93,12 @@ Key tables (via Prisma):
 ├── create-order/      # Create new order
 ├── time_slots/        # Pickup time management
 ├── business-calendar/ # Store calendar management
+├── news/              # News management
 ├── admin/             # Admin-only endpoints
-│   ├── summary/       # Dashboard KPIs
-│   ├── sales-stats/   # Analytics data
+│   ├── summary/       # Dashboard KPIs (excludes cancelled orders)
+│   ├── sales-stats/   # Analytics data (excludes cancelled orders)
 │   ├── reservations/  # Order management
+│   ├── news/          # Admin news CRUD
 │   └── business-calendar/  # Calendar admin endpoints
 └── auth/[...nextauth]/ # Authentication
 ```
@@ -148,7 +153,7 @@ CRON_SECRET
 ### Admin Dashboard
 - Located at `/admin/*` routes
 - Requires `is_admin: true` in profiles table
-- Features: order management, product CRUD, time slot configuration, sales analytics, business calendar
+- Features: order management, product CRUD, time slot configuration, sales analytics, business calendar, news management
 
 ### Time Slot Management
 - Booking system for pickup times
@@ -158,6 +163,19 @@ CRON_SECRET
 
 ### Business Calendar System
 - Dynamic store hours configuration
-- Recurring holiday patterns
+- Recurring holiday patterns (e.g., 4th Sunday of month)
 - Special closure dates
+- Bulk operation support for setting multiple days
 - Real-time availability checking for orders
+
+### Order Status Management
+- Orders can be cancelled (sets `payment_status='cancelled'`)
+- Cancelled orders are excluded from all metrics and totals
+- Visual indicators: Red color and strikethrough for cancelled orders
+- Cannot mark cancelled orders as shipped or edit them
+
+### News System
+- Admin can create/edit/delete news items
+- News displayed on homepage (limit 2) and news page (all)
+- Character limits: Title 40 chars, content 80 chars for homepage display
+- Admin receives visual warnings when exceeding character limits
