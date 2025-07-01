@@ -107,3 +107,26 @@
 .fc-admin-wrapper .fc-daygrid-day:hover {
   background-color: #f3f4f6;
 }
+
+/* カスタムイベントコンテンツ */
+.fc-event-custom {
+  padding: 2px 4px;
+}
+
+.fc-event-title {
+  font-weight: 500;
+}
+
+.fc-event-notes {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  opacity: 0.9;
+  word-break: break-all;
+  margin-top: 2px;
+}
+
+/* メモがあるイベントにアイコンを表示 */
+.fc-event.has-notes .fc-event-title::after {
+  content: " 📝";
+  font-size: 0.75rem;
+}

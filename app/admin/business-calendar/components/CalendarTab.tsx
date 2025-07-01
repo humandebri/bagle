@@ -64,6 +64,7 @@ export default function CalendarTab() {
         backgroundColor: day.is_open ? (day.is_special ? '#3b82f6' : '#4ade80') : '#f87171',
         borderColor: day.is_open ? (day.is_special ? '#2563eb' : '#22c55e') : '#ef4444',
         textColor: '#ffffff',
+        classNames: day.notes ? ['has-notes'] : [],
         extendedProps: {
           is_open: day.is_open,
           is_special: day.is_special,
@@ -183,6 +184,17 @@ export default function CalendarTab() {
           height="auto"
           datesSet={(arg) => {
             setCurrentMonth(arg.view.currentStart);
+          }}
+          eventContent={(eventInfo) => {
+            const notes = eventInfo.event.extendedProps.notes;
+            return (
+              <div className="fc-event-custom">
+                <div className="fc-event-title">{eventInfo.event.title}</div>
+                {notes && (
+                  <div className="fc-event-notes text-xs mt-1">{notes}</div>
+                )}
+              </div>
+            );
           }}
         />
       </div>

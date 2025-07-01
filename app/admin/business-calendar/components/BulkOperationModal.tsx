@@ -135,13 +135,13 @@ export default function BulkOperationModal({
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-1 block">備考</label>
+          <label className="text-sm font-medium mb-1 block">備考・イベント情報（選択した日すべてに適用）</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full px-3 py-2 border rounded-md text-sm"
             rows={2}
-            placeholder="例: 年末年始営業"
+            placeholder="例: ○○マルシェに出店、△△イベント参加、営業時間変更など"
           />
         </div>
 

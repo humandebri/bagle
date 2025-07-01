@@ -119,12 +119,8 @@ export default function BagelModalPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center">
-        <div className="relative mx-auto w-full max-w-md md:max-w-[500px] bg-white">
-          <div className="flex items-center justify-center h-[500px] text-gray-500">
-            読み込み中...
-          </div>
-        </div>
+      <div className="fixed inset-0 z-10 md:bg-black/50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
       </div>
     );
   }
@@ -140,11 +136,15 @@ export default function BagelModalPage() {
   return (
     <>
     <div
-      className="fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center"
+      className={`fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center transition-opacity duration-200 ${
+        loaded ? "opacity-100" : "opacity-0"
+      }`}
       onClick={handleBackgroundClick}
     >
     <div
-      className="relative  mx-auto w-full max-w-md md:max-w-[500px] bg-white   "
+      className={`relative  mx-auto w-full max-w-md md:max-w-[500px] bg-white transition-all duration-200 ${
+        loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+      }`}
       onClick={(e) => e.stopPropagation()}
     >
         {/* ✕ボタン（スマホのみ表示） */}

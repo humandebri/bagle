@@ -13,6 +13,10 @@ interface CalendarEvent {
   backgroundColor: string;
   borderColor: string;
   textColor: string;
+  classNames?: string[];
+  extendedProps?: {
+    notes?: string | null;
+  };
 }
 
 export default function BusinessCalendar() {
@@ -35,7 +39,11 @@ export default function BusinessCalendar() {
           date: day.date,
           backgroundColor: day.is_open ? (day.is_special ? '#3b82f6' : '#4ade80') : '#f87171',
           borderColor: day.is_open ? (day.is_special ? '#2563eb' : '#22c55e') : '#ef4444',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
+          classNames: day.notes ? ['has-notes'] : [],
+          extendedProps: {
+            notes: day.notes
+          }
         }));
 
         setEvents(calendarEvents);
@@ -74,6 +82,17 @@ export default function BusinessCalendar() {
           aspectRatio={1.2}
           datesSet={(arg) => {
             setCurrentMonth(arg.view.currentStart);
+          }}
+          eventContent={(eventInfo) => {
+            const notes = eventInfo.event.extendedProps.notes;
+            return (
+              <div className="fc-event-custom">
+                <div className="fc-event-title">{eventInfo.event.title}</div>
+                {notes && (
+                  <div className="fc-event-notes text-xs mt-1">{notes}</div>
+                )}
+              </div>
+            );
           }}
         />
       </div>

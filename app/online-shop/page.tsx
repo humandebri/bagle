@@ -83,7 +83,7 @@ export default function OnlineShopPage() {
 
   return (
     <>
-      <main className="min-h-[calc(100vh-7rem)] pb-15 md:pb-5">
+      <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-24">
         <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
           <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
             {mounted && (
@@ -127,15 +127,15 @@ function CartFooter({
   onClick: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 w-full bg-white flex justify-center z-20 border-t border-gray-300">
-      <div className="w-full max-w-md px-6 py-3">
+    <div className="fixed bottom-0 w-full bg-white flex justify-center z-20 border-t border-gray-300 md:bottom-4 md:right-4 md:w-auto md:border md:shadow-lg md:rounded-lg">
+      <div className="w-full max-w-md px-6 py-3 md:px-4 md:py-2">
         <button
           onClick={onClick}
-          className="w-full relative py-3 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center"
+          className="w-full relative py-3 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center md:px-8 md:py-2 md:text-base"
           aria-label="カートを見る"
         >
           カートを見る
-          <div className="flex absolute right-6">
+          <div className="flex absolute right-6 md:relative md:right-0 md:ml-2">
             <ShoppingBag className="h-5 w-5" />
             {totalQuantity > 0 && (
               <span className="ml-1 w-5 h-5 flex items-center justify-center">

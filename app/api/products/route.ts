@@ -1,11 +1,14 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const showAll = searchParams.get('all') === 'true';
+    
     const supabase = await createServerSupabaseClient();
 
-    const { data: products, error } = await supabase
+    let query = supabase
       .from('products')
       .select(`
         id,
@@ -22,8 +25,14 @@ export async function GET() {
           id,
           name
         )
-      `)
-      .eq('is_available', true)
+      `);
+    
+    // 管理画面からの場合はすべての商品を表示、それ以外は販売中のみ
+    if (!showAll) {
+      query = query.eq('is_available', true);
+    }
+    
+    const { data: products, error } = await query
       .order('created_at', { ascending: false });
 
     if (error) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server-api';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 
@@ -89,10 +90,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    
+    // 管理者用のSupabaseクライアントを使用（RLSをバイパス）
     // upsert（存在すれば更新、なければ作成）
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('business_days')
       .upsert({
         date,
@@ -168,8 +168,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    
+    // 管理者用のSupabaseクライアントを使用（RLSをバイパス）
     // 一括upsert
     const businessDays = dates.map(date => ({
       date,
@@ -179,7 +178,7 @@ export async function PUT(request: NextRequest) {
       updated_at: new Date().toISOString()
     }));
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('business_days')
       .upsert(businessDays, {
         onConflict: 'date'
@@ -227,8 +226,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    const { error } = await supabase
+    // 管理者用のSupabaseクライアントを使用（RLSをバイパス）
+    const { error } = await supabaseAdmin
       .from('business_days')
       .delete()
       .gte('date', startDate)

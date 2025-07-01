@@ -103,12 +103,12 @@ export default function DateEditModal({ isOpen, onClose, date, businessDay, onSa
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                備考
+                備考・イベント情報
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="例：臨時休業、イベント開催など"
+                placeholder="例：○○マルシェに出店、臨時休業、△△イベント参加、営業時間変更など"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#887c5d]"
                 rows={3}
               />
