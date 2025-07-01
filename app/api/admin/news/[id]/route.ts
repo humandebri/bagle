@@ -1,0 +1,91 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase-server-api';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+// 管理者権限チェック
+async function checkAdminAuth() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return false;
+  }
+  
+  const supabase = await createServerSupabaseClient();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('email', session.user.email)
+    .single();
+    
+  return profile?.is_admin === true;
+}
+
+// PUT /api/admin/news/[id] - ニュース更新
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // 管理者権限チェック
+    if (!await checkAdminAuth()) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const { date, title, content, is_published } = body;
+
+    if (!date || !title || !content) {
+      return NextResponse.json(
+        { error: 'date、title、contentは必須です' },
+        { status: 400 }
+      );
+    }
+
+    const news = await prisma.news.update({
+      where: { id },
+      data: {
+        date,
+        title,
+        content,
+        is_published
+      }
+    });
+
+    return NextResponse.json(news);
+  } catch (error) {
+    console.error('Error updating news:', error);
+    return NextResponse.json(
+      { error: 'ニュースの更新に失敗しました' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/admin/news/[id] - ニュース削除
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // 管理者権限チェック
+    if (!await checkAdminAuth()) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    await prisma.news.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting news:', error);
+    return NextResponse.json(
+      { error: 'ニュースの削除に失敗しました' },
+      { status: 500 }
+    );
+  }
+}

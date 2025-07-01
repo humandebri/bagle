@@ -10,7 +10,8 @@ import {
   CubeIcon,
   CalendarIcon,
   CalendarDaysIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  NewspaperIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({
@@ -44,6 +45,7 @@ export default function AdminLayout({
     { name: '予約管理', href: '/admin/reservations', icon: CalendarIcon },
     { name: '時間枠管理', href: '/admin/time_slots', icon: CalendarIcon },
     { name: '営業日カレンダー', href: '/admin/business-calendar', icon: CalendarDaysIcon },
+    { name: 'お知らせ管理', href: '/admin/news', icon: NewspaperIcon },
   ];
 
   

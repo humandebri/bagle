@@ -28,6 +28,8 @@ model orders {
   customer_name     String?
   phone             String?
   shipped           Boolean?
+  payment_intent_id String?
+  payment_status    String?
   profiles          profiles  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_profile")
 }
 
@@ -65,6 +67,7 @@ model profiles {
   last_name   String?
   phone       String?
   is_admin    Boolean? @default(false)
+  customer_id String?
   orders      orders[]
 }
 
@@ -110,4 +113,13 @@ model recurring_holidays {
   is_active    Boolean  @default(true)
   created_at   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
   updated_at   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+}
+
+model news {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date         String   // "2025.01.14" 形式
+  title        String
+  content      String   @db.Text
+  is_published Boolean  @default(true)
+  created_at   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
 }

@@ -5,7 +5,21 @@ import Link from 'next/link';
 import { Clock, MapPin, Phone, Calendar } from 'lucide-react';
 import './calendar.css';
 
-export default function Home() {
+async function getNews() {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/news`, {
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error('Failed to fetch news');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const news = await getNews();
   return (
     <div className="min-h-screen">
       {/* ヒーローセクション */}
@@ -133,7 +147,7 @@ export default function Home() {
             </div>
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
               <Calendar className="w-10 sm:w-12 h-10 sm:h-12 text-[#887c5d] mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">定休日</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">営業日</h3>
               <p className="text-gray-600 font-medium text-sm sm:text-base">木・金・土・<br className="sm:hidden" />第4日曜</p>
             </div>
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
@@ -166,29 +180,48 @@ export default function Home() {
           </div>
           
           <div className="grid md:grid-cols-2 gap-6">
-            <article className="group cursor-pointer">
-              <div className="bg-gray-50 p-8 rounded-lg hover:shadow-lg transition duration-300">
-                <time className="text-sm text-[#887c5d] font-medium">2025.01.14</time>
-                <h3 className="text-xl font-semibold text-gray-800 mt-2 mb-3 group-hover:text-[#887c5d] transition duration-300">
-                  新商品「抹茶ベーグル」販売開始
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  京都宇治産の抹茶を使用した、香り高い和風ベーグルが新登場です。
-                </p>
-              </div>
-            </article>
-            
-            <article className="group cursor-pointer">
-              <div className="bg-gray-50 p-8 rounded-lg hover:shadow-lg transition duration-300">
-                <time className="text-sm text-[#887c5d] font-medium">2025.01.10</time>
-                <h3 className="text-xl font-semibold text-gray-800 mt-2 mb-3 group-hover:text-[#887c5d] transition duration-300">
-                  オンライン予約システム開始
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  お待たせしました！オンラインでの事前予約が可能になりました。
-                </p>
-              </div>
-            </article>
+            {news.length > 0 ? (
+              news.map((item: any) => (
+                <article key={item.id} className="group cursor-pointer h-full">
+                  <div className="bg-gray-50 p-8 rounded-lg hover:shadow-lg transition duration-300 h-full flex flex-col">
+                    <time className="text-sm text-[#887c5d] font-medium">{item.date}</time>
+                    <h3 className="text-xl font-semibold text-gray-800 mt-2 mb-3 group-hover:text-[#887c5d] transition duration-300 line-clamp-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed line-clamp-3 flex-grow">
+                      {item.content}
+                    </p>
+                  </div>
+                </article>
+              ))
+            ) : (
+              // フォールバック（ニュースがない場合）
+              <>
+                <article className="group cursor-pointer h-full">
+                  <div className="bg-gray-50 p-8 rounded-lg hover:shadow-lg transition duration-300 h-full flex flex-col">
+                    <time className="text-sm text-[#887c5d] font-medium">2025.01.14</time>
+                    <h3 className="text-xl font-semibold text-gray-800 mt-2 mb-3 group-hover:text-[#887c5d] transition duration-300 line-clamp-2">
+                      新商品「抹茶ベーグル」販売開始
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed line-clamp-3 flex-grow">
+                      京都宇治産の抹茶を使用した、香り高い和風ベーグルが新登場です。
+                    </p>
+                  </div>
+                </article>
+                
+                <article className="group cursor-pointer h-full">
+                  <div className="bg-gray-50 p-8 rounded-lg hover:shadow-lg transition duration-300 h-full flex flex-col">
+                    <time className="text-sm text-[#887c5d] font-medium">2025.01.10</time>
+                    <h3 className="text-xl font-semibold text-gray-800 mt-2 mb-3 group-hover:text-[#887c5d] transition duration-300 line-clamp-2">
+                      オンライン予約システム開始
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed line-clamp-3 flex-grow">
+                      お待たせしました！オンラインでの事前予約が可能になりました。
+                    </p>
+                  </div>
+                </article>
+              </>
+            )}
           </div>
           
           <div className="text-center mt-12">
@@ -203,7 +236,7 @@ export default function Home() {
         </div>
       </section>
       
-      {/* フッターCTA */}
+      {/* フッターCTA
       <section className="py-16 px-4 bg-[#887c5d]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
@@ -219,7 +252,7 @@ export default function Home() {
             今すぐ予約する
           </Link>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }
