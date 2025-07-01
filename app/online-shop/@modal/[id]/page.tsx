@@ -173,7 +173,7 @@ export default function BagelModalPage() {
             )}
           </div>
 
-          <p className="text-xl text-gray-400 mb-3">{product.long_description}</p>
+          <p className="text-xl text-gray-400 mb-3">{product.description}</p>
 
           {/* 数量 & 注文ボタン */}
           <div className="my-8 pb-25 sm:pb-5 bg-white">

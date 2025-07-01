@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation';
 
 
@@ -36,41 +35,43 @@ export default function EditProductPage() {
   const router = useRouter()
 
   const fetchData = useCallback(async () => {
-    // 商品データの取得
-    const { data: productData, error: productError } = await supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(*)
-      `)
-      .eq('id', productId)
-      .single()
-
-    if (productError) {
-      console.error('Error fetching product:', {
-        message: productError.message,
-        details: productError.details,
-        hint: productError.hint,
-        code: productError.code
+    try {
+      // 商品データの取得
+      const productResponse = await fetch(`/api/products/${productId}`, {
+        credentials: 'include',
       })
-      return
+      
+      if (!productResponse.ok) {
+        const error = await productResponse.json()
+        console.error('Error fetching product:', error)
+        alert(error.error || '商品データの取得に失敗しました')
+        router.push('/admin/products')
+        return
+      }
+      
+      const productData = await productResponse.json()
+
+      // カテゴリー一覧の取得
+      const categoriesResponse = await fetch('/api/categories', {
+        credentials: 'include',
+      })
+      
+      if (!categoriesResponse.ok) {
+        console.error('Error fetching categories')
+        return
+      }
+      
+      const categoriesData = await categoriesResponse.json()
+
+      setProduct(productData)
+      setCategories(categoriesData)
+      setLoading(false)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      alert('データの取得に失敗しました')
+      router.push('/admin/products')
     }
-
-    // カテゴリー一覧の取得
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name')
-
-    if (categoriesError) {
-      console.error('Error fetching categories:', categoriesError)
-      return
-    }
-
-    setProduct(productData)
-    setCategories(categoriesData)
-    setLoading(false)
-  }, [productId])
+  }, [productId, router])
 
   useEffect(() => {
     fetchData()
@@ -110,9 +111,12 @@ export default function EditProductPage() {
     if (!product) return
 
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           name: product.name,
           description: product.description,
           long_description: product.long_description,
@@ -123,20 +127,21 @@ export default function EditProductPage() {
           start_date: product.start_date,
           end_date: product.end_date,
           category_id: product.category_id,
-        })
-        .eq('id', productId)
+        }),
+        credentials: 'include',
+      })
 
-      if (error) {
-        console.error('Error updating product:', error)
-        alert('商品の更新に失敗しました')
-        return
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '商品の更新に失敗しました')
       }
 
       alert('商品を更新しました')
       router.push('/admin/products')
     } catch (error) {
       console.error('Error updating product:', error)
-      alert('商品の更新に失敗しました')
+      alert(error instanceof Error ? error.message : '商品の更新に失敗しました')
     }
   }
 
@@ -227,7 +232,7 @@ export default function EditProductPage() {
             type="number"
             value={product.price}
             onChange={(e) =>
-              setProduct({ ...product, price: parseInt(e.target.value) })
+              setProduct({ ...product, price: parseInt(e.target.value) || 0 })
             }
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
           />

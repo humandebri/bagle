@@ -1,5 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/lib/auth'
+import type { Session } from 'next-auth'
 
 export async function GET(
   request: Request,
@@ -8,6 +11,10 @@ export async function GET(
   const { id } = await params                        // ★ await で展開
 
   try {
+    // 管理者権限チェック（管理画面からのアクセスか確認）
+    const session = await getServerSession(authOptions) as Session
+    const isAdmin = session && (session.user as { role?: string }).role === 'admin'
+
     const supabase = await createServerSupabaseClient()
 
     const { data: product, error } = await supabase
@@ -24,7 +31,8 @@ export async function GET(
         is_limited,
         start_date,
         end_date,
-        category:categories ( name )
+        category_id,
+        category:categories ( id, name )
       `
       )
       .eq('id', id)
@@ -45,7 +53,8 @@ export async function GET(
       )
     }
 
-    if (!product.is_available) {
+    // 管理者でない場合のみ、販売可能チェックを行う
+    if (!isAdmin && !product.is_available) {
       return NextResponse.json(
         { error: 'この商品は現在販売していません' },
         { status: 400 }
@@ -105,6 +114,94 @@ export async function DELETE(
     })
   } catch (error) {
     console.error('Error in DELETE /api/products/[id]:', error)
+    return NextResponse.json(
+      { error: 'サーバーエラーが発生しました' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  
+  try {
+    // 管理者権限チェック
+    const session = await getServerSession(authOptions) as Session
+    if (!session || (session.user as { role?: string }).role !== 'admin') {
+      return NextResponse.json(
+        { error: '管理者権限が必要です' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const {
+      name,
+      description,
+      long_description,
+      price,
+      image,
+      is_available,
+      is_limited,
+      start_date,
+      end_date,
+      category_id
+    } = body
+
+    const supabase = await createServerSupabaseClient()
+    
+    // 商品が存在するか確認
+    const { data: existingProduct, error: fetchError } = await supabase
+      .from('products')
+      .select('id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !existingProduct) {
+      return NextResponse.json(
+        { error: '商品が見つかりません' },
+        { status: 404 }
+      )
+    }
+
+    // 商品を更新
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from('products')
+      .update({
+        name,
+        description,
+        long_description,
+        price,
+        image,
+        is_available,
+        is_limited,
+        start_date: start_date || null,
+        end_date: end_date || null,
+        category_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Error updating product:', updateError)
+      return NextResponse.json(
+        { error: '商品の更新に失敗しました' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      data: updatedProduct,
+      message: '商品を更新しました' 
+    })
+  } catch (error) {
+    console.error('Error in PUT /api/products/[id]:', error)
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }

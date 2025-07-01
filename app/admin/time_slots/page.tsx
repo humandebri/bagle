@@ -31,9 +31,7 @@ const DEFAULT_TIME_SLOTS = [
   { time: "11:15", max_capacity: 1 },
   { time: "11:30", max_capacity: 1 },
   { time: "11:45", max_capacity: 1 },
-  { time: "12:00", max_capacity: 4 },
-  { time: "13:00", max_capacity: 3 },
-  { time: "14:00", max_capacity: 3 },
+  { time: "12:00", max_capacity: 10 },
 ];
 
 // デフォルト日付計算

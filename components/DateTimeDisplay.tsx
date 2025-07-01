@@ -11,9 +11,7 @@ export const TIME_RANGE_MAP = {
   '11:15': '11:30',
   '11:30': '11:45',
   '11:45': '12:00',
-  '12:00': '13:00',
-  '13:00': '14:00',
-  '14:00': '15:00',
+  '12:00': '15:00',
 } as const;
 
 type TimeRangeKey = keyof typeof TIME_RANGE_MAP;

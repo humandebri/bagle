@@ -22,7 +22,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
         <h4 className="text-2xl text-gray-400 mb-2">{bagel.name}</h4>
 
         <p className=" text-gray-400 mb-4 leading-relaxed flex-grow">
-          {bagel.description}
+          {bagel.longDescription}
         </p>
 {/* 
         <div className="flex space-x-1 mb-2">
