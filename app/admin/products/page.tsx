@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase' // ✅ 修正ポイント：共通クライアントを使う
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
 import { toast } from 'sonner'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 
 type Product = {
   id: string
@@ -23,6 +24,9 @@ type Category = {
   name: string
 }
 
+type SortColumn = 'name' | 'category' | 'price' | 'is_available'
+type SortDirection = 'asc' | 'desc'
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -32,6 +36,8 @@ export default function AdminProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const router = useRouter()
 
   const fetchCategories = useCallback(async () => {
@@ -207,8 +213,66 @@ export default function AdminProductsPage() {
     }
   }
 
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedProducts = [...products].sort((a, b) => {
+    if (!sortColumn) return 0
+
+    let aValue: string | number
+    let bValue: string | number
+
+    switch (sortColumn) {
+      case 'name':
+        aValue = a.name
+        bValue = b.name
+        break
+      case 'category':
+        aValue = a.category?.name || ''
+        bValue = b.category?.name || ''
+        break
+      case 'price':
+        aValue = a.price
+        bValue = b.price
+        break
+      case 'is_available':
+        aValue = a.is_available ? 1 : 0
+        bValue = b.is_available ? 1 : 0
+        break
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+    return 0
+  })
+
   if (loading) {
     return <div>Loading...</div>
+  }
+
+  const SortIndicator = ({ column }: { column: SortColumn }) => {
+    if (sortColumn !== column) {
+      return <span className="ml-1 text-gray-400">
+        <ChevronUp className="w-3 h-3 -mb-1" />
+        <ChevronDown className="w-3 h-3 -mt-1" />
+      </span>
+    }
+    
+    return (
+      <span className="ml-1">
+        {sortDirection === 'asc' ? (
+          <ChevronUp className="w-4 h-4 text-gray-700" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-700" />
+        )}
+      </span>
+    )
   }
 
   return (
@@ -254,20 +318,52 @@ export default function AdminProductsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <input
                   type="checkbox"
-                  checked={selectedProducts.length === products.length}
+                  checked={selectedProducts.length === products.length && products.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">商品名</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">カテゴリー</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">価格</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center">
+                  商品名
+                  <SortIndicator column="name" />
+                </div>
+              </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('category')}
+              >
+                <div className="flex items-center">
+                  カテゴリー
+                  <SortIndicator column="category" />
+                </div>
+              </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('price')}
+              >
+                <div className="flex items-center">
+                  価格
+                  <SortIndicator column="price" />
+                </div>
+              </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('is_available')}
+              >
+                <div className="flex items-center">
+                  ステータス
+                  <SortIndicator column="is_available" />
+                </div>
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
+            {sortedProducts.map((product) => (
               <tr key={product.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <input

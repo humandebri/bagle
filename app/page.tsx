@@ -2,7 +2,7 @@
 import BusinessCalendar from '@/components/BusinessCalendar';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, MapPin, Phone, Calendar } from 'lucide-react';
+import { Clock, MapPin, Phone, Calendar, Instagram } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import './calendar.css';
 
@@ -152,11 +152,11 @@ export default async function Home() {
             <div className="w-24 h-1 bg-[#887c5d] mx-auto"></div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-16">
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
               <Clock className="w-10 sm:w-12 h-10 sm:h-12 text-[#887c5d] mx-auto mb-3 sm:mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">営業時間</h3>
-              <p className="text-gray-600 font-medium text-sm sm:text-base">11:00 - 13:00</p>
+              <p className="text-gray-600 font-medium text-sm sm:text-base">11:00 - 15:00</p>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">売り切れ次第終了</p>
             </div>
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300">
@@ -175,6 +175,17 @@ export default async function Home() {
               <p className="text-gray-600 font-medium text-sm sm:text-base">松山市中心部</p>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">ロープウェイ駅すぐ</p>
             </div>
+            <a
+              href="https://instagram.com/rakudapicnic"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white p-6 sm:p-8 rounded-lg shadow-sm text-center hover:shadow-md transition duration-300 block"
+            >
+              <Instagram className="w-10 sm:w-12 h-10 sm:h-12 text-[#E4405F] mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Instagram</h3>
+              <p className="text-gray-600 font-medium text-sm sm:text-base">@rakudapicnic</p>
+              <p className="text-xs sm:text-sm text-[#E4405F] mt-1">フォローする</p>
+            </a>
           </div>
 
           {/* カレンダー */}

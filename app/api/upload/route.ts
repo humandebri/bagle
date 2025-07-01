@@ -62,14 +62,7 @@ export async function POST(request: Request) {
 
     const publicUrl = publicUrlData.publicUrl;
 
-    // ✅ DB更新
-    const { error: updateError } = await supabase
-      .from('products')
-      .update({ image: publicUrl })
-      .eq('id', productId);
-
-    if (updateError) throw updateError;
-
+    // 画像URLのみを返す（商品の更新はフロントエンドで管理）
     return NextResponse.json({ url: publicUrl });
 
   } catch (error: unknown) {
