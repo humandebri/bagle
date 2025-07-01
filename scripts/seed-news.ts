@@ -2,7 +2,11 @@ import { prisma } from '../lib/prisma';
 
 async function seedNews() {
   try {
-    const newsData = [
+    // Delete existing news first (optional)
+    await prisma.news.deleteMany();
+
+    // Create test news items
+    const newsItems = [
       {
         date: '2025.01.14',
         title: '新商品「抹茶ベーグル」販売開始',
@@ -14,18 +18,24 @@ async function seedNews() {
         title: 'オンライン予約システム開始',
         content: 'お待たせしました！オンラインでの事前予約が可能になりました。',
         is_published: true
+      },
+      {
+        date: '2025.01.05',
+        title: '年始の営業について',
+        content: '新年は1月7日より通常営業を開始いたします。本年もよろしくお願いいたします。',
+        is_published: true
       }
     ];
 
-    for (const news of newsData) {
+    for (const item of newsItems) {
       await prisma.news.create({
-        data: news
+        data: item
       });
     }
 
-    console.log('ニュースのシードデータを作成しました');
+    console.log('✅ News seeded successfully');
   } catch (error) {
-    console.error('シードデータの作成に失敗しました:', error);
+    console.error('Error seeding news:', error);
   } finally {
     await prisma.$disconnect();
   }

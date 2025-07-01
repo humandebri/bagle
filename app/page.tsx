@@ -3,6 +3,7 @@ import BusinessCalendar from '@/components/BusinessCalendar';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Clock, MapPin, Phone, Calendar } from 'lucide-react';
+import { prisma } from '@/lib/prisma';
 import './calendar.css';
 
 type NewsItem = {
@@ -15,11 +16,16 @@ type NewsItem = {
 
 async function getNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/news?limit=2`, {
-      cache: 'no-store'
+    const news = await prisma.news.findMany({
+      where: {
+        is_published: true
+      },
+      orderBy: {
+        date: 'desc'
+      },
+      take: 2
     });
-    if (!response.ok) throw new Error('Failed to fetch news');
-    return await response.json();
+    return news;
   } catch (error) {
     console.error('Error fetching news:', error);
     return [];

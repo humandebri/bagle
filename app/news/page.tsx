@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { prisma } from '@/lib/prisma';
 
 type NewsItem = {
   id: string;
@@ -11,11 +12,15 @@ type NewsItem = {
 
 async function getAllNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/news`, {
-      cache: 'no-store'
+    const news = await prisma.news.findMany({
+      where: {
+        is_published: true
+      },
+      orderBy: {
+        date: 'desc'
+      }
     });
-    if (!response.ok) throw new Error('Failed to fetch news');
-    return await response.json();
+    return news;
   } catch (error) {
     console.error('Error fetching news:', error);
     return [];

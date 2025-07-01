@@ -581,7 +581,7 @@ export default function ReservationsPage() {
       {/* 確認モーダル */}
       {showConfirmModal && selectedOrder && (
         <div 
-          className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setShowConfirmModal(false)}
         >
           <div 
@@ -615,7 +615,7 @@ export default function ReservationsPage() {
       {/* 時間編集モーダル */}
       {showTimeEditModal && selectedOrder && (
         <div 
-          className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-[9999]"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
           onClick={() => setShowTimeEditModal(false)}
         >
           <div 
