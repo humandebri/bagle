@@ -23,7 +23,7 @@ async function checkAdminAuth() {
 // PUT /api/admin/business-calendar/recurring-holidays/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 管理者権限チェック
@@ -31,7 +31,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
     const { name, type, pattern, is_active } = body;
 
@@ -70,7 +70,7 @@ export async function PUT(
 // DELETE /api/admin/business-calendar/recurring-holidays/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 管理者権限チェック
@@ -78,7 +78,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = params.id;
+    const { id } = await params;
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase
       .from('recurring_holidays')

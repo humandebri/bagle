@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { useAuthSession } from '@/lib/auth-compat';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { DateTimeDisplay_order } from '@/components/DateTimeDisplay';
 import { STORE_PHONE_NUMBER } from '@/lib/constants';
 

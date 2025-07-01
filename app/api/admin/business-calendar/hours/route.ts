@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server-api';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
@@ -28,7 +28,7 @@ function formatTime(time: string | null): string | null {
 }
 
 // GET /api/admin/business-calendar/hours
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 管理者権限チェック
     if (!await checkAdminAuth()) {

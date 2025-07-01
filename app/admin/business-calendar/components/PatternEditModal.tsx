@@ -48,7 +48,7 @@ export default function PatternEditModal({ isOpen, onClose, pattern, onSave }: P
   }, [pattern]);
 
   const handleSave = () => {
-    const patternData: any = {
+    const patternData: RecurringHoliday['pattern'] = {
       dayOfWeek
     };
     

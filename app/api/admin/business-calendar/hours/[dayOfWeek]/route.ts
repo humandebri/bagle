@@ -32,7 +32,7 @@ function formatTime(time: string | null): string | null {
 // PUT /api/admin/business-calendar/hours/[dayOfWeek]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { dayOfWeek: string } }
+  { params }: { params: Promise<{ dayOfWeek: string }> }
 ) {
   try {
     // 管理者権限チェック
@@ -40,7 +40,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dayOfWeek = parseInt(params.dayOfWeek);
+    const { dayOfWeek: dayOfWeekParam } = await params;
+    const dayOfWeek = parseInt(dayOfWeekParam);
     
     // 曜日の妥当性チェック（0-6）
     if (isNaN(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {

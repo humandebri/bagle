@@ -21,7 +21,7 @@ async function checkAdminAuth() {
 }
 
 // GET /api/admin/business-calendar/recurring-holidays
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 管理者権限チェック
     if (!await checkAdminAuth()) {

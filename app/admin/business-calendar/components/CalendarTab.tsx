@@ -6,7 +6,6 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import jaLocale from '@fullcalendar/core/locales/ja';
 import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
 import DateEditModal from './DateEditModal';
 import BulkOperationModal from './BulkOperationModal';
 import BulkDeleteModal from './BulkDeleteModal';
