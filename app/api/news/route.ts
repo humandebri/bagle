@@ -1,18 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/news - 公開中のニュースを最新2件取得
-export async function GET() {
+// GET /api/news - 公開中のニュースを取得
+export async function GET(request: Request) {
   try {
-    const news = await prisma.news.findMany({
+    const { searchParams } = new URL(request.url);
+    const limit = searchParams.get('limit');
+    
+    const query = {
       where: {
         is_published: true
       },
       orderBy: {
-        date: 'desc'
+        date: 'desc' as const
       },
-      take: 2
-    });
+      ...(limit && { take: parseInt(limit) })
+    };
+    
+    const news = await prisma.news.findMany(query);
 
     return NextResponse.json(news);
   } catch (error) {

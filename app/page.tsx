@@ -15,7 +15,7 @@ type NewsItem = {
 
 async function getNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/news`, {
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/news?limit=2`, {
       cache: 'no-store'
     });
     if (!response.ok) throw new Error('Failed to fetch news');
