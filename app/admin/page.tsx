@@ -24,6 +24,7 @@ interface Order {
   shipped: boolean;
   customer_name?: string;
   phone?: string;
+  payment_status?: string;
 }
 
 // OrderItem型を定義
@@ -281,7 +282,7 @@ export default function AdminDashboard() {
                   <tr className="bg-gray-50">
                     <th className="px-2 py-1 text-left">注文ID</th>
                     <th className="px-2 py-1 text-left">顧客名</th>
-                    <th className="px-2 py-1 text-left">電話番号</th>
+                    <th className="px-2 py-1 text-left">ステータス</th>
                     <th className="px-2 py-1 text-left">注文日</th>
                     <th className="px-2 py-1 text-left">合計金額</th>
                     <th className="px-2 py-1 text-left">配送日</th>
@@ -296,9 +297,17 @@ export default function AdminDashboard() {
                     <tr key={order.id} className="border-b">
                       <td className="px-2 py-1 text-left">{order.id.slice(0, 8)}...</td>
                       <td className="px-2 py-1 text-left">{order.customer_name || '-'}</td>
-                      <td className="px-2 py-1 text-left">{order.phone || '-'}</td>
+                      <td className="px-2 py-1 text-left">
+                        {order.payment_status === 'cancelled' ? (
+                          <span className="text-red-600 font-semibold">キャンセル済み</span>
+                        ) : (
+                          <span className="text-green-600">受付中</span>
+                        )}
+                      </td>
                       <td className="px-2 py-1 text-left">{order.created_at?.slice(0, 10)}</td>
-                      <td className="px-2 py-1 text-left">{formatYen(order.total_price)}</td>
+                      <td className={`px-2 py-1 text-left ${order.payment_status === 'cancelled' ? 'text-red-600 line-through' : ''}`}>
+                        {formatYen(order.total_price)}
+                      </td>
                       <td className="px-2 py-1 text-left">{order.dispatch_date || '-'}</td>
                       <td className="px-2 py-1 text-left">{order.dispatch_time || '-'}</td>
                       <td className="px-2 py-1 text-left">{order.shipped ? '発送済み' : '未発送'}</td>
