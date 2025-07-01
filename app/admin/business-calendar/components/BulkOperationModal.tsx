@@ -35,6 +35,17 @@ export default function BulkOperationModal({
   const [isSpecial, setIsSpecial] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [setOthersAsClosed, setSetOthersAsClosed] = useState(false);
+
+  // モーダルを閉じる時にstateをリセット
+  const handleClose = () => {
+    setSelectedWeekdays([]);
+    setIsOpen営業(true);
+    setIsSpecial(false);
+    setNotes('');
+    setSetOthersAsClosed(false);
+    onClose();
+  };
 
   const handleWeekdayToggle = (weekday: number) => {
     setSelectedWeekdays(prev => 
@@ -63,7 +74,8 @@ export default function BulkOperationModal({
           weekdays: selectedWeekdays,
           is_open: isOpen営業,
           is_special: isSpecial,
-          notes: notes || null
+          notes: notes || null,
+          set_others_as_closed: setOthersAsClosed
         }),
       });
 
@@ -74,7 +86,7 @@ export default function BulkOperationModal({
       const result = await response.json();
       toast.success(`${result.count}件の営業日を更新しました`);
       onComplete();
-      onClose();
+      handleClose();
     } catch (error) {
       console.error('Error bulk updating:', error);
       toast.error('一括更新に失敗しました');
@@ -86,7 +98,7 @@ export default function BulkOperationModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="営業日の一括設定"
     >
       <div className="space-y-4">
@@ -132,6 +144,14 @@ export default function BulkOperationModal({
               <span className="text-sm">特別営業日として設定</span>
             </label>
           )}
+          
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <Checkbox
+              checked={setOthersAsClosed}
+              onCheckedChange={(checked) => setSetOthersAsClosed(!!checked)}
+            />
+            <span className="text-sm">選択した曜日以外を休業日として設定</span>
+          </label>
         </div>
 
         <div>
@@ -148,7 +168,7 @@ export default function BulkOperationModal({
         <div className="flex justify-end space-x-2 pt-4">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
           >
             キャンセル

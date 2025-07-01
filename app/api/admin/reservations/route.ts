@@ -55,11 +55,14 @@ export async function GET(req: Request) {
       .from('orders')
       .select(`
         id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
-        profiles(first_name,last_name,phone), shipped
+        profiles(first_name,last_name,phone), shipped, payment_status
       `)
       .order('created_at', { ascending: order !== 'desc' });
 
     if (id) q = q.eq('id', id);
+
+    // Exclude cancelled orders
+    q = q.neq('payment_status', 'cancelled');
 
     if (start && end) q = q.gte('dispatch_date', start).lte('dispatch_date', end);
     if (st && st === 'shipped') q = q.eq('shipped', true);

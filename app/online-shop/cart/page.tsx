@@ -12,8 +12,7 @@ import { MAX_BAGEL_PER_ITEM } from "@/lib/constants";
 export default function CartPage() {
     
   const items = useCartStore((state) => state.items); 
-  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const finalAmount = totalAmount + 10; 
+  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0); 
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
 
@@ -101,13 +100,9 @@ export default function CartPage() {
                     
 
           {/* 合計金額 */}
-          <div className="flex justify-between  text-xl ">
-            <p>袋代</p>
-            <p>¥10</p>
-          </div>
-          <div className="flex -mt-2 justify-between text-xl ">
+          <div className="flex justify-between text-xl mt-6">
             <p>合計</p>
-            <p>¥{finalAmount.toLocaleString()}</p>
+            <p>¥{totalAmount.toLocaleString()}</p>
           </div>
 
         <div className="hidden md:flex justify-end mt-8">
@@ -115,7 +110,7 @@ export default function CartPage() {
                 onClick={handleCheckout}
                 className="flex-shrink-0 w-64 py-4 px-6 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
             >
-                注文 ¥{finalAmount.toLocaleString()}
+                注文 ¥{totalAmount.toLocaleString()}
             </button>
           </div>
         </div>

@@ -31,6 +31,7 @@ type Order = {
   customer_name: string | null;
   phone: string | null;
   created_at: string;
+  payment_status?: string;
 };
 
 type DateClickArg = {

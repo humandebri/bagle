@@ -11,6 +11,7 @@ interface Order {
   customer_name?: string;
   dispatch_date?: string;
   dispatch_time?: string;
+  payment_status?: string;
 }
 
 function formatYen(num: number) {

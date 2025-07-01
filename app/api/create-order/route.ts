@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const calculatedTotalPrice = total_price || items.reduce((s: number, i: OrderItem) => s + i.price * i.quantity, 0) + 10;
+    const calculatedTotalPrice = total_price || items.reduce((s: number, i: OrderItem) => s + i.price * i.quantity, 0);
 
     const { data, error } = await supabaseAdmin.from('orders').insert({
       user_id,

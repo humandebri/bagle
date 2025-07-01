@@ -40,8 +40,6 @@ export default function BagelModalPage() {
   const existingItem = cartItems.find((item) => item.id.toString() === id);
   const [quantity, setQuantity] = useState(existingItem ? existingItem.quantity : 1);
 
-  const [loaded, setLoaded] = useState(false);
-
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -63,10 +61,8 @@ export default function BagelModalPage() {
   }, [id]);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 100);
     document.body.style.overflow = "hidden";
     return () => {
-      clearTimeout(t);
       document.body.style.overflow = "";
     };
   }, []);
@@ -119,7 +115,7 @@ export default function BagelModalPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-10 md:bg-black/50 flex items-center justify-center">
+      <div className="fixed inset-0 z-10 bg-black/50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
       </div>
     );
@@ -136,15 +132,11 @@ export default function BagelModalPage() {
   return (
     <>
     <div
-      className={`fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center transition-opacity duration-200 ${
-        loaded ? "opacity-100" : "opacity-0"
-      }`}
+      className="fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center transition-opacity duration-150"
       onClick={handleBackgroundClick}
     >
     <div
-      className={`relative  mx-auto w-full max-w-md md:max-w-[500px] bg-white transition-all duration-200 ${
-        loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
-      }`}
+      className="relative mx-auto w-full max-w-md md:max-w-[500px] bg-white"
       onClick={(e) => e.stopPropagation()}
     >
         {/* ✕ボタン（スマホのみ表示） */}
@@ -163,9 +155,7 @@ export default function BagelModalPage() {
               src={product.image ?? "/placeholder.svg"}
               alt={product.name}
               fill
-              className={`object-cover transition-all duration-700 ${
-                loaded ? "opacity-100 blur-0 scale-100" : "opacity-70 blur-sm scale-105"
-              }`}
+              className="object-cover"
             />
           </div>
         </div>

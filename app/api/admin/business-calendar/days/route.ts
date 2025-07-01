@@ -140,7 +140,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { year, month, weekdays, is_open, is_special, notes } = body;
+    const { year, month, weekdays, is_open, is_special, notes, set_others_as_closed } = body;
 
     if (!year || month === undefined || !Array.isArray(weekdays)) {
       return NextResponse.json(
@@ -152,16 +152,21 @@ export async function PUT(request: NextRequest) {
     // 指定された月の全日付を取得
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0);
-    const dates = [];
+    const selectedDates = [];
+    const otherDates = [];
 
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
       const dayOfWeek = date.getDay();
+      const dateString = new Date(date).toISOString().split('T')[0];
+      
       if (weekdays.includes(dayOfWeek)) {
-        dates.push(new Date(date).toISOString().split('T')[0]);
+        selectedDates.push(dateString);
+      } else {
+        otherDates.push(dateString);
       }
     }
 
-    if (dates.length === 0) {
+    if (selectedDates.length === 0 && !set_others_as_closed) {
       return NextResponse.json(
         { error: '指定された条件に該当する日付がありません', code: 'NO_DATES' },
         { status: 400 }
@@ -169,14 +174,34 @@ export async function PUT(request: NextRequest) {
     }
 
     // 管理者用のSupabaseクライアントを使用（RLSをバイパス）
-    // 一括upsert
-    const businessDays = dates.map(date => ({
-      date,
-      is_open: is_open ?? true,
-      is_special: is_special ?? false,
-      notes: notes || null,
-      updated_at: new Date().toISOString()
-    }));
+    // 一括upsert用のデータを準備
+    const businessDays = [];
+
+    // 選択された曜日の日付を設定
+    if (selectedDates.length > 0) {
+      selectedDates.forEach(date => {
+        businessDays.push({
+          date,
+          is_open: is_open ?? true,
+          is_special: is_special ?? false,
+          notes: notes || null,
+          updated_at: new Date().toISOString()
+        });
+      });
+    }
+
+    // 選択された曜日以外を休業日に設定
+    if (set_others_as_closed && otherDates.length > 0) {
+      otherDates.forEach(date => {
+        businessDays.push({
+          date,
+          is_open: false,
+          is_special: false,
+          notes: null,
+          updated_at: new Date().toISOString()
+        });
+      });
+    }
 
     const { data, error } = await supabaseAdmin
       .from('business_days')
@@ -195,8 +220,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      count: data?.length || 0,
-      dates: dates 
+      count: data?.length || 0
     });
   } catch (error) {
     console.error('Unexpected error:', error);

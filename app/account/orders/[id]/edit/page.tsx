@@ -166,7 +166,7 @@ export default function EditOrderPage() {
   };
 
   const save = async () => {
-    const newTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 10;
+    const newTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     try {
       // 1. 古いタイムスロットを解放
       const { data: oldSlot, error: oldSlotError } = await supabase
@@ -290,7 +290,7 @@ export default function EditOrderPage() {
     </div>
   );
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 10;
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <>
@@ -366,11 +366,7 @@ export default function EditOrderPage() {
               </div>
             ))}
 
-            <div className="flex justify-between">
-              <p>袋代</p>
-              <p>¥10</p>
-            </div>
-            <div className="flex -mt-2 justify-between text-xl">
+            <div className="flex justify-between text-xl mt-4">
               <p>合計</p>
               <p>¥{total.toLocaleString()}</p>
             </div>

@@ -52,8 +52,6 @@ export async function POST(request: Request) {
               `).join('')}
             </ul>
             <div style="text-align: right; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
-              <p style="margin-bottom: 5px;">小計: ¥${(orderDetails.total - 10).toLocaleString()}</p>
-              <p style="margin-bottom: 5px;">袋代: ¥10</p>
               <p style="font-weight: bold;">合計金額: ¥${orderDetails.total.toLocaleString()}</p>
             </div>
           </div>

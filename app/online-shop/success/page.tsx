@@ -16,7 +16,7 @@ export default function SuccessPage() {
   const resetCart = useCartStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0) + 10;
+  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   useEffect(() => {
     const parseJapaneseDate = (jpDate: string): string => {
