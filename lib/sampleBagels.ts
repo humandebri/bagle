@@ -8,7 +8,7 @@ export const sampleBagels = [
       深い風味を引き出しています。そのまま食べても、トーストしてバターを塗っても、
       サンドイッチにしても美味しくお召し上がりいただけます。`,
     price: 350,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: ["vegan", "vegetarian"],
   },
   {
@@ -19,7 +19,7 @@ export const sampleBagels = [
       じっくりと発酵させることで深い風味を引き出しています。朝食やランチに最適で、クリームチーズや
       アボカドとの相性が抜群です。`,
     price: 370,
-    image: "/images/panpkin.jpg",
+    image: "/images/IMG_1867.jpeg",
     tags: ["vegan", "vegetarian"],
   },
   {
@@ -29,7 +29,7 @@ export const sampleBagels = [
     longDescription: `甘くスパイシーなシナモンと、ジューシーなレーズンが練り込まれたベーグル。
       軽くトーストしてバターを塗れば、朝食やティータイムにぴったりの一品です。`,
     price: 390,
-    image: "/images/panpkin.jpg",
+    image: "/images/5C56F05A-C8F2-4A1B-8263-906836D633B8.jpeg",
     tags: ["vegetarian"],
   },
   {
@@ -39,7 +39,7 @@ export const sampleBagels = [
     longDescription: `甘酸っぱいブルーベリーをたっぷり練り込んだベーグル。
       トーストするとフルーツの香りが引き立ち、クリームチーズとの相性も抜群です。`,
     price: 400,
-    image: "/images/panpkin.jpg",
+    image: "/images/IMG_1867.jpeg",
     tags: ["vegetarian"],
   },
   {
@@ -49,7 +49,7 @@ export const sampleBagels = [
     longDescription: `表面にローストしたオニオンをたっぷりトッピング。
       そのまま食べても、サンドイッチにしても旨味がしっかり。`,
     price: 380,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: [],
   },
   {
@@ -58,7 +58,7 @@ export const sampleBagels = [
     description: "ガーリックのパンチが効いた風味豊かな一品。",
     longDescription: `ガーリック好きにおすすめのベーグル。パスタやスープと合わせると食事パンとしても満足感◎。`,
     price: 390,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: [],
   },
   {
@@ -68,7 +68,7 @@ export const sampleBagels = [
     longDescription: `甘さ控えめのダークチョコレートを練り込んで焼き上げたベーグル。
       甘党の方にぴったりです。`,
     price: 420,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: ["vegetarian"],
   },
   {
@@ -78,7 +78,7 @@ export const sampleBagels = [
     longDescription: `京都宇治産の抹茶を使用した、香り高い和風ベーグル。
       あんこやホイップと合わせると絶品です。`,
     price: 410,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: ["vegetarian"],
   },
   {
@@ -88,7 +88,7 @@ export const sampleBagels = [
     longDescription: `チーズ好きにはたまらない、表面にチーズをのせて焼き上げたベーグル。
       軽くトーストするとさらに香ばしさがアップします。`,
     price: 430,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: [],
   },
   {
@@ -98,7 +98,7 @@ export const sampleBagels = [
     longDescription: `セミドライトマトとバジルを練り込んだ、食欲をそそるベーグル。
       パスタやサラダと合わせてどうぞ。`,
     price: 410,
-    image: "/images/panpkin.jpg",
+    image: "/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg",
     tags: ["vegetarian"],
   },
 ];

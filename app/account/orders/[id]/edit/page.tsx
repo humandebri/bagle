@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCartStore } from '@/store/cart-store';
 
 type OrderItem = {
   name: string;
@@ -37,8 +36,6 @@ export default function EditOrderPage() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [availableDates, setAvailableDates] = useState<DateOption[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [originalTotal, setOriginalTotal] = useState(0);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
   const TIME_RANGE_MAP = {
     '11:00': '11:15',
@@ -90,15 +87,13 @@ export default function EditOrderPage() {
       setItems((data.items as OrderItem[]).filter((item) => item.quantity > 0));
       setDispatchDate(data.dispatch_date);
       setDispatchTime(data.dispatch_time);
-      setOriginalTotal(data.total_price);
-      setPaymentIntentId(data.payment_intent_id);
 
       // 編集可能かどうかを判定
       const today = new Date();
       const targetDate = new Date(data.dispatch_date);
       targetDate.setDate(targetDate.getDate() - 1); // 2日前まで
 
-      setEditAllowed(!data.shipped && today <= targetDate && data.payment_status !== 'cancelled');
+      setEditAllowed(!data.shipped && today <= targetDate);
 
       setLoading(false);
     };
@@ -221,76 +216,17 @@ export default function EditOrderPage() {
         throw new Error('新しいタイムスロットの予約に失敗しました');
       }
 
-      // 3. 金額が変更された場合はStripeの注文をキャンセルし新規発行
-      if (newTotal !== originalTotal) {
-        // 3-1. 既存PaymentIntentをキャンセル
-        if (paymentIntentId) {
-          const cancelRes = await fetch('/api/cancel-payment-intent', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentIntentId }),
-          });
-          if (!cancelRes.ok) {
-            const err = await cancelRes.json();
-            throw new Error(err.error || '支払いのキャンセルに失敗しました');
-          }
-        }
-        // 3-2. customerId取得
-        const customerRes = await fetch('/api/create-or-get-customer', { method: 'POST' });
-        const { customerId, error: customerError } = await customerRes.json();
-        if (!customerId) throw new Error(customerError || 'カスタマー情報の取得に失敗しました');
-        // 3-3. paymentMethodId取得（Zustandストアから or Stripeから取得）
-        let paymentMethodId = useCartStore.getState().paymentMethodId;
-        if (!paymentMethodId) {
-          // StripeのAPIから取得
-          const pmRes = await fetch('/api/get-payment-method', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentIntentId }),
-          });
-          const pmData = await pmRes.json();
-          if (!pmRes.ok || !pmData.paymentMethodId) {
-            throw new Error(pmData.error || '支払い方法の取得に失敗しました');
-          }
-          paymentMethodId = pmData.paymentMethodId;
-        }
-        // 3-4. 新しいPaymentIntent作成
-        const createRes = await fetch('/api/create-payment-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: newTotal,
-            customerId,
-            paymentMethodId,
-          }),
-        });
-        const { paymentIntent, error: createError } = await createRes.json();
-        if (!paymentIntent?.id) throw new Error(createError || '新しい支払いの作成に失敗しました');
-        // 3-5. DB更新（新しいpayment_intent_idで）
-        const { error: orderError } = await supabase
-          .from('orders')
-          .update({
-            items,
-            dispatch_date: dispatchDate,
-            dispatch_time: dispatchTime,
-            total_price: newTotal,
-            payment_intent_id: paymentIntent.id,
-          })
-          .eq('id', id);
-        if (orderError) throw new Error('注文情報の更新に失敗しました');
-      } else {
-        // 金額が変わらない場合は従来通り
-        const { error: orderError } = await supabase
-          .from('orders')
-          .update({
-            items,
-            dispatch_date: dispatchDate,
-            dispatch_time: dispatchTime,
-            total_price: newTotal,
-          })
-          .eq('id', id);
-        if (orderError) throw new Error('注文情報の更新に失敗しました');
-      }
+      // 3. 注文情報を更新
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({
+          items,
+          dispatch_date: dispatchDate,
+          dispatch_time: dispatchTime,
+          total_price: newTotal,
+        })
+        .eq('id', id);
+      if (orderError) throw new Error('注文情報の更新に失敗しました');
       router.push(`/account/orders/${id}`);
     } catch (error) {
       console.error('注文更新エラーの詳細:', error);
@@ -326,29 +262,7 @@ export default function EditOrderPage() {
         throw new Error('タイムスロットの解放に失敗しました');
       }
 
-      // 2. Stripeの支払いをキャンセル
-      if (paymentIntentId) {
-        const response = await fetch('/api/cancel-payment-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentIntentId,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || '支払いのキャンセルに失敗しました');
-        }
-
-        // すでにキャンセル済みの場合は警告を表示
-        if (data.message) {
-          console.warn(data.message);
-        }
-      }
-
-      // 3. 注文をキャンセル状態に更新
+      // 2. 注文をキャンセル状態に更新
       const { error: orderError } = await supabase
         .from('orders')
         .update({ 
@@ -372,7 +286,7 @@ export default function EditOrderPage() {
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
   if (!editAllowed) return (
     <div className="p-6 text-center text-gray-500">
-      {paymentIntentId ? 'この注文は編集できません。' : 'この注文はキャンセルされています。'}
+      この注文は編集できません。
     </div>
   );
 

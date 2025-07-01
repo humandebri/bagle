@@ -1,15 +1,14 @@
 'use client';
 
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useAuthSession } from '@/lib/auth-compat';
+import { clientSignIn, clientSignOut } from '@/lib/next-auth-client';
 import { FcGoogle } from 'react-icons/fc'; 
 import { PowerIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
-
 export default function Account() {
   const router = useRouter();
-
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAuthSession();
 
   if (status === 'loading') {
     return <div className="p-8 text-center">ロード中...</div>;
@@ -21,17 +20,17 @@ export default function Account() {
         <h1 className="text-2xl text-gray-400 mb-6">マイページ</h1>
         <p className="mb-4">ログインして注文履歴を確認したり、アカウント情報を管理しましょう。</p>
         <button 
-          onClick={() => signIn('google')}
+          onClick={() => clientSignIn('google')}
           className="w-full py-3 bg-white border border-gray-300 shadow-sm text-gray-700 flex items-center justify-center gap-3 hover:bg-gray-50"
         >
-          <FcGoogle className="w-5 h-5" /> {/* ← react-iconsのカラーGoogleアイコン */}
+          <FcGoogle className="w-5 h-5" />
           Googleでログイン
         </button>
       </div>
     );
   }
 
-  const isAdmin = (session?.user as { role?: string })?.role === 'admin';
+  const isAdmin = session?.user?.role === 'admin';
 
   return (
     <div className="max-w-2xl mx-auto p-8">
@@ -40,7 +39,7 @@ export default function Account() {
   
         <button
           className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-sky-100 hover:text-[#887c5d]"
-          onClick={() => signOut()}
+          onClick={() => clientSignOut()}
         >
           <PowerIcon className="w-6 h-6" />
         </button>
@@ -65,7 +64,6 @@ export default function Account() {
           className="w-full text-left p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
         >
           <h2 className="text-xl mb-4 text-gray-400">注文情報</h2>
-          {/* 説明など入れてもOK */}
         </button>
 
         <button
@@ -73,7 +71,6 @@ export default function Account() {
           className="w-full text-left p-6 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
         >
           <h2 className="text-xl mb-4 text-gray-400">アカウント情報</h2>
-          {/* 説明など入れてもOK */}
         </button>
       </div>
     </div>

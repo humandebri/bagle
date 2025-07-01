@@ -22,8 +22,6 @@ type CartState = {
   clearCart: () => void;
   setDispatchDate: (date: string | null) => void;
   setDispatchTime: (time: string | null) => void;
-  paymentMethodId: string | null;
-  setPaymentMethodId: (id: string) => void;
   reset: () => void;
 };
 
@@ -65,16 +63,12 @@ export const useCartStore = create<CartState>()(
       setDispatchDate: (date) => set({ dispatchDate: date }),
 
       setDispatchTime: (time) => set({ dispatchTime: time }),
-      
-      paymentMethodId: null,
-      setPaymentMethodId: (id) => set({ paymentMethodId: id }),
 
       reset: () =>
         set({
           items: [],
           dispatchDate: initialDispatchDate,
           dispatchTime: initialDispatchTime,
-          paymentMethodId: null,
         }),
     }),
     {

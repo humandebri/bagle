@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase' // ✅ 修正ポイント：共通クライアントを使う
+import DeleteConfirmModal from '@/components/DeleteConfirmModal'
+import { toast } from 'sonner'
 
 type Product = {
   id: string
@@ -26,6 +28,10 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
   const fetchCategories = useCallback(async () => {
@@ -49,7 +55,8 @@ export default function AdminProductsPage() {
   const fetchProducts = useCallback(async () => {
     console.log('📥 fetchProducts called')
     try {
-      const response = await fetch('/api/products')
+      // 管理画面では全商品を表示するため all=true パラメータを追加
+      const response = await fetch('/api/products?all=true')
       if (!response.ok) {
         throw new Error('商品データの取得に失敗しました')
       }
@@ -132,6 +139,74 @@ export default function AdminProductsPage() {
     }
   }
 
+  const handleDeleteClick = (id: string, name: string) => {
+    setDeleteTarget({ id, name })
+    setDeleteModalOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/products/${deleteTarget.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '削除に失敗しました')
+      }
+
+      toast.success(data.message)
+      setDeleteModalOpen(false)
+      setDeleteTarget(null)
+      fetchProducts()
+    } catch (error) {
+      console.error('削除エラー:', error)
+      toast.error(error instanceof Error ? error.message : '削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleBulkDeleteClick = () => {
+    if (selectedProducts.length === 0) return
+    setBulkDeleteModalOpen(true)
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch('/api/products/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productIds: selectedProducts }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '削除に失敗しました')
+      }
+
+      toast.success(data.message)
+      setBulkDeleteModalOpen(false)
+      setSelectedProducts([])
+      fetchProducts()
+    } catch (error) {
+      console.error('一括削除エラー:', error)
+      toast.error(error instanceof Error ? error.message : '削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (loading) {
     return <div>Loading...</div>
   }
@@ -154,6 +229,12 @@ export default function AdminProductsPage() {
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 border border-gray-300"
               >
                 選択商品を販売再開
+              </button>
+              <button
+                onClick={handleBulkDeleteClick}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 border border-red-700"
+              >
+                選択商品を削除 ({selectedProducts.length})
               </button>
             </>
           )}
@@ -236,9 +317,15 @@ export default function AdminProductsPage() {
                   </button>
                   <button
                     onClick={() => handleToggleAvailability(product.id, product.is_available)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-yellow-600 hover:text-yellow-700 mr-4"
                   >
                     {product.is_available ? '販売停止' : '販売再開'}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(product.id, product.name)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    削除
                   </button>
                 </td>
               </tr>
@@ -246,6 +333,30 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* 個別削除確認モーダル */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false)
+          setDeleteTarget(null)
+        }}
+        onConfirm={handleDelete}
+        title="商品を削除しますか？"
+        message={`商品「${deleteTarget?.name || ''}」を削除します。この操作は取り消せません。`}
+        isDeleting={isDeleting}
+      />
+
+      {/* 一括削除確認モーダル */}
+      <DeleteConfirmModal
+        isOpen={bulkDeleteModalOpen}
+        onClose={() => setBulkDeleteModalOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="選択した商品を削除しますか？"
+        message={`${selectedProducts.length}件の商品を削除します。この操作は取り消せません。`}
+        confirmText={`${selectedProducts.length}件を削除`}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

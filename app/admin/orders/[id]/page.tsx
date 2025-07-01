@@ -13,7 +13,6 @@ interface Order {
   user_id: string;
   created_at: string;
   total_price: number;
-  payment_status: string;
   shipped: boolean;
   customer_name?: string;
   dispatch_date?: string;
@@ -67,13 +66,6 @@ export default function OrderDetailPage() {
             <div><span className="font-semibold">配送日:</span> {order.dispatch_date || '-'}</div>
             <div><span className="font-semibold">配送時間:</span> {order.dispatch_time || '-'}</div>
             <div><span className="font-semibold">合計金額:</span> {formatYen(order.total_price)}</div>
-            <div><span className="font-semibold">決済状況:</span> {
-              order.payment_status === 'confirmed'
-                ? '成功'
-                : (order.payment_status === 'canceled' || order.payment_status === 'cancelled')
-                  ? 'キャンセル'
-                  : '未決済'
-            }</div>
             <div><span className="font-semibold">発送状況:</span> {order.shipped ? '発送済み' : '未発送'}</div>
           </div>
           <div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { useSession } from 'next-auth/react'
+import { useAuthSession } from '@/lib/auth-compat'
 
 type Category = {
   id: string
@@ -15,9 +15,9 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [newCategoryName, setNewCategoryName] = useState('')
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { data: session, status } = useAuthSession()
 
-  const userId = (session?.user as { id: string })?.id;
+  const userId = session?.user?.id;
   // 未ログインならログイン画面に飛ばす
   useEffect(() => {
     if (status === 'unauthenticated') {

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuthSession } from '@/lib/auth-compat';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { data: session } = useAuthSession();
   const router = useRouter();
 
   const [firstName, setFirstName] = useState('');
@@ -24,7 +24,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const userId = (session?.user as { id: string })?.id;
+      const userId = session?.user?.id;
       const userEmail = session?.user?.email;
 
       if (!userId || !userEmail) {

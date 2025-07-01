@@ -1,5 +1,3 @@
-import StripeProvider from './stripe-provider';
-
 export default function OnlineShopLayout({
   children,
   modal,
@@ -9,9 +7,7 @@ export default function OnlineShopLayout({
 }) {
   return (
     <>
-    <StripeProvider>
       {children}
-      </StripeProvider>
       {modal}
     </>
   );

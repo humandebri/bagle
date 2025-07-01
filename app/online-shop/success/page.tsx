@@ -4,11 +4,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
-import { useSession } from 'next-auth/react';
+import { useAuthSession } from '@/lib/auth-compat';
 
 export default function SuccessPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session } = useAuthSession();
 
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
@@ -59,6 +59,11 @@ export default function SuccessPage() {
       <p className="text-gray-700 mb-8">
         ご注文を受け付けました。受取日時に店舗までお越しください。
       </p>
+      <div className="bg-gray-100 p-4 mb-8 rounded-lg">
+        <p className="text-sm text-gray-700">
+          <strong>お支払いについて：</strong>店頭にて現金でお支払いください。
+        </p>
+      </div>
       <button
         onClick={() => router.push('/online-shop')}
         className="bg-[#887c5d] text-white px-6 py-3 rounded hover:bg-[#6e624a]"

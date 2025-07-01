@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-04-30.basil',
-});
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,10 +11,10 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServerSupabaseClient();
 
-    // 注文情報を取得
+    // 注文が存在するか確認
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('payment_intent_id, payment_status')
+      .select('id')
       .eq('id', orderId)
       .single();
 
@@ -27,32 +22,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '注文が見つかりません' }, { status: 404 });
     }
 
-    // 決済処理が必要な場合（pendingの場合）
-    if (order.payment_status === 'pending') {
-      try {
-        // 決済を実行
-        await stripe.paymentIntents.capture(order.payment_intent_id);
-      } catch (err: unknown) {
-        if (
-          err instanceof Stripe.errors.StripeError &&
-          err.code === 'payment_intent_unexpected_state'
-        ) {
-          console.log('決済は既にキャプチャ済みです');
-        } else {
-          console.error('決済エラー:', err);
-          return NextResponse.json(
-            { error: '決済処理に失敗しました' },
-            { status: 500 }
-          );
-        }
-      }
-    }
-
     // 注文ステータスを更新
     const { error: updateError } = await supabase
       .from('orders')
       .update({
-        payment_status: 'confirmed',
         shipped: true
       })
       .eq('id', orderId);

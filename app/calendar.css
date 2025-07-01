@@ -1,0 +1,132 @@
+/* FullCalendar カスタムスタイル */
+.fc {
+  font-family: inherit;
+}
+
+.fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.fc-button {
+  background-color: #887c5d !important;
+  border-color: #887c5d !important;
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 500 !important;
+}
+
+.fc-button:hover {
+  background-color: #6b5f48 !important;
+  border-color: #6b5f48 !important;
+}
+
+.fc-button-active {
+  background-color: #6b5f48 !important;
+  border-color: #6b5f48 !important;
+}
+
+.fc-day-sun .fc-daygrid-day-number {
+  color: #ef4444;
+}
+
+.fc-day-sat .fc-daygrid-day-number {
+  color: #3b82f6;
+}
+
+.fc-event {
+  border: none !important;
+  padding: 2px 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.fc-daygrid-event {
+  white-space: normal;
+}
+
+/* モバイル対応 */
+@media (max-width: 640px) {
+  .fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .fc-toolbar-title {
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
+  }
+  
+  .fc-button {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .fc-button-group {
+    margin: 0 !important;
+  }
+  
+  /* カレンダーの日付セルを小さく */
+  .fc-daygrid-day {
+    min-height: 3rem !important;
+  }
+  
+  .fc-daygrid-day-number {
+    font-size: 0.875rem;
+    padding: 2px;
+  }
+  
+  .fc-event {
+    font-size: 0.75rem !important;
+    padding: 1px 2px !important;
+  }
+  
+  /* 曜日ヘッダーを短く */
+  .fc-col-header-cell {
+    padding: 0.5rem 0 !important;
+    font-size: 0.875rem;
+  }
+  
+  /* カレンダー全体のパディング調整 */
+  .fc-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 管理画面のカレンダースタイル */
+.fc-admin-wrapper .fc-event {
+  cursor: pointer;
+}
+
+.fc-admin-wrapper .fc-daygrid-day {
+  cursor: pointer;
+}
+
+.fc-admin-wrapper .fc-daygrid-day:hover {
+  background-color: #f3f4f6;
+}
+
+/* カスタムイベントコンテンツ */
+.fc-event-custom {
+  padding: 2px 4px;
+}
+
+.fc-event-title {
+  font-weight: 500;
+}
+
+.fc-event-notes {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  opacity: 0.9;
+  word-break: break-all;
+  margin-top: 2px;
+}
+
+/* メモがあるイベントにアイコンを表示 */
+.fc-event.has-notes .fc-event-title::after {
+  content: " 📝";
+  font-size: 0.75rem;
+}

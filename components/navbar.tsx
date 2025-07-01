@@ -9,7 +9,7 @@ const links = [
   { name: 'HOME', href: '/' },
   { name: 'MENU', href: '/menu' },
   { name: 'ACCESS', href: '/access' },
-  { name: 'SHOP', href: '/online-shop' },
+  { name: 'ORDER', href: '/online-shop' },
   { name: 'ACCOUNT', href: '/account' },
 ];
 
