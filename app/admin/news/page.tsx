@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
 import { toast } from 'sonner'
 import { Plus, Edit, Trash2 } from 'lucide-react'
@@ -23,7 +22,6 @@ export default function AdminNewsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ date: '', title: '', content: '', is_published: true })
-  const router = useRouter()
 
   const fetchNews = useCallback(async () => {
     try {
@@ -273,8 +271,9 @@ export default function AdminNewsPage() {
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        itemName={deleteTarget?.title || ''}
-        isLoading={isDeleting}
+        title="ニュースを削除"
+        message={`「${deleteTarget?.title || ''}」を削除してもよろしいですか？`}
+        isDeleting={isDeleting}
       />
     </div>
   )

@@ -5,7 +5,15 @@ import Link from 'next/link';
 import { Clock, MapPin, Phone, Calendar } from 'lucide-react';
 import './calendar.css';
 
-async function getNews() {
+type NewsItem = {
+  id: string;
+  date: string;
+  title: string;
+  content: string;
+  is_published: boolean;
+}
+
+async function getNews(): Promise<NewsItem[]> {
   try {
     const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/news`, {
       cache: 'no-store'
@@ -181,7 +189,7 @@ export default async function Home() {
           
           <div className="grid md:grid-cols-2 gap-6">
             {news.length > 0 ? (
-              news.map((item: any) => (
+              news.map((item) => (
                 <article key={item.id} className="group cursor-pointer h-full">
                   <div className="bg-gray-50 p-8 rounded-lg hover:shadow-lg transition duration-300 h-full flex flex-col">
                     <time className="text-sm text-[#887c5d] font-medium">{item.date}</time>
