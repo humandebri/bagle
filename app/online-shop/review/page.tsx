@@ -52,9 +52,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(false);
   const [dateError, setDateError] = useState('');
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const bagFee = 10;
-  const total = subtotal + bagFee;
+  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   // 日付のバリデーション
   useEffect(() => {
@@ -174,10 +172,6 @@ export default function ReviewPage() {
               <p className="self-end">¥{(item.price * item.quantity).toLocaleString()}</p>
             </div>
           ))}
-          <div className="flex justify-between text-sm border-b pb-2">
-            <p className="font-medium">袋代</p>
-            <p>¥{bagFee}</p>
-          </div>
         </div>
       )}
       </div>

@@ -55,7 +55,7 @@ export async function GET(req: Request) {
       .from('orders')
       .select(`
         id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
-        profiles(first_name,last_name,phone), shipped
+        profiles(first_name,last_name,phone), shipped, payment_status
       `)
       .order('created_at', { ascending: order !== 'desc' });
 
