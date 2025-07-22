@@ -51,7 +51,7 @@ export default async function Home() {
         {/* コンテンツ */}
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 sm:mb-6 tracking-wider">
-            Bagel Shop
+            BAGELラクダピクニック
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-white mb-6 sm:mb-8 font-light">
             松山城ロープウェイ乗り場すぐそば
@@ -62,10 +62,10 @@ export default async function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/menu"
+              href="/online-shop"
               className="px-6 sm:px-8 py-3 bg-white text-[#887c5d] font-semibold rounded-full hover:bg-gray-100 transition duration-300"
             >
-              メニューを見る
+              オンラインショップへ
             </Link>
             <Link
               href="/online-shop"

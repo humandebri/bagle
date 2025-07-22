@@ -21,11 +21,7 @@ export const authOptions: AuthOptions = {
       authorization: {
         params: {
           access_type: 'offline',
-          // ✅ クエリに admin=1 が含まれていれば prompt: 'consent'
-          prompt: typeof globalThis?.URLSearchParams !== 'undefined' &&
-                  new URLSearchParams(globalThis.location?.search || '').get('admin') === '1'
-                    ? 'consent'
-                    : 'select_account', // ← 通常はこれでUX改善
+          prompt: 'select_account',
         },
       },
     }),

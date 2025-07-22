@@ -26,11 +26,10 @@ export default function Access() {
 
                 <p className="mb-2"> 愛媛県松山市大街道3丁目 7-3 1F</p>
 
-                <p className="mb-1">ロープウェイ乗り場から徒歩1分</p>
+                <p className="mb-1">ロープウェイ乗り場から徒歩１分くらい</p>
 
 
-                <p className="mb-1">駅　A1出口より徒歩15分</p>
-                <p className="mb-1">駅）B2出口より徒歩12分</p>
+                <p className="mb-1">大街道電停から徒歩4分くらい</p>
 
 
                 {/* <p className="mb-1">*写真は旧店舗のものです。</p> */}
