@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
 import { toast } from 'sonner'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react'
 
 type News = {
   id: string
@@ -94,6 +94,27 @@ export default function AdminNewsPage() {
     } catch (error) {
       console.error('更新エラー:', error)
       toast.error('更新に失敗しました')
+    }
+  }
+
+  const togglePublish = async (item: News) => {
+    try {
+      const response = await fetch(`/api/admin/news/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...item,
+          is_published: !item.is_published
+        })
+      })
+      
+      if (!response.ok) throw new Error('更新に失敗しました')
+      
+      toast.success(item.is_published ? 'ニュースを非公開にしました' : 'ニュースを公開しました')
+      fetchNews()
+    } catch (error) {
+      console.error('公開状態の更新エラー:', error)
+      toast.error('公開状態の更新に失敗しました')
     }
   }
 
@@ -241,7 +262,21 @@ export default function AdminNewsPage() {
                       </div>
                     </td>
                     <td className="p-2 text-center">
-                      <span className={`inline-block w-2 h-2 rounded-full ${item.is_published ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      <button
+                        onClick={() => togglePublish(item)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          item.is_published 
+                            ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        title={item.is_published ? '非公開にする' : '公開する'}
+                      >
+                        {item.is_published ? (
+                          <Eye className="w-4 h-4" />
+                        ) : (
+                          <EyeOff className="w-4 h-4" />
+                        )}
+                      </button>
                     </td>
                     <td className="p-2">
                       <div className="flex gap-2 justify-center">
