@@ -7,10 +7,17 @@ import { ja } from 'date-fns/locale';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function GET(request: Request) {
+interface OrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export async function GET() {
   try {
     // Vercel cronからのリクエストであることを確認
-    const authHeader = headers().get('authorization');
+    const headersList = await headers();
+    const authHeader = headersList.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -50,7 +57,7 @@ export async function GET(request: Request) {
       }
 
       // itemsをパース（JSONとして保存されている）
-      const items = order.items as any[];
+      const items = (order.items as unknown) as OrderItem[];
       const dispatchDate = format(new Date(order.dispatch_date + 'T00:00:00+09:00'), 'yyyy年MM月dd日(E)', { locale: ja });
       const dispatchTime = formatTimeRange(order.dispatch_time || '');
 
@@ -87,7 +94,7 @@ export async function GET(request: Request) {
               <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
                 <h2 style="color: #887c5d; margin-top: 0; border-bottom: 2px solid #887c5d; padding-bottom: 10px;">■ご注文内容</h2>
                 <ul style="list-style: none; padding: 0;">
-                  ${items.map((item: any) => `
+                  ${items.map((item: OrderItem) => `
                     <li style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 3px;">
                       <span style="font-weight: bold;">${item.name}</span> × ${item.quantity}個
                       <span style="float: right;">¥${(item.price * item.quantity).toLocaleString()}</span>
