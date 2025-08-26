@@ -1,17 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { headers } from 'next/headers';
 
-// 管理者権限チェック
+// Edgeランタイム対策
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// 管理者権限チェック（デバッグ付き）
 async function checkAdminAuth() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // 本番環境デバッグログ
+    if (process.env.NODE_ENV === 'production') {
+      const headersList = await headers();
+      console.log('[DEBUG] checkAdminAuth:', {
+        env: process.env.NODE_ENV,
+        nextauth_url: process.env.NEXTAUTH_URL,
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id || 'no-id',
+        userRole: session?.user ? (session.user as { role?: string }).role : 'no-role',
+        cookies: headersList.get('cookie')?.substring(0, 100) || 'no-cookies',
+        authorization: headersList.get('authorization')?.substring(0, 50) || 'no-auth'
+      });
+    }
+    
+    if (!session?.user) {
+      return false;
+    }
+    
+    // session.user.role で管理者チェック
+    return (session.user as { role?: string }).role === 'admin';
+  } catch (error) {
+    console.error('[ERROR] checkAdminAuth failed:', error);
     return false;
   }
-  
-  // session.user.role で管理者チェック
-  return (session.user as { role?: string }).role === 'admin';
 }
 
 // GET /api/admin/news - 管理用ニュース一覧（全て）

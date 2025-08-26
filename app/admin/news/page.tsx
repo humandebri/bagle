@@ -25,7 +25,10 @@ export default function AdminNewsPage() {
 
   const fetchNews = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/news')
+      const response = await fetch('/api/admin/news', { 
+        cache: 'no-store',
+        credentials: 'include' 
+      })
       if (!response.ok) throw new Error('Failed to fetch news')
       const data = await response.json()
       setNews(data)
