@@ -88,6 +88,31 @@ export default function CheckoutPage() {
       toast.error('日時を選択してください');
       return;
     }
+    
+    // 時間枠の有効性をチェック
+    try {
+      const response = await fetch('/api/validate-time-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dispatchDate, time: dispatchTime }),
+      });
+
+      const result = await response.json();
+
+      if (!result.valid) {
+        toast.error("選択された時間枠は利用できません", {
+          description: result.message,
+        });
+        // 無効な時間枠の場合、日時選択画面へ誘導
+        router.push('/online-shop/dispatch');
+        return;
+      }
+    } catch {
+      toast.error("エラーが発生しました", {
+        description: "もう一度お試しください。",
+      });
+      return;
+    }
   
     const userId = session?.user?.id;
     const userMail = session?.user?.email;
@@ -106,7 +131,9 @@ export default function CheckoutPage() {
     });
   
     if (error) {
-      console.error('プロフィール保存失敗:', error.message);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('プロフィール保存失敗:', error.message);
+      }
       return;
     }
   

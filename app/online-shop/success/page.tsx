@@ -46,7 +46,9 @@ export default function SuccessPage() {
         resetCart();
       } else {
         const data = await res.json();
-        console.error('注文保存エラー:', data.error || '不明なエラー');
+        if (process.env.NODE_ENV === 'development') {
+          console.error('注文保存エラー:', data.error || '不明なエラー');
+        }
       }
     };
 

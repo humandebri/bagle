@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { EventClickArg } from '@fullcalendar/core';
 import jaLocale from '@fullcalendar/core/locales/ja';
 import { format } from 'date-fns';
 import DateEditModal from './DateEditModal';
@@ -115,6 +116,20 @@ export default function CalendarTab() {
     setIsModalOpen(true);
   };
 
+  // イベント（営業日/休業日の文言）をクリックしたとき
+  const handleEventClick = (info: EventClickArg) => {
+    const clickedDate = info.event.startStr;
+    setSelectedDate(clickedDate);
+    setSelectedDay({
+      id: info.event.id,
+      date: clickedDate,
+      is_open: info.event.extendedProps.is_open,
+      is_special: info.event.extendedProps.is_special,
+      notes: info.event.extendedProps.notes
+    });
+    setIsModalOpen(true);
+  };
+
   // 営業日情報を保存
   const handleSave = async (data: Omit<BusinessDay, 'id'>) => {
     try {
@@ -180,6 +195,7 @@ export default function CalendarTab() {
           }}
           events={events}
           dateClick={handleDateClick}
+          eventClick={handleEventClick}
           height="auto"
           datesSet={(arg) => {
             setCurrentMonth(arg.view.currentStart);

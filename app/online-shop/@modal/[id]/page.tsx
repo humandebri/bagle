@@ -50,7 +50,9 @@ export default function BagelModalPage() {
         const data = await response.json();
         setProduct(data);
       } catch (error) {
-        console.error('商品データの取得に失敗しました:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('商品データの取得に失敗しました:', error);
+        }
         setError('商品データの取得に失敗しました');
       } finally {
         setLoading(false);
@@ -121,7 +123,7 @@ export default function BagelModalPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-10 bg-black/50 flex items-center justify-center">
+      <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
       </div>
     );
@@ -138,7 +140,7 @@ export default function BagelModalPage() {
   return (
     <>
     <div
-      className="fixed inset-0 z-10 md:bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center transition-opacity duration-150"
+      className="fixed inset-0 z-[60] bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center transition-opacity duration-150"
       onClick={handleBackgroundClick}
     >
     <div
@@ -207,7 +209,7 @@ export default function BagelModalPage() {
 
       {/* スマホだけ 固定フッター */}
     </div>
-  <div className="md:hidden z-20 fixed bottom-0  w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white">
+  <div className="md:hidden z-[70] fixed bottom-0  w-full max-w-md px-6 py-3 border-t border-gray-300 bg-white">
     <button
       onClick={add}
       className="w-full py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"

@@ -142,7 +142,7 @@ export default function DispatchModalPage() {
   /* ---------- JSX (省略なしで掲載) ---------- */
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
       onClick={close}
     >
       <div
@@ -228,7 +228,7 @@ export default function DispatchModalPage() {
         </div>
 
         {/* スマホ固定フッター */}
-        <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-50">
+        <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-[70]">
           <button
             className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
             onClick={close}

@@ -40,7 +40,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: '商品データの取得に失敗しました' }, { status: 500 });
     }
 
-    return NextResponse.json(products);
+    // カテゴリーの表示順を定義
+    const categoryOrder: Record<string, number> = {
+      'シンプルベーグル': 1,
+      'フィリングベーグル': 2,
+      'クリームチーズ': 3,
+      '定番商品': 4,
+      'ベーグルサンドイッチ': 5,
+    };
+
+    // カテゴリーごとにグループ化して価格順でソート
+    const sortedProducts = products?.sort((a, b) => {
+      // @ts-expect-error Supabase returns category differently
+      const categoryA = a.category?.name || '';
+      // @ts-expect-error Supabase returns category differently
+      const categoryB = b.category?.name || '';
+      const orderA = categoryOrder[categoryA] || 999;
+      const orderB = categoryOrder[categoryB] || 999;
+      
+      // まずカテゴリー順で比較
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // 同じカテゴリーなら価格順（安い順）で比較
+      return a.price - b.price;
+    });
+
+    return NextResponse.json(sortedProducts);
   } catch (error) {
     console.error('Error in products API:', error);
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });

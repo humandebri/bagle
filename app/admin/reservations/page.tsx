@@ -425,7 +425,7 @@ export default function ReservationsPage() {
             <div className="flex gap-2">
               {selectedDate && (
                 <button
-                  onClick={() => window.open(`/admin/reservations/print?date=${selectedDate}`, '_blank')}
+                  onClick={() => window.open(`/print/reservations?date=${selectedDate}`, '_blank')}
                   className="p-2 text-blue-600 hover:text-blue-700"
                   title="印刷用ページを開く"
                 >

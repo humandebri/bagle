@@ -5,6 +5,7 @@ import {Shippori_Mincho , Montserrat} from 'next/font/google'
 import Navbar from "@/components/navbar"
 import { Toaster } from "@/components/ui/sonner"
 import { Providers } from './providers'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 
 const montserrat = Montserrat({ 
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   description: 'ベーグルのご来店予約が出来ます',
   openGraph: {
     title: 'ラクダピクニック',
-    images: ['/images/bagle_shop_image.jpg'],
+    images: ['/images/shop_display.jpg'],
   }
 };
 
@@ -46,6 +47,7 @@ export default function RootLayout({
           <Navbar />
           {children}
           <Toaster />
+          <SpeedInsights />
         </Providers>
       </body>
     </html>

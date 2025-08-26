@@ -14,24 +14,35 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const isHomepage = pathname === '/';
+  
+  // 印刷ページでは表示しない
+  if (pathname?.startsWith('/print/')) {
+    return null;
+  }
 
   return (
-    <nav className="relative z-10 flex justify-center items-center h-16 px-4 text-gray-300 bg-[#887c5d]/70">
-      <div className="flex space-x-8 sm:text-[18px]">
+    <nav className={clsx(
+      "flex justify-center items-center h-16 px-4 z-50",
+      isHomepage ? "absolute top-0 left-0 right-0 bg-transparent text-white" : "relative z-10 text-gray-300 bg-[#887c5d]/70"
+    )}>
+      <div className="flex space-x-8 text-xl sm:text-2xl">
         {links.map((link) => (
           <Link
             key={link.name}
             href={link.href}
             className={clsx(
-              'hover:text-gray-700 transition',
+              'transition',
+              isHomepage ? 'hover:text-gray-300' : 'hover:text-gray-700',
               {
-                'text-gray-50': pathname === link.href,
+                'text-gray-50': pathname === link.href && !isHomepage,
+                'text-white font-semibold': pathname === link.href && isHomepage,
               }
             )}
           >
             {/* --- 通常はテキスト、ACCOUNTだけアイコン --- */}
             {link.name === 'ACCOUNT' ? (
-              <User className="w-5 h-5" />
+              <User className="w-6 h-6" />
             ) : (
               <p>{link.name}</p>
             )}

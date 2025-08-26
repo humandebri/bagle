@@ -37,7 +37,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen">
       {/* ヒーローセクション */}
-      <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center">
+      <section className="relative h-screen min-h-[600px] flex items-center justify-center">
         {/* 背景画像 */}
         <Image
           src="/images/IMG_1867.jpeg"
@@ -65,7 +65,7 @@ export default async function Home() {
               href="/online-shop"
               className="px-6 sm:px-8 py-3 bg-[#887c5d] text-white font-semibold rounded-full hover:bg-[#6b5f48] transition duration-300"
             >
-              オンライン予約
+              オンライン予約はこちら
             </Link>
           </div>
         </div>

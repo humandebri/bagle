@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, AlertCircle } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
 import { Bagel } from '@/components/BagelCard';
@@ -30,6 +30,8 @@ export default function OnlineShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableSlotsCount, setAvailableSlotsCount] = useState<number | null>(null);
+  const [checkingSlots, setCheckingSlots] = useState(true);
   
   const cartItems = useCartStore((s) => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
@@ -45,11 +47,34 @@ export default function OnlineShopPage() {
       const data = await response.json();
       setProducts(data);
     } catch (error) {
-      console.error('商品データの取得に失敗しました:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('商品データの取得に失敗しました:', error);
+      }
       setError('商品データの取得に失敗しました');
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAvailableSlots = async () => {
+    try {
+      const response = await fetch('/api/get-available-slots');
+      if (!response.ok) {
+        throw new Error('時間枠データの取得に失敗しました');
+      }
+      const data = await response.json();
+      
+      // 利用可能な時間枠（is_available: true）の数をカウント
+      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean }) => slot.is_available).length || 0;
+      setAvailableSlotsCount(availableCount);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('時間枠データの取得に失敗しました:', error);
+      }
+      setAvailableSlotsCount(0);
+    } finally {
+      setCheckingSlots(false);
     }
   };
 
@@ -59,6 +84,14 @@ export default function OnlineShopPage() {
 
   useEffect(() => {
     fetchProducts();
+    checkAvailableSlots();
+    
+    // 30秒ごとに利用可能な時間枠をチェック
+    const interval = setInterval(() => {
+      checkAvailableSlots();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const convertToBagels = (products: Product[]): Bagel[] => {
@@ -85,13 +118,51 @@ export default function OnlineShopPage() {
     <>
       <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-24">
         <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+          {/* 予約枠の警告メッセージ */}
+          {!checkingSlots && availableSlotsCount === 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="text-red-800 font-semibold mb-1">
+                    現在、予約可能な時間枠がありません
+                  </p>
+                  <p className="text-red-700">
+                    申し訳ございませんが、現在全ての予約枠が埋まっております。
+                    後日、再度ご確認いただくか、直接店舗へお問い合わせください。
+                  </p>
+                  <p className="text-red-600 mt-2 text-xs">
+                    ※ 商品の確認は可能ですが、現時点では予約はできません。
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* 予約枠が少ない場合の警告 */}
+          {!checkingSlots && availableSlotsCount !== null && availableSlotsCount > 0 && availableSlotsCount <= 3 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="text-amber-800 font-semibold">
+                    残りわずか！予約可能な時間枠は残り{availableSlotsCount}枠です
+                  </p>
+                  <p className="text-amber-700">
+                    お早めのご予約をおすすめします。
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
             {mounted && (
               <button onClick={() => router.push(`/online-shop/dispatch`)}>
                 {dispatchDate && dispatchTime ? (
                   <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
                 ) : (
-                  "日時を選択してください"
+                  "予約日時を選択してください"
                 )}
               </button>
             )}
@@ -113,6 +184,7 @@ export default function OnlineShopPage() {
         <CartFooter
           totalQuantity={totalQuantity}
           onClick={() => router.push('/online-shop/cart')}
+          disabled={availableSlotsCount === 0}
         />
       )}
     </>
@@ -122,28 +194,65 @@ export default function OnlineShopPage() {
 function CartFooter({
   totalQuantity,
   onClick,
+  disabled = false,
 }: {
   totalQuantity: number;
   onClick: () => void;
+  disabled?: boolean;
 }) {
+  const handleClick = async () => {
+    // カートボタンクリック時に再度時間枠をチェック
+    try {
+      const response = await fetch('/api/get-available-slots');
+      if (!response.ok) {
+        throw new Error('時間枠データの取得に失敗しました');
+      }
+      const data = await response.json();
+      
+      // 利用可能な時間枠をチェック
+      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean }) => slot.is_available).length || 0;
+      
+      if (availableCount === 0) {
+        // react-hot-toastの代わりにalertを使用（または別のトースト実装）
+        alert('申し訳ございません。現在予約可能な時間枠がありません。');
+        return;
+      }
+      
+      // 時間枠が利用可能な場合のみカートページへ遷移
+      onClick();
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('時間枠の確認に失敗しました:', error);
+      }
+      // エラーの場合も一応カートページへ遷移を許可
+      onClick();
+    }
+  };
+
   return (
     <div className="fixed bottom-0 w-full bg-white flex justify-center z-20 border-t border-gray-300 md:bottom-4 md:right-4 md:w-auto md:border md:shadow-lg md:rounded-lg">
       <div className="w-full max-w-md px-6 py-3 md:px-4 md:py-2">
-        <button
-          onClick={onClick}
-          className="w-full relative py-3 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center md:px-8 md:py-2 md:text-base"
-          aria-label="カートを見る"
-        >
-          カートを見る
-          <div className="flex absolute right-6 md:relative md:right-0 md:ml-2">
-            <ShoppingBag className="h-5 w-5" />
-            {totalQuantity > 0 && (
-              <span className="ml-1 w-5 h-5 flex items-center justify-center">
-                {totalQuantity}
-              </span>
-            )}
+        {disabled ? (
+          <div className="w-full py-3 bg-gray-400 text-gray-200 text-xl flex items-center justify-center md:px-8 md:py-2 md:text-base cursor-not-allowed">
+            予約枠がありません
           </div>
-        </button>
+        ) : (
+          <button
+            onClick={handleClick}
+            className="w-full relative py-3 bg-[#887c5d] text-gray-200 hover:bg-gray-600 text-xl flex items-center justify-center md:px-8 md:py-2 md:text-base"
+            aria-label="カートを見る"
+          >
+            カートを見る
+            <div className="flex absolute right-6 md:relative md:right-0 md:ml-2">
+              <ShoppingBag className="h-5 w-5" />
+              {totalQuantity > 0 && (
+                <span className="ml-1 w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
+              )}
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );

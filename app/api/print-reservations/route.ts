@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/auth';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
@@ -13,12 +11,6 @@ const supabase = createClient(
 
 export async function GET(req: Request) {
   try {
-    // 認証チェック
-    const session = await getServerSession(authOptions);
-    if (!session || (session.user as { role?: string }).role !== 'admin') {
-      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
-    }
-
     // URLパラメータから日付を取得
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date');

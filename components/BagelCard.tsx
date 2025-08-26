@@ -16,7 +16,7 @@ export type Bagel = {
 export default function BagelCard({ bagel }: { bagel: Bagel }) {
   return (
     /* ▲ 3fr : 1fr で分割するグリッドを作る */
-    <div className="grid grid-cols-[2fr_1fr] md:grid-cols-[5fr_3fr]  border-b  md:border  h-full">
+    <div className="grid grid-cols-[2fr_1fr] md:grid-cols-[5fr_3fr]  border-b  md:border  h-full shadow-md">
       {/* ------- 左 3fr ------- */}
       <div className="flex flex-col p-4">
         <h4 className="text-2xl text-gray-400 mb-2">{bagel.name}</h4>

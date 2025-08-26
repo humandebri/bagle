@@ -81,6 +81,25 @@ export default function ReviewPage() {
     setLoading(true);
 
     try {
+      // 時間枠の有効性を最終チェック
+      const validateResponse = await fetch('/api/validate-time-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dispatchDate, time: dispatchTime }),
+      });
+
+      const validateResult = await validateResponse.json();
+
+      if (!validateResult.valid) {
+        setError(validateResult.message);
+        setLoading(false);
+        // 無効な時間枠の場合、日時選択画面へ誘導
+        setTimeout(() => {
+          router.push('/online-shop/dispatch');
+        }, 2000);
+        return;
+      }
+
       // 注文情報を保存
       const orderRes = await fetch('/api/create-order', {
         method: 'POST',
@@ -97,7 +116,9 @@ export default function ReviewPage() {
       const orderData = await orderRes.json();
 
       if (!orderRes.ok) {
-        console.error('注文保存エラー:', orderData);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('注文保存エラー:', orderData);
+        }
         setError(orderData.details || orderData.error || '注文情報の保存に失敗しました');
         setLoading(false);
         return;
@@ -121,13 +142,15 @@ export default function ReviewPage() {
         }),
       });
 
-      if (!emailRes.ok) {
+      if (!emailRes.ok && process.env.NODE_ENV === 'development') {
         console.error('メール送信エラー:', await emailRes.json());
       }
 
       router.push('/online-shop/success');
     } catch (error) {
-      console.error('注文処理エラー:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('注文処理エラー:', error);
+      }
       setError('注文処理中にエラーが発生しました');
       setLoading(false);
     }
@@ -147,7 +170,7 @@ export default function ReviewPage() {
       {/* 受取場所 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お持ち帰り場所</h3>
-        〒790-0004 愛媛県松山市大街道３丁目７−３
+        〒790-0004 愛媛県松山市大街道3丁目 7-3 1F
       </div>
 
       {/* 支払い方法 */}

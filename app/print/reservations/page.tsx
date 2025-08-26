@@ -37,7 +37,7 @@ function PrintPageContent() {
 
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`/api/admin/reservations/print?date=${date}`);
+        const response = await fetch(`/api/print-reservations?date=${date}`);
         if (!response.ok) {
           throw new Error('データの取得に失敗しました');
         }
@@ -105,13 +105,14 @@ function PrintPageContent() {
   });
 
   return (
-    <div className="print:m-0 print:p-4 p-8">
+    <div className="print:m-0 print:p-4 p-8 bg-white min-h-screen">
       {/* 印刷時のスタイル */}
       <style jsx global>{`
         @media print {
           body {
             margin: 0;
             padding: 0;
+            background: white !important;
           }
           .no-print {
             display: none !important;
@@ -125,6 +126,10 @@ function PrintPageContent() {
           @page {
             margin: 1cm;
           }
+        }
+        /* 画面表示時もクリーンな見た目に */
+        body {
+          background: white !important;
         }
       `}</style>
 
@@ -232,8 +237,14 @@ function PrintPageContent() {
           印刷する
         </button>
         <button
-          onClick={() => window.close()}
+          onClick={() => window.history.back()}
           className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        >
+          戻る
+        </button>
+        <button
+          onClick={() => window.close()}
+          className="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
         >
           閉じる
         </button>
