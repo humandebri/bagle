@@ -31,7 +31,7 @@ const DEFAULT_TIME_SLOTS = [
   { time: "11:15", max_capacity: 1 },
   { time: "11:30", max_capacity: 1 },
   { time: "11:45", max_capacity: 1 },
-  { time: "12:00", max_capacity: 10 },
+  { time: "12:00", max_capacity: 8 },  // 12:00-15:00の枠として8人
 ];
 
 // デフォルト日付計算
@@ -153,18 +153,18 @@ export default function TimeSlotsPage() {
   }, [timeSlots]);
 
   // 一括作成対象枠数カウント
-  function countBulkCreateSlots(start: string, end: string, days: number[], times: string[]) {
+  function countBulkCreateSlots(start: string, end: string, days: number[], timeSlotsList: typeof DEFAULT_TIME_SLOTS) {
     let count = 0;
     const s = new Date(start);
     const e = new Date(end);
     for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
       if (days.includes(d.getDay())) {
-        count += times.length;
+        count += timeSlotsList.length;
       }
     }
     return count;
   }
-  const bulkCreateCount = countBulkCreateSlots(bulkStart, bulkEnd, bulkDays, bulkTimeSlots.map(s => s.time));
+  const bulkCreateCount = countBulkCreateSlots(bulkStart, bulkEnd, bulkDays, bulkTimeSlots);
 
   // 一括作成ハンドラ
   async function handleBulkCreate(e: React.FormEvent) {
@@ -421,7 +421,7 @@ export default function TimeSlotsPage() {
                 </div>
               </div>
               <div className={bulkCreateCount >= 100 ? "text-red-600 font-bold" : "text-gray-600"}>
-                この条件で作成される枠数：{bulkCreateCount}件{bulkCreateCount >= 100 && "（作りすぎ注意！）"}
+                この条件で作成される時間帯枠：{bulkCreateCount}件{bulkCreateCount >= 100 && "（作りすぎ注意！）"}
               </div>
               {bulkError && <div className="text-red-600">{bulkError}</div>}
               <div className="flex gap-2 justify-end">

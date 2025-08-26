@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
-import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM } from "@/lib/constants";
+import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING } from "@/lib/constants";
 import { toast } from "sonner";
 
 type Product = {
@@ -76,9 +76,15 @@ export default function BagelModalPage() {
       });
       return;
     }
-    if (quantity >= MAX_BAGEL_PER_ITEM) {
-      toast.error(`1つの商品は最大${MAX_BAGEL_PER_ITEM}個までです！`, {
-        description: `お一人様1つの商品につき${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+    
+    // カテゴリーに応じた制限値を設定
+    const maxPerItem = product?.category?.name === 'フィリングベーグル' 
+      ? MAX_BAGEL_PER_ITEM_FILLING 
+      : MAX_BAGEL_PER_ITEM;
+    
+    if (quantity >= maxPerItem) {
+      toast.error(`1つの商品は最大${maxPerItem}個までです！`, {
+        description: `${product?.category?.name === 'フィリングベーグル' ? 'フィリングベーグルは' : 'お一人様1つの商品につき'}${maxPerItem}個までご予約いただけます。`,
       });
       return;
     }
@@ -102,7 +108,7 @@ export default function BagelModalPage() {
     }
 
     addToCart(
-      { id: product.id, name: product.name, price: product.price, quantity }
+      { id: product.id, name: product.name, price: product.price, quantity, category: product.category }
     );
     close();
   };
@@ -149,15 +155,13 @@ export default function BagelModalPage() {
         </button>
 
         {/* 画像 */}
-        <div className=" flex justify-center">
-          <div className="relative w-80 h-70  overflow-hidden">
-            <Image
-              src={product.image ?? "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover"
-            />
-          </div>
+        <div className="relative w-full aspect-square overflow-hidden">
+          <Image
+            src={product.image ?? "/placeholder.svg"}
+            alt={product.name}
+            fill
+            className="object-cover"
+          />
         </div>
 
         {/* 情報 */}

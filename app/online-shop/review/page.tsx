@@ -147,13 +147,13 @@ export default function ReviewPage() {
       {/* 受取場所 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お持ち帰り場所</h3>
-        店舗住所
+        〒790-0004 愛媛県松山市大街道３丁目７−３
       </div>
 
       {/* 支払い方法 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お支払い方法</h3>
-        <p className="text-sm">店頭にて現金でお支払いください</p>
+        <p className="mb-2">店頭にてお支払いください</p>
       </div>
 
       {/* 商品リスト */}
@@ -165,9 +165,9 @@ export default function ReviewPage() {
             <div key={item.id} className="flex justify-between text-sm border-b pb-2">
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-gray-500">¥{item.price.toLocaleString()} × {item.quantity}</p>
+                <p className="text-gray-500">¥{item.price.toLocaleString()}(税込) × {item.quantity}</p>
               </div>
-              <p className="self-end">¥{(item.price * item.quantity).toLocaleString()}</p>
+              <p className="self-end">¥{(item.price * item.quantity).toLocaleString()}(税込)</p>
             </div>
           ))}
         </div>
@@ -177,14 +177,15 @@ export default function ReviewPage() {
       {!loading && (
         <div className="flex justify-between text-lg mb-4">
           <p>合計</p>
-          <p>¥{total.toLocaleString()}</p>
+          <p>¥{total.toLocaleString()}(税込)</p>
         </div>
       )}
       {/* キャンセルポリシーの案内 */}
       <div className="text-xs text-gray-600 mt-4 pb-5 leading-relaxed space-y-1">
-        <p>・キャンセルは <strong>2日前まで無料</strong> でマイページから可能です。</p>
+        <p>・キャンセルは <strong>2日前まで</strong> でマイページから可能です。</p>
         <p>・前日のキャンセルはお電話（📞{STORE_PHONE_NUMBER}）でご連絡ください。</p>
-        <p><strong>・当日以降のキャンセルには、キャンセル料（商品代金の100%）を頂戴します。</strong></p>
+        <p><strong>・当日どうしても来られなくなった場合は、冷凍での後日のお引き取りをお願い致します。必ずお電話でご連絡下さい。
+        </strong></p>
       </div>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}

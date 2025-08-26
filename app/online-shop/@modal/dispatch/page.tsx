@@ -171,6 +171,9 @@ export default function DispatchModalPage() {
 
           <div className="mb-6">
             <h2 className="mb-1">お持ち帰り時間</h2>
+            <p className="text-sm text-gray-500 mt-2">
+              ※ 各日の予約は1週間前の同じ曜日0時から開始されます
+            </p>
           </div>
 
           {/* 日付選択 */}
@@ -186,11 +189,17 @@ export default function DispatchModalPage() {
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {availableDates.map(({ iso, label }) => (
-                  <SelectItem key={iso} value={iso}>
-                    {label}
-                  </SelectItem>
-                ))}
+                {availableDates.length > 0 ? (
+                  availableDates.map(({ iso, label }) => (
+                    <SelectItem key={iso} value={iso}>
+                      {label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    現在予約可能な日付がありません
+                  </div>
+                )}
               </SelectContent>
             </Select>
           </div>

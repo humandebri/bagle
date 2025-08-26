@@ -10,7 +10,8 @@ import {
   PencilIcon, 
   TrashIcon,
   PlusIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline';
 import { DateTimeDisplay_order } from '@/components/DateTimeDisplay';
 import { supabase } from '@/lib/supabase';
@@ -421,8 +422,18 @@ export default function ReservationsPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               {selectedDate ? format(new Date(selectedDate), 'yyyy年MM月dd日', { locale: ja }) : '日付を選択'}
             </h2>
+            <div className="flex gap-2">
+              {selectedDate && (
+                <button
+                  onClick={() => window.open(`/admin/reservations/print?date=${selectedDate}`, '_blank')}
+                  className="p-2 text-blue-600 hover:text-blue-700"
+                  title="印刷用ページを開く"
+                >
+                  <PrinterIcon className="h-5 w-5" />
+                </button>
+              )}
             {selectedOrder && (
-              <div className="flex gap-2">
+              <>
                 {!selectedOrder.shipped && selectedOrder.payment_status !== 'cancelled' && (
                   <button
                     onClick={() => setShowConfirmModal(true)}
@@ -468,8 +479,9 @@ export default function ReservationsPage() {
                 >
                   <TrashIcon className="h-5 w-5" />
                 </button>
-              </div>
+              </>
             )}
+            </div>
           </div>
 
           {selectedDate && (

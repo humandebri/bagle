@@ -9,6 +9,9 @@ export type CartItem = {
   name: string;
   price: number;
   quantity: number;
+  category?: {
+    name: string;
+  };
 };
 
 // カートストアの型

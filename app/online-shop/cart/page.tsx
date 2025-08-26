@@ -4,7 +4,7 @@ import { useCartStore } from '@/store/cart-store';
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
-import { MAX_BAGEL_PER_ITEM } from "@/lib/constants";
+import { MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING } from "@/lib/constants";
 
 
 
@@ -83,9 +83,14 @@ export default function CartPage() {
                 <span className="flex-1 text-center text-xl text-gray-400">{item.quantity}</span>
 
                 <button onClick={() => {
-                  if (item.quantity >= MAX_BAGEL_PER_ITEM) {
-                    toast.error(`1つの商品は最大${MAX_BAGEL_PER_ITEM}個までです！`, {
-                      description: `お一人様1つの商品につき${MAX_BAGEL_PER_ITEM}個までご予約いただけます。`,
+                  // カテゴリーに応じた制限値を設定
+                  const maxPerItem = item.category?.name === 'フィリングベーグル' 
+                    ? MAX_BAGEL_PER_ITEM_FILLING 
+                    : MAX_BAGEL_PER_ITEM;
+                  
+                  if (item.quantity >= maxPerItem) {
+                    toast.error(`1つの商品は最大${maxPerItem}個までです！`, {
+                      description: `${item.category?.name === 'フィリングベーグル' ? 'フィリングベーグルは' : 'お一人様1つの商品につき'}${maxPerItem}個までご予約いただけます。`,
                     });
                     return;
                   }

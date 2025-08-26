@@ -37,7 +37,7 @@
 //   twoWeeksLater.setDate(today.getDate() + 14);
 
 //   const slots = [];
-//   for (let d = new Date(today); d <= twoWeeksLater; d.setDate(d.getDate() + 1)) {
+//   for (let d = new Date(today); d <= oneWeekLater; d.setDate(d.getDate() + 1)) {
 //     // 木曜日（4）と土曜日（6）のみ
 //     if (d.getDay() === 4 || d.getDay() === 6) {
 //       for (const slot of TIME_SLOTS) {
@@ -71,21 +71,19 @@ const TIME_SLOTS = [
   { time: '11:15', max_capacity: 1 },
   { time: '11:30', max_capacity: 1 },
   { time: '11:45', max_capacity: 1 },
-  { time: '12:00', max_capacity: 4 },
-  { time: '13:00', max_capacity: 3 },
-  { time: '14:00', max_capacity: 3 },
+  { time: '12:00', max_capacity: 8 },  // 12:00-15:00の枠として8人
 ];
 
-const DAYS_AHEAD = 14;
+const DAYS_AHEAD = 7; // 1週間分のスロットを生成
 
 async function seedTimeSlots() {
   const today = new Date();
-  const twoWeeksLater = new Date();
-  twoWeeksLater.setDate(today.getDate() + DAYS_AHEAD);
+  const oneWeekLater = new Date();
+  oneWeekLater.setDate(today.getDate() + DAYS_AHEAD);
 
   const slots = [];
 
-  for (let d = new Date(today); d <= twoWeeksLater; d.setDate(d.getDate() + 1)) {
+  for (let d = new Date(today); d <= oneWeekLater; d.setDate(d.getDate() + 1)) {
     if ([4, 6].includes(d.getDay())) {
       for (const slot of TIME_SLOTS) {
         slots.push({
@@ -99,6 +97,20 @@ async function seedTimeSlots() {
     }
   }
 
+  // 既存のデータをクリア（今日以降のデータを削除）
+  const { error: deleteError } = await supabaseAdmin
+    .from('time_slots')
+    .delete()
+    .gte('date', today.toISOString().split('T')[0]);
+  
+  if (deleteError) {
+    console.error('Error deleting existing time slots:', deleteError);
+    return;
+  }
+  
+  console.log('✅ Cleared existing time slots');
+
+  // 新しいデータを挿入
   const { error } = await supabaseAdmin
     .from('time_slots')
     .upsert(slots, { onConflict: 'date,time' });

@@ -61,7 +61,7 @@ export default function SuccessPage() {
       </p>
       <div className="bg-gray-100 p-4 mb-8 rounded-lg">
         <p className="text-sm text-gray-700">
-          <strong>お支払いについて：</strong>店頭にて現金でお支払いください。
+          <strong>お支払いについて：</strong>店頭にてお支払いください。
         </p>
       </div>
       <button

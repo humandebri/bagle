@@ -46,11 +46,11 @@ export default async function Home() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="absolute inset-0 "></div>
         
         {/* コンテンツ */}
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 sm:mb-6 tracking-wider">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 tracking-wider">
             BAGELラクダピクニック
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-white mb-6 sm:mb-8 font-light">
@@ -60,13 +60,7 @@ export default async function Home() {
             手作りの温もりと、素材へのこだわり。<br />
             毎日焼きたてのベーグルをお届けします。
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/online-shop"
-              className="px-6 sm:px-8 py-3 bg-white text-[#887c5d] font-semibold rounded-full hover:bg-gray-100 transition duration-300"
-            >
-              オンラインショップへ
-            </Link>
+          <div className="flex justify-center">
             <Link
               href="/online-shop"
               className="px-6 sm:px-8 py-3 bg-[#887c5d] text-white font-semibold rounded-full hover:bg-[#6b5f48] transition duration-300"
@@ -80,10 +74,6 @@ export default async function Home() {
       {/* コンセプトセクション */}
       <section className="py-12 sm:py-16 lg:py-20 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 mb-4">Our Story</h2>
-            <div className="w-24 h-1 bg-[#887c5d] mx-auto"></div>
-          </div>
           
           <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
             <div className="order-2 md:order-1">
@@ -132,7 +122,7 @@ export default async function Home() {
                 </div>
                 <div className="relative h-32 sm:h-40 md:h-48 rounded-lg overflow-hidden">
                   <Image
-                    src="/images/bagle_shop_image.jpg"
+                    src="/images/shop_display.jpg"
                     alt="店舗の様子"
                     fill
                     className="object-cover hover:scale-105 transition duration-300"
@@ -268,7 +258,7 @@ export default async function Home() {
             焼きたてベーグルをご自宅で
           </h2>
           <p className="text-lg text-white/90 mb-8">
-            オンラインで簡単予約。お好きな時間にお受け取りいただけます。
+            ベーグルのご来店予約が出来ます
           </p>
           <Link
             href="/online-shop"
