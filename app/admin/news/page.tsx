@@ -29,12 +29,18 @@ export default function AdminNewsPage() {
         cache: 'no-store',
         credentials: 'include' 
       })
-      if (!response.ok) throw new Error('Failed to fetch news')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('API Error Response:', errorData)
+        throw new Error(errorData.error || 'Failed to fetch news')
+      }
+      
       const data = await response.json()
       setNews(data)
     } catch (error) {
       console.error('ニュースの取得に失敗しました:', error)
-      toast.error('ニュースの取得に失敗しました')
+      toast.error(`ニュースの取得に失敗しました: ${(error as Error).message}`)
     } finally {
       setLoading(false)
     }
