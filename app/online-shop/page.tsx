@@ -145,8 +145,7 @@ export default function OnlineShopPage() {
                     現在、予約可能な時間枠がありません
                   </p>
                   <p className="text-red-700">
-                    申し訳ございませんが、現在全ての予約枠が埋まっております。
-                    後日、再度ご確認いただくか、直接店舗へお問い合わせください。
+                    後日、再度ご確認下さい。空き枠が出る場合もあります。
                   </p>
                   <p className="text-red-600 mt-2 text-xs">
                     ※ 商品の確認は可能ですが、現時点では予約はできません。

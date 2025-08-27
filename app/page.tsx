@@ -106,7 +106,7 @@ export default async function Home() {
                 </div>
                 <div className="relative h-32 sm:h-40 md:h-48 rounded-lg overflow-hidden">
                   <Image
-                    src="/images/IMG_1867.jpeg"
+                    src="/images/beagel_plane.jpg"
                     alt="手作りベーグル"
                     fill
                     className="object-cover hover:scale-105 transition duration-300"
