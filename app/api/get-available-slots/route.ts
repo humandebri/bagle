@@ -33,21 +33,14 @@ export async function GET() {
     // 予約開始制限をかける
     // 各日付について、ちょうど7日前の0時から予約可能
     const filteredTimeSlots = allTimeSlots.filter((slot) => {
-      // スロットの日付をJST時刻として解釈
-      const slotDateStr = slot.date + 'T00:00:00+09:00'; // JST明示
-      const slotDate = new Date(slotDateStr);
-      
-      // 7日前のJST 0時を正確に計算
-      // スロット日付から7日前の日付文字列を作成
-      const bookingStartDate = new Date(slotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      // JST 0:00に設定（日付文字列から再作成）
-      const year = bookingStartDate.getFullYear();
-      const month = String(bookingStartDate.getMonth() + 1).padStart(2, '0');
-      const day = String(bookingStartDate.getDate()).padStart(2, '0');
-      const bookingStartDateJST = new Date(`${year}-${month}-${day}T00:00:00+09:00`);
-      
-      // 現在時刻が予約開始時刻を過ぎているかチェック
-      return jstNow >= bookingStartDateJST;
+      // ① 「スロット日の JST 00:00」を "絶対時刻" として取得（UTCに固定される）
+      const slotStartJSTMs = Date.parse(`${slot.date}T00:00:00+09:00`);
+
+      // ② そこから 7 日（JSTはDSTが無いので 86400000ms×7 でOK）さかのぼる
+      const bookingStartJSTMs = slotStartJSTMs - 7 * 24 * 60 * 60 * 1000;
+
+      // ③ いま（UTCの現在時刻）と絶対時刻（JST 00:00 相当）を ms で比較
+      return Date.now() >= bookingStartJSTMs;
     });
 
     return NextResponse.json({ 
