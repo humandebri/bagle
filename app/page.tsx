@@ -50,7 +50,7 @@ export default async function Home() {
         
         {/* コンテンツ */}
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 tracking-wider">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 tracking-wider whitespace-nowrap">
             BAGELラクダピクニック
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-white mb-6 sm:mb-8 font-light">
