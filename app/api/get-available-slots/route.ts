@@ -37,13 +37,17 @@ export async function GET() {
       const slotDateStr = slot.date + 'T00:00:00+09:00'; // JST明示
       const slotDate = new Date(slotDateStr);
       
-      // スロットの日付のちょうど7日前の0時を計算（予約開始時刻）
-      const bookingStartDate = new Date(slotDate);
-      bookingStartDate.setDate(bookingStartDate.getDate() - 7);
-      bookingStartDate.setHours(0, 0, 0, 0);
+      // 7日前のJST 0時を正確に計算
+      // スロット日付から7日前の日付文字列を作成
+      const bookingStartDate = new Date(slotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // JST 0:00に設定（日付文字列から再作成）
+      const year = bookingStartDate.getFullYear();
+      const month = String(bookingStartDate.getMonth() + 1).padStart(2, '0');
+      const day = String(bookingStartDate.getDate()).padStart(2, '0');
+      const bookingStartDateJST = new Date(`${year}-${month}-${day}T00:00:00+09:00`);
       
       // 現在時刻が予約開始時刻を過ぎているかチェック
-      return jstNow >= bookingStartDate;
+      return jstNow >= bookingStartDateJST;
     });
 
     return NextResponse.json({ 
