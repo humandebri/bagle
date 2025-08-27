@@ -264,7 +264,7 @@ export default function CartPage() {
                     : 'bg-[#887c5d] text-gray-200 hover:bg-gray-600'
                 }`}
             >
-                {availableSlotsCount === 0 && !dispatchDate ? '予約枠がありません' : `注文 ¥${totalAmount.toLocaleString()}`}
+                {availableSlotsCount === 0 && !dispatchDate ? '予約枠がありません' : '注文手続きに進む'}
             </button>
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function CartPage() {
               : 'bg-[#887c5d] text-gray-200 hover:bg-gray-600'
           }`}
         >
-          {availableSlotsCount === 0 && !dispatchDate ? '予約枠がありません' : 'お支払いへ進む'}
+          {availableSlotsCount === 0 && !dispatchDate ? '予約枠がありません' : '注文手続きに進む'}
         </button>
       </div>
     </>

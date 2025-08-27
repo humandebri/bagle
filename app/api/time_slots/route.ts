@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
     
-    // 1. time_slotsテーブルのデータを取得
+    // 1. time_slotsテーブルのデータを取得（current_bookingsはDBの値をそのまま使用）
     const { data: timeSlots, error: timeSlotsError } = await supabase
       .from('time_slots')
       .select('*')
@@ -14,15 +14,7 @@ export async function GET() {
 
     if (timeSlotsError) throw timeSlotsError;
 
-    // 2. 確定済み注文数を取得
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('dispatch_date, dispatch_time')
-      .neq('payment_status', 'cancelled');
-
-    if (ordersError) throw ordersError;
-
-    // 3. 仮予約数を取得（slot_reservationsテーブル）
+    // 2. 仮予約数を取得（slot_reservationsテーブル）
     const { data: tempReservations } = await supabase
       .from('slot_reservations')
       .select('date, time')
@@ -31,14 +23,8 @@ export async function GET() {
     // テーブルが存在しない場合もあるのでnullチェック
     const reservations = tempReservations || [];
 
-    // 4. 各time_slotのcurrent_bookingsを計算
+    // 3. 各time_slotに仮予約数を追加
     const enrichedTimeSlots = timeSlots?.map(slot => {
-      // 確定済み注文数をカウント
-      const confirmedCount = orders?.filter(order => 
-        order.dispatch_date === slot.date && 
-        order.dispatch_time === slot.time.slice(0, 5) // "11:00:00" → "11:00"
-      ).length || 0;
-
       // 仮予約数をカウント
       const tempCount = reservations.filter(res => {
         const resDateStr = typeof res.date === 'string' 
@@ -50,14 +36,9 @@ export async function GET() {
         return resDateStr === slot.date && resTimeStr === slot.time;
       }).length || 0;
 
-      // 合計を計算
-      const totalBookings = confirmedCount + tempCount;
-
       return {
         ...slot,
-        current_bookings: totalBookings,
-        confirmed_bookings: confirmedCount,
-        temp_bookings: tempCount
+        temp_bookings: tempCount  // 仮予約数を追加
       };
     }) || [];
 

@@ -9,6 +9,7 @@ interface TimeSlot {
   time: string;
   max_capacity: number;
   current_bookings?: number;
+  temp_bookings?: number;  // 仮予約数を追加
   is_available?: boolean;
   created_at?: string;
 }
@@ -624,19 +625,23 @@ export default function TimeSlotsPage() {
                           -
                         </span>
                       );
-                    } else if (slot.is_available === false || (slot.current_bookings ?? 0) >= slot.max_capacity) {
+                    } else if (slot.is_available === false || ((slot.current_bookings ?? 0) + (slot.temp_bookings ?? 0)) >= slot.max_capacity) {
                       cell = (
                         <span className="text-red-500 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
                           ×<br />
-                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                          <span className="text-xs font-normal">
+                            {(slot.current_bookings ?? 0)}{slot.temp_bookings ? `(+${slot.temp_bookings})` : ''}/{slot.max_capacity}
+                          </span>
                         </span>
                       );
                     } else {
-                      const remain = slot.max_capacity - (slot.current_bookings ?? 0);
+                      const remain = slot.max_capacity - (slot.current_bookings ?? 0) - (slot.temp_bookings ?? 0);
                       cell = (
                         <span className="text-blue-600 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
                           ⚪︎{remain}<br />
-                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                          <span className="text-xs font-normal">
+                            {(slot.current_bookings ?? 0)}{slot.temp_bookings ? `(+${slot.temp_bookings})` : ''}/{slot.max_capacity}
+                          </span>
                         </span>
                       );
                     }
@@ -682,19 +687,23 @@ export default function TimeSlotsPage() {
                           -
                         </span>
                       );
-                    } else if (slot.is_available === false || (slot.current_bookings ?? 0) >= slot.max_capacity) {
+                    } else if (slot.is_available === false || ((slot.current_bookings ?? 0) + (slot.temp_bookings ?? 0)) >= slot.max_capacity) {
                       cell = (
                         <span className="text-red-500 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
                           ×<br />
-                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                          <span className="text-xs font-normal">
+                            {(slot.current_bookings ?? 0)}{slot.temp_bookings ? `(+${slot.temp_bookings})` : ''}/{slot.max_capacity}
+                          </span>
                         </span>
                       );
                     } else {
-                      const remain = slot.max_capacity - (slot.current_bookings ?? 0);
+                      const remain = slot.max_capacity - (slot.current_bookings ?? 0) - (slot.temp_bookings ?? 0);
                       cell = (
                         <span className="text-blue-600 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
                           ⚪︎{remain}<br />
-                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                          <span className="text-xs font-normal">
+                            {(slot.current_bookings ?? 0)}{slot.temp_bookings ? `(+${slot.temp_bookings})` : ''}/{slot.max_capacity}
+                          </span>
                         </span>
                       );
                     }
@@ -717,7 +726,12 @@ export default function TimeSlotsPage() {
             <div className="mb-2">日付: <span className="font-mono">{detailSlot.date}</span></div>
             <div className="mb-2">時間帯: <span className="font-mono">{formatTimeRange(detailSlot.time.slice(0,5))}</span></div>
             <div className="mb-2">最大予約数: <input type="number" min={detailSlot.current_bookings ?? 0} value={editDetailMax ?? ''} onChange={e => setEditDetailMax(Number(e.target.value))} className="border px-2 py-1 w-24 ml-2" /></div>
-            <div className="mb-2">予約数: <span className="font-mono">{detailSlot.current_bookings ?? 0}</span></div>
+            <div className="mb-2">
+              予約数: <span className="font-mono">{detailSlot.current_bookings ?? 0}</span>
+              {detailSlot.temp_bookings ? (
+                <span className="text-orange-600 ml-2">(仮予約: {detailSlot.temp_bookings})</span>
+              ) : null}
+            </div>
             <div className="mb-2">利用可否: <select value={editDetailAvail ? 'true' : 'false'} onChange={e => setEditDetailAvail(e.target.value === 'true')} className="border px-2 py-1 w-24 ml-2"><option value="true">利用可</option><option value="false">利用不可</option></select></div>
             {detailSlot.created_at && (
               <div className="mb-2">作成日時: <span className="font-mono">{new Date(detailSlot.created_at).toLocaleString('ja-JP')}</span></div>
