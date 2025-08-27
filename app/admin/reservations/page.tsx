@@ -247,23 +247,36 @@ export default function ReservationsPage() {
 
     setIsProcessing(true);
     try {
+      // キャンセル対象の注文を取得
+      const targetOrder = orders.find(o => o.id === orderId);
+      if (!targetOrder) {
+        throw new Error('注文が見つかりません');
+      }
+
       // 1. タイムスロットを解放
+      // time_slotsテーブルの時間形式に合わせる（HH:MM:SS形式）
+      const timeWithSeconds = targetOrder.dispatch_time.length === 5 
+        ? `${targetOrder.dispatch_time}:00` 
+        : targetOrder.dispatch_time;
+      
       const { data: slot, error: slotError } = await supabase
         .from('time_slots')
         .select('current_bookings')
-        .eq('date', selectedOrder?.dispatch_date)
-        .eq('time', selectedOrder?.dispatch_time)
+        .eq('date', targetOrder.dispatch_date)
+        .eq('time', timeWithSeconds)
         .single();
 
       if (slotError) {
-        throw new Error('タイムスロットの取得に失敗しました');
+        console.error('タイムスロット取得エラー:', slotError);
+        console.error('検索条件:', { date: targetOrder.dispatch_date, time: timeWithSeconds });
+        // エラーでもキャンセル処理は続行
+      } else if (slot) {
+        await supabase
+          .from('time_slots')
+          .update({ current_bookings: Math.max(0, (slot.current_bookings || 0) - 1) })
+          .eq('date', targetOrder.dispatch_date)
+          .eq('time', timeWithSeconds);
       }
-
-      await supabase
-        .from('time_slots')
-        .update({ current_bookings: Math.max(0, (slot?.current_bookings || 0) - 1) })
-        .eq('date', selectedOrder?.dispatch_date)
-        .eq('time', selectedOrder?.dispatch_time);
 
       // 2. 注文をキャンセル状態に更新
       const { error: orderError } = await supabase

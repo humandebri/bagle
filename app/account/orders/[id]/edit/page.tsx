@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
 import { TimeSlot } from '@/lib/supabase-server';
 import {
   Select,
@@ -36,6 +37,18 @@ export default function EditOrderPage() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [availableDates, setAvailableDates] = useState<DateOption[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [products, setProducts] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    image: string | null;
+    category: { name: string };
+  }>>([]);
+  const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
+  const [originalDate, setOriginalDate] = useState('');
+  const [originalTime, setOriginalTime] = useState('');
 
   const TIME_RANGE_MAP = {
     '11:00': '11:15',
@@ -84,7 +97,11 @@ export default function EditOrderPage() {
         return;
       }
 
-      setItems((data.items as OrderItem[]).filter((item) => item.quantity > 0));
+      const itemsData = (data.items as OrderItem[]).filter((item) => item.quantity > 0);
+      setItems(itemsData);
+      setOriginalItems(itemsData); // 元の内容を保存
+      setOriginalDate(data.dispatch_date);
+      setOriginalTime(data.dispatch_time);
       setDispatchDate(data.dispatch_date);
       setDispatchTime(data.dispatch_time);
 
@@ -132,6 +149,25 @@ export default function EditOrderPage() {
     fetchTimeSlots();
   }, []);
 
+  // 商品データの取得
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, category:categories(name)')
+        .eq('is_available', true)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setProducts(data);
+      }
+    };
+
+    if (showProductModal) {
+      fetchProducts();
+    }
+  }, [showProductModal]);
+
   // 日付が決まったら時間リストを作る
   useEffect(() => {
     if (!dispatchDate) return;
@@ -165,55 +201,79 @@ export default function EditOrderPage() {
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
+  const addProduct = (product: {
+    name: string;
+    price: number;
+  }) => {
+    const existingItem = items.find(item => item.name === product.name);
+    if (existingItem) {
+      // 既存の商品の数量を増やす
+      setItems(prev =>
+        prev.map(item =>
+          item.name === product.name 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+    } else {
+      // 新しい商品を追加
+      setItems(prev => [...prev, {
+        name: product.name,
+        price: product.price,
+        quantity: 1
+      }]);
+    }
+    setShowProductModal(false);
+  };
+
   const save = async () => {
     const newTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const hasChanges = JSON.stringify(items) !== JSON.stringify(originalItems) ||
+                      dispatchDate !== originalDate ||
+                      dispatchTime !== originalTime;
+    
     try {
-      // 1. 古いタイムスロットを解放
-      const { data: oldSlot, error: oldSlotError } = await supabase
-        .from('time_slots')
-        .select('current_bookings')
-        .eq('date', dispatchDate)
-        .eq('time', dispatchTime)
-        .single();
+      // 日時が変更された場合のみタイムスロットを更新
+      if (dispatchDate !== originalDate || dispatchTime !== originalTime) {
+        // 1. 古いタイムスロットを解放
+        const { data: oldSlot, error: oldSlotError } = await supabase
+          .from('time_slots')
+          .select('current_bookings')
+          .eq('date', originalDate)
+          .eq('time', originalTime)
+          .single();
 
-      if (oldSlotError) {
-        console.error('古いタイムスロットの取得に失敗:', oldSlotError);
-        throw new Error('古いタイムスロットの取得に失敗しました');
-      }
+        if (!oldSlotError && oldSlot) {
+          await supabase
+            .from('time_slots')
+            .update({ current_bookings: Math.max(0, (oldSlot.current_bookings || 0) - 1) })
+            .eq('date', originalDate)
+            .eq('time', originalTime);
+        }
 
-      const { error: updateOldSlotError } = await supabase
-        .from('time_slots')
-        .update({ current_bookings: (oldSlot?.current_bookings || 0) - 1 })
-        .eq('date', dispatchDate)
-        .eq('time', dispatchTime);
+        // 2. 新しいタイムスロットを予約
+        const { data: newSlot, error: newSlotError } = await supabase
+          .from('time_slots')
+          .select('current_bookings')
+          .eq('date', dispatchDate)
+          .eq('time', dispatchTime)
+          .single();
 
-      if (updateOldSlotError) {
-        console.error('古いタイムスロットの解放に失敗:', updateOldSlotError);
-        throw new Error('古いタイムスロットの解放に失敗しました');
-      }
+        if (newSlotError) {
+          console.error('新しいタイムスロットの取得に失敗:', newSlotError);
+          throw new Error('新しいタイムスロットが利用できません');
+        }
 
-      // 2. 新しいタイムスロットを予約
-      const { data: newSlot, error: newSlotError } = await supabase
-        .from('time_slots')
-        .select('current_bookings')
-        .eq('date', dispatchDate)
-        .eq('time', dispatchTime)
-        .single();
+        const { error: updateNewSlotError } = await supabase
+          .from('time_slots')
+          .update({ current_bookings: (newSlot?.current_bookings || 0) + 1 })
+          .eq('date', dispatchDate)
+          .eq('time', dispatchTime);
 
-      if (newSlotError) {
-        console.error('新しいタイムスロットの取得に失敗:', newSlotError);
-        throw new Error('新しいタイムスロットの取得に失敗しました');
-      }
-
-      const { error: updateNewSlotError } = await supabase
-        .from('time_slots')
-        .update({ current_bookings: (newSlot?.current_bookings || 0) + 1 })
-        .eq('date', dispatchDate)
-        .eq('time', dispatchTime);
-
-      if (updateNewSlotError) {
-        console.error('新しいタイムスロットの予約に失敗:', updateNewSlotError);
-        throw new Error('新しいタイムスロットの予約に失敗しました');
+        if (updateNewSlotError) {
+          console.error('新しいタイムスロットの予約に失敗:', updateNewSlotError);
+          throw new Error('新しいタイムスロットの予約に失敗しました');
+        }
       }
 
       // 3. 注文情報を更新
@@ -227,6 +287,22 @@ export default function EditOrderPage() {
         })
         .eq('id', id);
       if (orderError) throw new Error('注文情報の更新に失敗しました');
+      
+      // 変更確認メールを送信
+      if (hasChanges) {
+        await fetch('/api/send-order-update-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: id,
+            items,
+            dispatchDate,
+            dispatchTime,
+            total: newTotal
+          })
+        });
+      }
+      
       router.push(`/account/orders/${id}`);
     } catch (error) {
       console.error('注文更新エラーの詳細:', error);
@@ -240,26 +316,24 @@ export default function EditOrderPage() {
     }
 
     try {
-      // 1. タイムスロットを解放
+      // 1. タイムスロットを解放（元の予約日時を使用）
       const { data: slot, error: slotError } = await supabase
         .from('time_slots')
         .select('current_bookings')
-        .eq('date', dispatchDate)
-        .eq('time', dispatchTime)
+        .eq('date', originalDate)
+        .eq('time', originalTime)
         .single();
 
-      if (slotError) {
-        throw new Error('タイムスロットの取得に失敗しました');
-      }
+      if (!slotError && slot) {
+        const { error: updateSlotError } = await supabase
+          .from('time_slots')
+          .update({ current_bookings: Math.max(0, (slot.current_bookings || 0) - 1) })
+          .eq('date', originalDate)
+          .eq('time', originalTime);
 
-      const { error: updateSlotError } = await supabase
-        .from('time_slots')
-        .update({ current_bookings: Math.max(0, (slot?.current_bookings || 0) - 1) })
-        .eq('date', dispatchDate)
-        .eq('time', dispatchTime);
-
-      if (updateSlotError) {
-        throw new Error('タイムスロットの解放に失敗しました');
+        if (updateSlotError) {
+          console.warn('タイムスロットの解放に失敗しました:', updateSlotError);
+        }
       }
 
       // 2. 注文をキャンセル状態に更新
@@ -366,6 +440,17 @@ export default function EditOrderPage() {
               </div>
             ))}
 
+            {/* 商品追加ボタン */}
+            <div className="mt-6">
+              <button
+                onClick={() => setShowProductModal(true)}
+                className="w-full py-3 px-6 border-2 border-dashed border-[#887c5d] text-[#887c5d] hover:bg-[#f5f2ea] rounded flex items-center justify-center gap-2"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                商品を追加
+              </button>
+            </div>
+
             <div className="flex justify-between text-xl mt-4">
               <p>合計</p>
               <p>¥{total.toLocaleString()}</p>
@@ -425,6 +510,48 @@ export default function EditOrderPage() {
 
 
       </main>
+
+      {/* 商品選択モーダル */}
+      {showProductModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowProductModal(false)}>
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">商品を追加</h2>
+                <button
+                  onClick={() => setShowProductModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => addProduct(product)}
+                  >
+                    <div className="relative w-full h-40 mb-3">
+                      <Image
+                        src={product.image || '/placeholder.svg'}
+                        alt={product.name}
+                        fill
+                        className="object-cover rounded"
+                      />
+                    </div>
+                    <h3 className="font-semibold">{product.name}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+                    <p className="text-lg font-semibold mt-2">¥{product.price}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
