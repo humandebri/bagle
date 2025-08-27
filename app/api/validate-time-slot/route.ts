@@ -114,48 +114,88 @@ export async function POST(request: Request) {
       sessionId = cookieStore.get('temp_session_id')?.value || '';
     }
     
-    // 仮予約を考慮した利用可能枠数を取得
-    const { data: availableCapacity } = await supabase
-      .rpc('get_available_capacity', {
+    // 新しいcheck_slot_availability関数を使用（フォールバック付き）
+    const { data: availabilityData, error: availabilityError } = await supabase
+      .rpc('check_slot_availability', {
         p_date: date,
         p_time: time,
-        p_session_id: sessionId
+        p_session_id: sessionId || null
       });
     
-    const remainingCapacity = availableCapacity || 0;
-    
-    // 予約可能枠が残っているかチェック
-    if (remainingCapacity <= 0) {
-      // ユーザーが既に仮予約を持っている場合は有効とする
-      if (isUserSelection || sessionId) {
-        const { data: hasReservation } = await supabase
-          .from('temporary_slot_reservations')
-          .select('id')
-          .eq('session_id', sessionId)
-          .eq('date', date)
-          .gte('expires_at', new Date().toISOString())
-          .single();
-        
-        if (hasReservation) {
-          return NextResponse.json({ 
-            valid: true, 
-            message: '選択済みの時間枠です',
-            isFull: true,
-            remainingCapacity: 0
-          });
+    if (availabilityError) {
+      // 新しい関数が存在しない場合は旧方式にフォールバック
+      console.log('[validate-time-slot] New function not found, using fallback');
+      
+      const { data: availableCapacity } = await supabase
+        .rpc('get_available_capacity', {
+          p_date: date,
+          p_time: time,
+          p_session_id: sessionId
+        });
+      
+      const remainingCapacity = availableCapacity || 0;
+      
+      if (remainingCapacity <= 0) {
+        // ユーザーが既に仮予約を持っている場合は有効とする
+        if (isUserSelection || sessionId) {
+          const { data: hasReservation } = await supabase
+            .from('temporary_slot_reservations')
+            .select('id')
+            .eq('session_id', sessionId)
+            .eq('date', date)
+            .eq('time', timeWithSeconds)
+            .gte('expires_at', new Date().toISOString())
+            .single();
+          
+          if (hasReservation) {
+            return NextResponse.json({ 
+              valid: true, 
+              message: '選択済みの時間枠です',
+              isFull: true,
+              remainingCapacity: 0
+            });
+          }
         }
+        
+        return NextResponse.json({ 
+          valid: false, 
+          message: 'この時間枠は満員です。別の時間枠を選択してください。' 
+        });
       }
       
       return NextResponse.json({ 
+        valid: true, 
+        message: '時間枠は利用可能です',
+        remainingCapacity 
+      });
+    }
+    
+    // 新方式のレスポンスを処理
+    const isAvailable = availabilityData?.available || false;
+    const capacity = availabilityData?.capacity || 0;
+    const isReservedByMe = availabilityData?.is_reserved_by_me || false;
+    
+    // ユーザーの選択時またはユーザーが既に予約を持っている場合は有効とする
+    if ((isUserSelection || isReservedByMe) && !isAvailable) {
+      return NextResponse.json({ 
+        valid: true, 
+        message: isReservedByMe ? '選択済みの時間枠です' : '時間枠を予約中です',
+        isFull: capacity <= 0,
+        remainingCapacity: 0
+      });
+    }
+    
+    if (!isAvailable) {
+      return NextResponse.json({ 
         valid: false, 
-        message: 'この時間枠は満員です。別の時間枠を選択してください。' 
+        message: availabilityData?.message || 'この時間枠は満員です。別の時間枠を選択してください。' 
       });
     }
     
     return NextResponse.json({ 
       valid: true, 
-      message: '時間枠は利用可能です',
-      remainingCapacity 
+      message: availabilityData?.message || '時間枠は利用可能です',
+      remainingCapacity: capacity
     });
     
   } catch (error) {

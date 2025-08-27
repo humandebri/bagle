@@ -13,10 +13,10 @@ interface TimeSlot {
   created_at?: string;
 }
 
-// 一週間分の日付配列を生成
+// 2週間分の日付配列を生成
 function getWeekDates(startDate: Date): string[] {
   const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 14; i++) { // 14日分（2週間）
     const d = new Date(startDate);
     d.setDate(startDate.getDate() + i);
     dates.push(d.toISOString().split("T")[0]);
@@ -96,15 +96,15 @@ export default function TimeSlotsPage() {
     return monday;
   });
 
-  // 週送り・週戻し
+  // 2週間送り・2週間戻し
   const goPrevWeek = () => {
     const prev = new Date(weekStart);
-    prev.setDate(weekStart.getDate() - 7);
+    prev.setDate(weekStart.getDate() - 14); // 2週間前
     setWeekStart(prev);
   };
   const goNextWeek = () => {
     const next = new Date(weekStart);
-    next.setDate(weekStart.getDate() + 7);
+    next.setDate(weekStart.getDate() + 14); // 2週間後
     setWeekStart(next);
   };
   // 今週に戻る
@@ -202,11 +202,15 @@ export default function TimeSlotsPage() {
       }
       // 既存APIにPOST連打
       for (const slot of slots) {
-        await fetch("/api/time_slots", {
+        const res = await fetch("/api/time_slots", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(slot),
         });
+        if (!res.ok) {
+          const error = await res.json();
+          console.error('Failed to create slot:', slot, error);
+        }
       }
       setShowModal(false);
       if (formRef.current) formRef.current.reset();
@@ -348,32 +352,34 @@ export default function TimeSlotsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">時間枠カレンダー</h1>
-      <div className="flex gap-5 mb-2 pb-5">
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => setShowModal(true)}
-        >
-          一括作成
-        </button>
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => setShowEditModal(true)}
-        >
-          一括編集
-        </button>
-        <button
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-          onClick={() => setShowDeleteModal(true)}
-        >
-          一括削除
-        </button>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">時間枠カレンダー</h1>
+        <div className="flex gap-2">
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            onClick={() => setShowModal(true)}
+          >
+            一括作成
+          </button>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            onClick={() => setShowEditModal(true)}
+          >
+            一括編集
+          </button>
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            onClick={() => setShowDeleteModal(true)}
+          >
+            一括削除
+          </button>
+        </div>
       </div>
       <div className="flex items-center gap-4 mb-4">
-        <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goPrevWeek}>前の週</button>
+        <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goPrevWeek}>前の2週間</button>
         <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={goToday}>今週</button>
-        <span className="font-bold">{weekDates[0]} 〜 {weekDates[6]}</span>
-        <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goNextWeek}>次の週</button>
+        <span className="font-bold">{weekDates[0]} 〜 {weekDates[13]}</span>
+        <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goNextWeek}>次の2週間</button>
       </div>
       {showModal && (
         <div
@@ -589,58 +595,120 @@ export default function TimeSlotsPage() {
           </div>
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1 bg-gray-50 text-center">時間帯</th>
-              {weekDates.map((date) => (
-                <th key={date} className="border px-2 py-1 bg-gray-50 text-center">
-                  {formatDate(date)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {timeKeys.map((time) => (
-              <tr key={time}>
-                <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
-                {weekDates.map((date) => {
-                  const slot = slotMap[date][time];
-                  let cell;
-                  if (!slot) {
-                    cell = (
-                      <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
-                        id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true })}>
-                        -
-                      </span>
-                    );
-                  } else if (slot.is_available === false || (slot.current_bookings ?? 0) >= slot.max_capacity) {
-                    cell = (
-                      <span className="text-red-500 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
-                        ×<br />
-                        <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
-                      </span>
-                    );
-                  } else {
-                    const remain = slot.max_capacity - (slot.current_bookings ?? 0);
-                    cell = (
-                      <span className="text-blue-600 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
-                        ⚪︎{remain}<br />
-                        <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
-                      </span>
-                    );
-                  }
-                  return (
-                    <td key={date} className="border px-2 py-1 text-center align-middle">
-                      {cell}
-                    </td>
-                  );
-                })}
+      {/* 1週目のテーブル */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-2">第1週: {weekDates[0]} 〜 {weekDates[6]}</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border">
+            <thead>
+              <tr>
+                <th className="border px-2 py-1 bg-gray-50 text-center">時間帯</th>
+                {weekDates.slice(0, 7).map((date) => (
+                  <th key={date} className="border px-2 py-1 bg-gray-50 text-center">
+                    {formatDate(date)}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {timeKeys.map((time) => (
+                <tr key={time}>
+                  <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
+                  {weekDates.slice(0, 7).map((date) => {
+                    const slot = slotMap[date][time];
+                    let cell;
+                    if (!slot) {
+                      cell = (
+                        <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
+                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true })}>
+                          -
+                        </span>
+                      );
+                    } else if (slot.is_available === false || (slot.current_bookings ?? 0) >= slot.max_capacity) {
+                      cell = (
+                        <span className="text-red-500 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
+                          ×<br />
+                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                        </span>
+                      );
+                    } else {
+                      const remain = slot.max_capacity - (slot.current_bookings ?? 0);
+                      cell = (
+                        <span className="text-blue-600 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
+                          ⚪︎{remain}<br />
+                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <td key={date} className="border px-2 py-1 text-center align-middle">
+                        {cell}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 2週目のテーブル */}
+      <div>
+        <h2 className="text-lg font-semibold mb-2">第2週: {weekDates[7]} 〜 {weekDates[13]}</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border">
+            <thead>
+              <tr>
+                <th className="border px-2 py-1 bg-gray-50 text-center">時間帯</th>
+                {weekDates.slice(7, 14).map((date) => (
+                  <th key={date} className="border px-2 py-1 bg-gray-50 text-center">
+                    {formatDate(date)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {timeKeys.map((time) => (
+                <tr key={time}>
+                  <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
+                  {weekDates.slice(7, 14).map((date) => {
+                    const slot = slotMap[date][time];
+                    let cell;
+                    if (!slot) {
+                      cell = (
+                        <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
+                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true })}>
+                          -
+                        </span>
+                      );
+                    } else if (slot.is_available === false || (slot.current_bookings ?? 0) >= slot.max_capacity) {
+                      cell = (
+                        <span className="text-red-500 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
+                          ×<br />
+                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                        </span>
+                      );
+                    } else {
+                      const remain = slot.max_capacity - (slot.current_bookings ?? 0);
+                      cell = (
+                        <span className="text-blue-600 font-bold cursor-pointer" onClick={() => setDetailSlot(slot)}>
+                          ⚪︎{remain}<br />
+                          <span className="text-xs font-normal">{(slot.current_bookings ?? 0)}/{slot.max_capacity}</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <td key={date} className="border px-2 py-1 text-center align-middle">
+                        {cell}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       {detailSlot && (
         <div className="fixed inset-0  bg-black/30 flex items-center justify-center z-50" onClick={() => setDetailSlot(null)}>

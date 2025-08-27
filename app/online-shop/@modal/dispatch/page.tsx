@@ -173,7 +173,7 @@ export default function DispatchModalPage() {
           <div className="mb-6">
             <h2 className="mb-1">お持ち帰り時間</h2>
             <p className="text-sm text-gray-500 mt-2">
-              ※ 各日の予約は1週間前の同じ曜日0時から開始されます
+              ※ 各日の予約は1週間前の同じ曜日0時から開始されます（当日・翌日予約不可）
             </p>
           </div>
 

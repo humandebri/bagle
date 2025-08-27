@@ -150,7 +150,7 @@ export default function BagelModalPage() {
         {/* ✕ボタン（スマホのみ表示） */}
         <button
           onClick={close}
-          className="absolute top-2 right-4 text-3xl text-gray-400 hover:text-black md:hidden"
+          className="absolute top-2 right-4 z-10 text-3xl text-gray-400 hover:text-black md:hidden"
           aria-label="閉じる"
         >
           ✕

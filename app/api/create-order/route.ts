@@ -38,22 +38,33 @@ export async function POST(req: NextRequest) {
 
     // dispatch_dateとdispatch_timeがある場合のみ処理
     if (dispatch_date && dispatch_time) {
-      // 1. 仮予約を削除（あれば）
+      // 新しい方式: release_time_slot_reservation関数を使用
       if (sessionId) {
-        const { error: cleanupError } = await supabaseAdmin
-          .rpc('cleanup_temp_reservation_for_order', {
-            p_session_id: sessionId,
+        const { error: releaseError } = await supabaseAdmin
+          .rpc('release_time_slot_reservation', {
             p_date: dispatch_date,
-            p_time: dispatch_time
+            p_time: dispatch_time,
+            p_session_id: sessionId
           });
         
-        if (cleanupError) {
-          console.warn('仮予約の削除に失敗:', cleanupError);
-          // エラーでも続行（仮予約がない場合もある）
+        if (releaseError) {
+          // 新しい関数が存在しない場合は旧方式にフォールバック
+          console.log('New function not found, using fallback');
+          
+          const { error: cleanupError } = await supabaseAdmin
+            .rpc('cleanup_temp_reservation_for_order', {
+              p_session_id: sessionId,
+              p_date: dispatch_date,
+              p_time: dispatch_time
+            });
+          
+          if (cleanupError) {
+            console.warn('仮予約の削除に失敗:', cleanupError);
+          }
         }
       }
       
-      // 2. current_bookingsを増やす（管理者設定と連動）
+      // 2. current_bookingsを増やす（注文確定時）
       const { error: incrementError } = await supabaseAdmin
         .rpc('increment_current_bookings', {
           p_date: dispatch_date,

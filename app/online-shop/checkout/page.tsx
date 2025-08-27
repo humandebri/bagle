@@ -173,15 +173,16 @@ export default function CheckoutPage() {
           <p className="text-lg">受取場所 : </p>
           <p>店舗</p>
           <p className="text-lg">受取日時 : </p>
-          <div className="border-2 p-3 text-center">
-            <button onClick={() => router.push(`/online-shop/dispatch`)}>
-              {dispatchDate && dispatchTime ? (
-                <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
-              ) : (
-                "日時を選択してください"
-              )}
-            </button>
-          </div>
+          <button 
+            onClick={() => router.push(`/online-shop/dispatch`)}
+            className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
+          >
+            {dispatchDate && dispatchTime ? (
+              <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+            ) : (
+              "日時を選択してください"
+            )}
+          </button>
         </section>
 
         <section className="pb-5">

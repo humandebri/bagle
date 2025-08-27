@@ -172,12 +172,15 @@ export default function CartPage() {
 
       {/* 予約日時の表示 */}
       {dispatchDate && dispatchTime && (
-        <div className="border-2 border-[#887c5d]/60 p-4 mb-6 bg-gray-50">
+        <button 
+          onClick={() => router.push('/online-shop/dispatch')}
+          className="w-full border-2 border-[#887c5d]/60 p-4 mb-6 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        >
           <div className="flex items-center gap-2 text-[#887c5d]">
             <Calendar className="w-5 h-5" />
             <DateTimeDisplay date={dispatchDate} time={dispatchTime} className="text-base" />
           </div>
-        </div>
+        </button>
       )}
 
       {/* 予約日時が未選択の場合の警告 */}

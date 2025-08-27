@@ -10,19 +10,19 @@ export async function GET() {
     const jstOffset = 9 * 60; // JST is UTC+9
     const jstNow = new Date(now.getTime() + (now.getTimezoneOffset() + jstOffset) * 60 * 1000);
     
-    // 明日から1週間後までの予約枠を取得（当日予約は不可）
-    const tomorrow = new Date(jstNow);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    // 明後日から1週間後までの予約枠を取得（当日・翌日予約は不可）
+    const dayAfterTomorrow = new Date(jstNow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2); // 明後日
+    dayAfterTomorrow.setHours(0, 0, 0, 0);
     
-    const oneWeekFromTomorrow = new Date(tomorrow);
-    oneWeekFromTomorrow.setDate(tomorrow.getDate() + 6); // 明日から6日後まで（計7日分）
+    const oneWeekFromDayAfterTomorrow = new Date(dayAfterTomorrow);
+    oneWeekFromDayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 6); // 明後日から6日後まで（計7日分）
 
     const { data: allTimeSlots, error } = await supabase
       .from('time_slots')
       .select('*')
-      .gte('date', tomorrow.toISOString().split('T')[0])
-      .lte('date', oneWeekFromTomorrow.toISOString().split('T')[0])
+      .gte('date', dayAfterTomorrow.toISOString().split('T')[0])
+      .lte('date', oneWeekFromDayAfterTomorrow.toISOString().split('T')[0])
       .order('date', { ascending: true })
       .order('time', { ascending: true });
 
@@ -49,7 +49,7 @@ export async function GET() {
     return NextResponse.json({ 
       timeSlots: filteredTimeSlots,
       currentTime: jstNow.toISOString(),
-      message: '各日の予約は7日前の同じ曜日0時から開始されます（当日予約不可）'
+      message: '各日の予約は7日前の同じ曜日0時から開始されます（当日・翌日予約不可）'
     });
   } catch (error) {
     console.error('Error fetching time slots:', error);

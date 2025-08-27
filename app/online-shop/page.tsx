@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
@@ -57,7 +57,7 @@ export default function OnlineShopPage() {
     }
   };
 
-  const checkAvailableSlots = async () => {
+  const checkAvailableSlots = useCallback(async () => {
     try {
       const response = await fetch('/api/get-available-slots');
       if (!response.ok) {
@@ -90,7 +90,7 @@ export default function OnlineShopPage() {
     } finally {
       setCheckingSlots(false);
     }
-  };
+  }, [dispatchDate, dispatchTime]);
 
   useEffect(() => {
     setMounted(true);
@@ -109,7 +109,7 @@ export default function OnlineShopPage() {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [dispatchDate, dispatchTime]);
+  }, [dispatchDate, dispatchTime, checkAvailableSlots]);
 
   const convertToBagels = (products: Product[]): Bagel[] => {
     return products.map(product => ({
@@ -173,9 +173,12 @@ export default function OnlineShopPage() {
             </div>
           )}
 
-          <div className="border-2 p-3 mb-6 text-center max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto mb-6">
             {mounted && (
-              <button onClick={() => router.push(`/online-shop/dispatch`)}>
+              <button 
+                onClick={() => router.push(`/online-shop/dispatch`)}
+                className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
+              >
                 {dispatchDate && dispatchTime ? (
                   <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
                 ) : (
@@ -187,7 +190,7 @@ export default function OnlineShopPage() {
 
           <div className="flex border-b sm:border-b-0  max-w-4xl mx-auto ">
             <div className=" border-b-2 pl-4">
-              <button className="font-medium text-2xl text-gray-400">BAGEL</button>
+              <button className="font-medium text-2xl text-gray-400">BAGEL(税込価格)</button>
             </div>
           </div>
 
