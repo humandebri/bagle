@@ -1,9 +1,16 @@
 import type { NextConfig } from 'next';
 
 /** @type {NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   images: {
-    domains: ['dcoglbvltwtqvjyaxzzr.supabase.co'], // ✅ これだけでOK
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'dcoglbvltwtqvjyaxzzr.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
 };
 

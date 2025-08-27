@@ -67,11 +67,11 @@ Cash-only payment at store during pickup:
 
 ### Key Business Constraints
 - `MAX_BAGEL_PER_ORDER = 12` - Maximum bagels per order
-- `MAX_BAGEL_PER_ITEM = 5` - Maximum quantity per product (default)
+- `MAX_BAGEL_PER_ITEM = 3` - Maximum quantity per product (default)
 - `MAX_BAGEL_PER_ITEM_FILLING = 3` - Maximum quantity for filling bagels
 - `STORE_PHONE_NUMBER = '089-904-2666'`
 - No bag fee (previously ¥10, now removed)
-- Category-based limits: "フィリングベーグル" category limited to 3 items, others to 5
+- Category-based limits: All categories now limited to 3 items per product
 
 ## Database Schema
 

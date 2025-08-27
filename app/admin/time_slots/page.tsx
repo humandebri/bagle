@@ -107,6 +107,14 @@ export default function TimeSlotsPage() {
     next.setDate(weekStart.getDate() + 7);
     setWeekStart(next);
   };
+  // 今週に戻る
+  const goToday = () => {
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    monday.setHours(0,0,0,0);
+    setWeekStart(monday);
+  };
 
   useEffect(() => {
     setWeekDates(getWeekDates(weekStart));
@@ -359,6 +367,7 @@ export default function TimeSlotsPage() {
       </div>
       <div className="flex items-center gap-4 mb-4">
         <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goPrevWeek}>前の週</button>
+        <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={goToday}>今週</button>
         <span className="font-bold">{weekDates[0]} 〜 {weekDates[6]}</span>
         <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goNextWeek}>次の週</button>
       </div>

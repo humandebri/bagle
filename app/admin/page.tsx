@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING } from '@/lib/constants';
 
 // KPIデータ型
 interface KpiData {
@@ -30,13 +31,6 @@ interface Order {
 // OrderItem型を定義
 type OrderItem = unknown;
 
-// Product型を定義
-interface Product {
-  category?: {
-    name?: string;
-  };
-  // 必要に応じて他のフィールドも追加
-}
 
 const ORDER_STATUS_OPTIONS = [
   { label: 'すべて', value: '' },
@@ -75,33 +69,43 @@ export default function AdminDashboard() {
   const [salesTo, setSalesTo] = useState<string>('');
 
   // 商品数・カテゴリー数・注文数・時間枠数をAPIから取得
-  const [productCount, setProductCount] = useState<number>(0);
+  const [availableProductCount, setAvailableProductCount] = useState<number>(0);
+  const [unavailableProductCount, setUnavailableProductCount] = useState<number>(0);
   const [categoryCount, setCategoryCount] = useState<number>(0);
   const [orderCount, setOrderCount] = useState<number>(0);
   const [timeSlotCount, setTimeSlotCount] = useState<number>(0);
 
   const fetchCounts = useCallback(async (from: string, to: string) => {
-    // 商品数・カテゴリー数
-    const productsRes = await fetch(`/api/products?from=${from}&to=${to}`);
-    const products = await productsRes.json();
-    setProductCount(Array.isArray(products) ? products.length : 0);
-    // カテゴリー数（重複除外）
-    const categorySet = new Set(
-      Array.isArray(products)
-        ? (products as Product[])
-            .map((p: Product): string | undefined => p.category?.name)
-            .filter((v): v is string => typeof v === 'string')
-        : []
-    );
-    setCategoryCount(categorySet.size);
-    // 注文数
+    // 商品数（すべての商品を取得して販売中・停止中を分けてカウント）
+    const productsRes = await fetch('/api/products?all=true');
+    const productsData = await productsRes.json();
+    // APIが直接配列を返す場合と、productsプロパティを持つ場合の両方に対応
+    const products = Array.isArray(productsData) ? productsData : (productsData.products || []);
+    
+    const availableProducts = products.filter((p: { is_available: boolean }) => p.is_available === true);
+    const unavailableProducts = products.filter((p: { is_available: boolean }) => p.is_available === false);
+    
+    setAvailableProductCount(availableProducts.length);
+    setUnavailableProductCount(unavailableProducts.length);
+    
+    // カテゴリー数（categoriesテーブルから直接取得）
+    const categoriesRes = await fetch('/api/categories');
+    const categories = await categoriesRes.json();
+    setCategoryCount(Array.isArray(categories) ? categories.length : 0);
+    
+    // 注文数（期間内）
     const summaryRes = await fetch(`/api/admin/summary?from=${from}&to=${to}`);
     const summary = await summaryRes.json();
     setOrderCount(summary.orderCount ?? 0);
-    // 時間枠数
-    const timeSlotsRes = await fetch(`/api/time_slots?from=${from}&to=${to}`);
+    
+    // 時間枠数（今日以降の予約可能枠のみ）
+    const today = new Date().toISOString().split('T')[0];
+    const timeSlotsRes = await fetch('/api/time_slots');
     const timeSlotsJson = await timeSlotsRes.json();
-    setTimeSlotCount(Array.isArray(timeSlotsJson.timeSlots) ? timeSlotsJson.timeSlots.length : 0);
+    const futureSlots = Array.isArray(timeSlotsJson.timeSlots)
+      ? timeSlotsJson.timeSlots.filter((slot: { date: string; is_available: boolean }) => slot.date >= today && slot.is_available)
+      : [];
+    setTimeSlotCount(futureSlots.length);
   }, []);
 
   // 期間指定フォームの値が変わったら再取得
@@ -217,40 +221,71 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="flex gap-6 items-end text-gray-700 text-base font-medium">
-          <div>商品数 <span className="font-bold text-gray-900">{productCount}</span></div>
+          <div>
+            <span>商品数</span>
+            <span className="font-bold text-green-700 ml-1" title="販売中">{availableProductCount}</span>
+            <span className="text-gray-500 mx-1">/</span>
+            <span className="font-bold text-gray-500" title="停止中">{unavailableProductCount}</span>
+          </div>
           <div>カテゴリー数 <span className="font-bold text-gray-900">{categoryCount}</span></div>
-          <div>注文数 <span className="font-bold text-gray-900">{orderCount}</span></div>
-          <div>時間枠数 <span className="font-bold text-gray-900">{timeSlotCount}</span></div>
+          <div title="選択期間内の注文数">注文数 <span className="font-bold text-gray-900">{orderCount}</span></div>
+          <div title="今日以降の予約可能枠">時間枠数 <span className="font-bold text-gray-900">{timeSlotCount}</span></div>
         </div>
       </div>
 
-      {/* KPIセクション */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">概要（KPI）</h2>
-        {loading ? (
-          <p>読み込み中...</p>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
-        ) : kpi ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div>
-              <p className="text-sm text-gray-600">売上合計</p>
-              <p className="text-xl font-bold">{formatYen(kpi.totalSales)}</p>
+      {/* ダッシュボード上部：購入制限とKPI */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        {/* 購入制限設定 */}
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-2">購入制限設定</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">1注文あたり</span>
+              <span className="font-bold text-gray-900">{MAX_BAGEL_PER_ORDER}個</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">注文数</p>
-              <p className="text-xl font-bold">{kpi.orderCount}</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">通常ベーグル</span>
+              <span className="font-bold text-gray-900">{MAX_BAGEL_PER_ITEM}個/商品</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">新規顧客数 / リピーター数</p>
-              <p className="text-xl font-bold">{kpi.newCustomers} / {kpi.repeatCustomers}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">平均注文額（AOV）</p>
-              <p className="text-xl font-bold">{formatYen(kpi.aov)}</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">フィリング</span>
+              <span className="font-bold text-gray-900">{MAX_BAGEL_PER_ITEM_FILLING}個/商品</span>
             </div>
           </div>
-        ) : null}
+        </div>
+
+        {/* KPI */}
+        <div className="lg:col-span-2 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-2">概要（KPI）</h3>
+          {loading ? (
+            <p className="text-gray-500 text-sm">読み込み中...</p>
+          ) : error ? (
+            <p className="text-red-500 text-sm">{error}</p>
+          ) : kpi ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">売上合計</p>
+                <p className="text-lg font-bold text-gray-900">{formatYen(kpi.totalSales)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">注文数</p>
+                <p className="text-lg font-bold text-gray-900">{kpi.orderCount}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">新規/リピーター</p>
+                <p className="text-lg font-bold text-gray-900">
+                  <span className="text-blue-600">{kpi.newCustomers}</span>
+                  <span className="text-gray-400 mx-1">/</span>
+                  <span className="text-green-600">{kpi.repeatCustomers}</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">平均注文額</p>
+                <p className="text-lg font-bold text-gray-900">{formatYen(kpi.aov)}</p>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* 注文状況セクション */}

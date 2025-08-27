@@ -70,7 +70,8 @@ export async function GET() {
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               
               <div style="background-color: #887c5d; color: white; padding: 20px; border-radius: 5px 5px 0 0; margin-bottom: 0;">
-                <h1 style="margin: 0; font-size: 20px;">明日のご予約のお知らせ</h1>
+                <h1 style="margin: 0; font-size: 24px; font-weight: bold;">BAGELラクダピクニック</h1>
+                <p style="margin: 10px 0 0 0; font-size: 18px;">明日のご予約のお知らせ</p>
               </div>
 
               <div style="background-color: #fff8f0; padding: 20px; border: 1px solid #887c5d; border-top: none; border-radius: 0 0 5px 5px;">
