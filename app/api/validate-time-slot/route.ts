@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const { date, time } = await request.json();
+    const { date, time, isUserSelection } = await request.json();
+
+    console.log('[validate-time-slot] Validating:', { date, time, isUserSelection });
 
     if (!date || !time) {
       return NextResponse.json({ 
@@ -44,31 +48,104 @@ export async function POST(request: Request) {
     }
     
     // time_slotsテーブルから該当スロットを取得
+    // データベースには "11:00:00" 形式で8文字で保存されている
+    // ユーザーからは "11:00" 形式で5文字で送られてくる
+    const timeWithSeconds = time.length === 5 ? `${time}:00` : time;
+    
     const { data: slot, error } = await supabase
       .from('time_slots')
       .select('*')
       .eq('date', date)
-      .eq('time', time)
+      .eq('time', timeWithSeconds)
       .single();
       
     if (error || !slot) {
+      console.log('[validate-time-slot] Slot not found:', { date, timeWithSeconds, error });
       return NextResponse.json({ 
         valid: false, 
         message: 'この時間枠は利用できません。別の時間枠を選択してください。' 
       });
     }
+
+    console.log('[validate-time-slot] Slot found:', { 
+      date: slot.date,
+      time: slot.time,
+      is_available: slot.is_available,
+      max_capacity: slot.max_capacity,
+      current_bookings: slot.current_bookings
+    });
     
-    // スロットが利用可能かチェック
-    if (!slot.is_available) {
+    // 現在のユーザーセッションを取得
+    const session = await getServerSession(authOptions);
+    
+    // ユーザーが既にこの時間枠に予約を持っているかチェック
+    let userHasExistingBooking = false;
+    if (session?.user?.email) {
+      // ordersテーブルの dispatch_time は "12:00" 形式で5文字で保存されている
+      const timeForComparison = time.slice(0, 5); // 常に5文字に変換
+      const { data: existingOrders } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('customer_email', session.user.email)
+        .eq('dispatch_date', date)
+        .eq('dispatch_time', timeForComparison)
+        .neq('payment_status', 'cancelled') // キャンセル済みは除外
+        .single();
+      
+      userHasExistingBooking = !!existingOrders;
+    }
+    
+    // ユーザーが既に予約を持っている場合は、満員でも有効とする
+    if (userHasExistingBooking) {
+      console.log('[validate-time-slot] User has existing booking');
       return NextResponse.json({ 
-        valid: false, 
-        message: 'この時間枠は満員です。別の時間枠を選択してください。' 
+        valid: true, 
+        message: '既存の予約時間枠です',
+        existingBooking: true
       });
     }
     
+    // セッションIDを取得（仮予約確認用）
+    let sessionId = session?.user?.email || '';
+    if (!sessionId && typeof window === 'undefined') {
+      // サーバーサイドでCookieから取得
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      sessionId = cookieStore.get('temp_session_id')?.value || '';
+    }
+    
+    // 仮予約を考慮した利用可能枠数を取得
+    const { data: availableCapacity } = await supabase
+      .rpc('get_available_capacity', {
+        p_date: date,
+        p_time: time,
+        p_session_id: sessionId
+      });
+    
+    const remainingCapacity = availableCapacity || 0;
+    
     // 予約可能枠が残っているかチェック
-    const remainingCapacity = slot.max_capacity - slot.current_bookings;
     if (remainingCapacity <= 0) {
+      // ユーザーが既に仮予約を持っている場合は有効とする
+      if (isUserSelection || sessionId) {
+        const { data: hasReservation } = await supabase
+          .from('temporary_slot_reservations')
+          .select('id')
+          .eq('session_id', sessionId)
+          .eq('date', date)
+          .gte('expires_at', new Date().toISOString())
+          .single();
+        
+        if (hasReservation) {
+          return NextResponse.json({ 
+            valid: true, 
+            message: '選択済みの時間枠です',
+            isFull: true,
+            remainingCapacity: 0
+          });
+        }
+      }
+      
       return NextResponse.json({ 
         valid: false, 
         message: 'この時間枠は満員です。別の時間枠を選択してください。' 

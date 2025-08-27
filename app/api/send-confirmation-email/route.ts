@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { emailConfig } from '@/lib/email-config';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -26,9 +27,10 @@ export async function POST(request: Request) {
     const { email, orderDetails }: RequestBody = await request.json();
 
     await resend.emails.send({
-      from: '予約確認 <onboarding@resend.dev>',
+      from: emailConfig.getFromAddress(),
+      replyTo: emailConfig.replyTo,
       to: email,
-      subject: 'ご予約が確定いたしました',
+      subject: '【BAGELラクダピクニック】ご予約が確定いたしました',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           

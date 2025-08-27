@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         {
           date: body.date,
           time: body.time,
-          max_capacity: body.max_capacity ?? 1,
+          max_capacity: body.max_capacity !== undefined ? body.max_capacity : 1,
           current_bookings: body.current_bookings ?? 0,
           is_available: body.is_available ?? true,
         },

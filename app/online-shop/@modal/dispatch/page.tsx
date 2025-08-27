@@ -131,7 +131,8 @@ export default function DispatchModalPage() {
       }
 
       setDispatchDate(selectedDate); // Zustand に保存
-      setDispatchTime(selectedTime); // Zustand に保存
+      // 時間を "10:00:00" から "10:00" 形式に変換して保存
+      setDispatchTime(selectedTime.slice(0, 5)); // Zustand に保存
       router.back();
     } catch (err) {
       console.error('Error updating time slot:', err);

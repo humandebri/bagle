@@ -84,54 +84,72 @@
 // }
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/lib/auth';
 
 type RequestBody = {
   date: string; // yyyy-mm-dd
   time: string; // '11:00' など
 };
 
-type TimeSlot = {
-  date: string;
-  time: string;
-  max_capacity: number;
-  current_bookings: number;
-  is_available: boolean;
-};
-
 export async function POST(req: Request): Promise<NextResponse> {
   try {
     const { date, time }: RequestBody = await req.json();
     const supabase = await createServerSupabaseClient();
+    
+    // セッションIDを取得（認証済みユーザーのIDまたはクッキーから）
+    const session = await getServerSession(authOptions);
+    let sessionId = session?.user?.email || '';
+    
+    // セッションIDがない場合はクッキーから取得または生成
+    if (!sessionId) {
+      const cookieStore = await cookies();
+      const existingSessionId = cookieStore.get('temp_session_id')?.value;
+      
+      if (!existingSessionId) {
+        sessionId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+        // クッキーに保存（15分間有効）
+        cookieStore.set('temp_session_id', sessionId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 15 // 15分
+        });
+      } else {
+        sessionId = existingSessionId;
+      }
+    }
 
-    // ★ 型はここで指定 ────────────────────────┐
-    const { data: timeSlot, error: fetchError } = await supabase
-      .rpc('lock_time_slot', { p_date: date, p_time: time })
-      .single<TimeSlot>();                           // ←──┘
+    // 時間枠を仮予約（シンプルに1つの関数だけ）
+    const { data: result, error } = await supabase
+      .rpc('reserve_time_slot', {
+        p_date: date,
+        p_time: time,
+        p_session_id: sessionId
+      });
 
-    if (fetchError) throw fetchError;
-
-    if (!timeSlot || !timeSlot.is_available) {
+    if (error) {
+      console.error('Failed to reserve time slot:', error);
       return NextResponse.json(
-        { error: 'この時間枠は既に予約が埋まっています' },
+        { error: '予約枠の確保に失敗しました' },
+        { status: 500 },
+      );
+    }
+
+    if (!result?.success) {
+      return NextResponse.json(
+        { error: result?.message || 'この時間枠は予約できません' },
         { status: 400 },
       );
     }
 
-    const newBookings = timeSlot.current_bookings + 1;
-    const isAvailable = newBookings < timeSlot.max_capacity;
-
-    const { error: updateError } = await supabase
-      .from('time_slots')
-      .update({
-        current_bookings: newBookings,
-        is_available: isAvailable,
-      })
-      .eq('date', date)
-      .eq('time', time);
-
-    if (updateError) throw updateError;
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      expires_at: result.expires_at,
+      session_id: sessionId,
+      message: result.message
+    });
   } catch (err: unknown) {
     console.error('Error updating time slot:', err);
     return NextResponse.json(

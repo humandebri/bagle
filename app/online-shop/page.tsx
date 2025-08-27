@@ -65,8 +65,22 @@ export default function OnlineShopPage() {
       }
       const data = await response.json();
       
-      // 利用可能な時間枠（is_available: true）の数をカウント
-      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean }) => slot.is_available).length || 0;
+      // ユーザーが既に選択している時間枠を取得
+      const userDispatchDate = dispatchDate;
+      const userDispatchTime = dispatchTime;
+      
+      // 利用可能な時間枠をカウント（ユーザーが選択済みの枠も利用可能とみなす）
+      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean; date: string; time: string }) => {
+        // ユーザーが選択している時間枠の場合は常に利用可能とみなす
+        if (userDispatchDate && userDispatchTime && 
+            slot.date === userDispatchDate && 
+            slot.time.slice(0, 5) === userDispatchTime) {
+          return true;
+        }
+        // それ以外は通常の利用可能性チェック
+        return slot.is_available;
+      }).length || 0;
+      
       setAvailableSlotsCount(availableCount);
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -84,6 +98,9 @@ export default function OnlineShopPage() {
 
   useEffect(() => {
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
     checkAvailableSlots();
     
     // 30秒ごとに利用可能な時間枠をチェック
@@ -92,7 +109,7 @@ export default function OnlineShopPage() {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [dispatchDate, dispatchTime]);
 
   const convertToBagels = (products: Product[]): Bagel[] => {
     return products.map(product => ({
@@ -118,8 +135,8 @@ export default function OnlineShopPage() {
     <>
       <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-24">
         <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
-          {/* 予約枠の警告メッセージ */}
-          {!checkingSlots && availableSlotsCount === 0 && (
+          {/* 予約枠の警告メッセージ（ユーザーが時間枠を選択していない場合のみ表示） */}
+          {!checkingSlots && availableSlotsCount === 0 && !dispatchDate && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
               <div className="flex items-start">
                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -139,8 +156,8 @@ export default function OnlineShopPage() {
             </div>
           )}
           
-          {/* 予約枠が少ない場合の警告 */}
-          {!checkingSlots && availableSlotsCount !== null && availableSlotsCount > 0 && availableSlotsCount <= 3 && (
+          {/* 予約枠が少ない場合の警告（ユーザーが時間枠を選択していない場合のみ表示） */}
+          {!checkingSlots && availableSlotsCount !== null && availableSlotsCount > 0 && availableSlotsCount <= 3 && !dispatchDate && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
               <div className="flex items-start">
                 <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -184,7 +201,7 @@ export default function OnlineShopPage() {
         <CartFooter
           totalQuantity={totalQuantity}
           onClick={() => router.push('/online-shop/cart')}
-          disabled={availableSlotsCount === 0}
+          disabled={availableSlotsCount === 0 && !dispatchDate}
         />
       )}
     </>
@@ -209,11 +226,24 @@ function CartFooter({
       }
       const data = await response.json();
       
-      // 利用可能な時間枠をチェック
-      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean }) => slot.is_available).length || 0;
+      // ユーザーが既に選択している時間枠を取得
+      const userDispatchDate = useCartStore.getState().dispatchDate;
+      const userDispatchTime = useCartStore.getState().dispatchTime;
       
-      if (availableCount === 0) {
-        // react-hot-toastの代わりにalertを使用（または別のトースト実装）
+      // 利用可能な時間枠をチェック（ユーザーが選択済みの枠も利用可能とみなす）
+      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean; date: string; time: string }) => {
+        // ユーザーが選択している時間枠の場合は常に利用可能とみなす
+        if (userDispatchDate && userDispatchTime && 
+            slot.date === userDispatchDate && 
+            slot.time.slice(0, 5) === userDispatchTime) {
+          return true;
+        }
+        // それ以外は通常の利用可能性チェック
+        return slot.is_available;
+      }).length || 0;
+      
+      if (availableCount === 0 && !userDispatchDate) {
+        // ユーザーが時間枠を選択していない場合のみ警告を表示
         alert('申し訳ございません。現在予約可能な時間枠がありません。');
         return;
       }

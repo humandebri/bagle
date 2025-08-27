@@ -167,7 +167,8 @@ export default function TimeSlotsPage() {
     const e = new Date(end);
     for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
       if (days.includes(d.getDay())) {
-        count += timeSlotsList.length;
+        // 0枠のスロットは除外してカウント
+        count += timeSlotsList.filter(slot => slot.max_capacity > 0).length;
       }
     }
     return count;
@@ -186,13 +187,16 @@ export default function TimeSlotsPage() {
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         if (bulkDays.includes(d.getDay())) {
           for (const slot of bulkTimeSlots) {
-            slots.push({
-              date: d.toISOString().split("T")[0],
-              time: slot.time,
-              max_capacity: slot.max_capacity,
-              current_bookings: 0,
-              is_available: true,
-            });
+            // 0枠のスロットは作成しない
+            if (slot.max_capacity > 0) {
+              slots.push({
+                date: d.toISOString().split("T")[0],
+                time: slot.time,
+                max_capacity: slot.max_capacity,
+                current_bookings: 0,
+                is_available: true,
+              });
+            }
           }
         }
       }
@@ -416,7 +420,7 @@ export default function TimeSlotsPage() {
                       <span className="w-20">{slot.time}</span>
                       <input
                         type="number"
-                        min={1}
+                        min={0}
                         value={slot.max_capacity}
                         onChange={e => {
                           const v = Number(e.target.value);
@@ -496,7 +500,7 @@ export default function TimeSlotsPage() {
               </div>
               <div>
                 <label className="block mb-1">最大予約数</label>
-                <input type="number" min={1} value={editMaxCapacity} onChange={e => setEditMaxCapacity(Number(e.target.value))} className="border px-2 py-1 w-20" />
+                <input type="number" min={0} value={editMaxCapacity} onChange={e => setEditMaxCapacity(Number(e.target.value))} className="border px-2 py-1 w-20" />
               </div>
               <div>
                 <label className="block mb-1">利用可否</label>

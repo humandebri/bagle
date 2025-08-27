@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { emailConfig } from '@/lib/email-config';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -36,9 +37,10 @@ export async function GET() {
     const orders = await prisma.orders.findMany({
       where: {
         dispatch_date: tomorrowDateStr,
-        payment_status: {
-          not: 'cancelled'
-        },
+        OR: [
+          { payment_status: null },
+          { payment_status: { not: 'cancelled' } }
+        ],
         shipped: false
       },
       include: {
@@ -63,7 +65,8 @@ export async function GET() {
 
       try {
         await resend.emails.send({
-          from: '予約リマインド <onboarding@resend.dev>',
+          from: emailConfig.getFromAddress(),
+          replyTo: emailConfig.replyTo,
           to: email,
           subject: `【リマインド】明日${dispatchTime}のご予約について`,
           html: `

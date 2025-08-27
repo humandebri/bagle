@@ -94,7 +94,11 @@ export default function CheckoutPage() {
       const response = await fetch('/api/validate-time-slot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: dispatchDate, time: dispatchTime }),
+        body: JSON.stringify({ 
+          date: dispatchDate, 
+          time: dispatchTime,
+          isUserSelection: true // This is the user's current cart selection
+        }),
       });
 
       const result = await response.json();
