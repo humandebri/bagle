@@ -349,6 +349,20 @@ export default function EditOrderPage() {
         throw new Error('注文のキャンセルに失敗しました');
       }
 
+      // 3. キャンセル確認メールを送信
+      try {
+        await fetch('/api/send-cancellation-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: id
+          })
+        });
+      } catch (emailError) {
+        console.warn('キャンセルメールの送信に失敗しました:', emailError);
+        // メール送信失敗はキャンセル処理自体には影響させない
+      }
+
       router.push('/account/orders');
     } catch (error) {
       console.error('キャンセルエラー:', error);

@@ -132,11 +132,14 @@ export default function ReviewPage() {
       resetCart();
       
       // 確認メールを送信
+      // user_idと注文データをAPIに送信（メールアドレスの取得はAPI側で行う）
+      console.log('Sending confirmation email for user_id:', session?.user?.id);
+
       const emailRes = await fetch('/api/send-confirmation-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: session?.user?.email,
+          userId: session?.user?.id,  // user_idを送信
           orderDetails: {
             items,
             dispatchDate: formatDate(dispatchDate || ''),
@@ -146,8 +149,11 @@ export default function ReviewPage() {
         }),
       });
 
-      if (!emailRes.ok && process.env.NODE_ENV === 'development') {
-        console.error('メール送信エラー:', await emailRes.json());
+      if (!emailRes.ok) {
+        const errorData = await emailRes.json();
+        console.error('メール送信エラー:', errorData);
+      } else {
+        console.log('Confirmation email sent successfully');
       }
 
       router.push('/online-shop/success');

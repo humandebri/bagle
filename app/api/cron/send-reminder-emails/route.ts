@@ -42,9 +42,6 @@ export async function GET() {
           { payment_status: { not: 'cancelled' } }
         ],
         shipped: false
-      },
-      include: {
-        profiles: true
       }
     });
 
@@ -52,7 +49,27 @@ export async function GET() {
 
     // 各予約にリマインドメールを送信
     const emailPromises = orders.map(async (order) => {
-      const email = order.profiles?.email;
+      // Prismaを使ってプロフィール情報を取得
+      let email: string | undefined;
+      let customerName = order.customer_name || 'お客様';
+      
+      if (order.user_id) {
+        const profile = await prisma.profiles.findUnique({
+          where: { user_id: order.user_id },
+          select: { email: true, first_name: true, last_name: true }
+        });
+        
+        if (profile) {
+          email = profile.email || undefined;
+          if (profile.last_name) {
+            customerName = `${profile.last_name} ${profile.first_name || ''}`;
+          }
+        }
+      }
+      
+      // user_idがない場合はcustomer_emailを使用
+      email = email || order.customer_email;
+      
       if (!email) {
         console.error(`No email found for order ${order.id}`);
         return null;
@@ -79,7 +96,7 @@ export async function GET() {
 
               <div style="background-color: #fff8f0; padding: 20px; border: 1px solid #887c5d; border-top: none; border-radius: 0 0 5px 5px;">
                 <p style="font-size: 16px; margin-bottom: 20px;">
-                  ${order.profiles?.last_name || ''} ${order.profiles?.first_name || ''} 様
+                  ${customerName} 様
                 </p>
                 
                 <p style="margin-bottom: 20px;">
@@ -143,13 +160,14 @@ export async function GET() {
               </div>
 
               <div style="background-color: #fff3cd; padding: 20px; border-radius: 5px; border: 1px solid #ffc107;">
-                <h3 style="color: #856404; margin-top: 0; margin-bottom: 10px;">キャンセルについて</h3>
-                <p style="color: #856404; margin-bottom: 10px;">
-                  当日のキャンセルはお受けできません。<br>
-                  どうしても来られなくなった場合は、<strong>冷凍での後日のお引き取り</strong>をお願い致します。
-                </p>
-                <p style="color: #856404; font-weight: bold;">
-                  その際は必ずお電話（089-904-2666）でご連絡ください。
+                <h3 style="color: #856404; margin-top: 0; margin-bottom: 10px;">■キャンセルポリシー</h3>
+                <p style="color: #856404; margin-bottom: 10px;">・キャンセルは<strong>2日前まで</strong>マイページから可能です。</p>
+                <p style="color: #856404; margin-bottom: 10px;">・前日のキャンセルはお電話（📞089-904-2666）でご連絡ください。</p>
+                <p style="color: #856404;"><strong>・当日どうしても来られなくなった場合は、冷凍での後日のお引き取りをお願い致します。必ずお電話でご連絡下さい。</strong></p>
+                <p style="margin-top: 15px;">
+                  <a href="https://rakudapicnic.vercel.app/account" style="color: #887c5d; text-decoration: underline;">
+                    マイページはこちら
+                  </a>
                 </p>
               </div>
 

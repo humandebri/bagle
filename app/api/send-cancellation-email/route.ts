@@ -15,15 +15,11 @@ interface OrderItem {
 
 interface RequestBody {
   orderId: string;
-  items: OrderItem[];
-  dispatchDate: string;
-  dispatchTime: string;
-  total: number;
 }
 
 export async function POST(request: Request) {
   try {
-    const { orderId, items, dispatchDate, dispatchTime, total }: RequestBody = await request.json();
+    const { orderId }: RequestBody = await request.json();
     
     // 注文情報を取得
     const { data: order, error } = await supabase
@@ -59,21 +55,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });
     }
     
+    // itemsをパース
+    const items = (order.items as unknown) as OrderItem[];
+    
     // 日時のフォーマット
-    const formattedDate = format(new Date(dispatchDate + 'T00:00:00+09:00'), 'yyyy年MM月dd日(E)', { locale: ja });
-    const formattedTime = formatTimeRange(dispatchTime);
+    const formattedDate = format(new Date(order.dispatch_date + 'T00:00:00+09:00'), 'yyyy年MM月dd日(E)', { locale: ja });
+    const formattedTime = formatTimeRange(order.dispatch_time);
 
     await resend.emails.send({
       from: emailConfig.getFromAddress(),
       replyTo: emailConfig.replyTo,
       to: email,
-      subject: '【BAGELラクダピクニック】ご注文内容の変更確認',
+      subject: '【BAGELラクダピクニック】ご予約のキャンセルを承りました',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           
           <div style="background-color: #887c5d; color: white; padding: 20px; border-radius: 5px 5px 0 0; margin-bottom: 0;">
             <h1 style="margin: 0; font-size: 24px; font-weight: bold;">BAGELラクダピクニック</h1>
-            <p style="margin: 10px 0 0 0; font-size: 18px;">ご注文内容変更のお知らせ</p>
+            <p style="margin: 10px 0 0 0; font-size: 18px;">ご予約キャンセルのお知らせ</p>
           </div>
 
           <div style="background-color: #fff8f0; padding: 20px; border: 1px solid #887c5d; border-top: none; border-radius: 0 0 5px 5px;">
@@ -82,20 +81,20 @@ export async function POST(request: Request) {
             </p>
             
             <p style="margin-bottom: 20px;">
-              ご注文内容を下記の通り変更いたしました。<br>
-              変更後の内容をご確認ください。
+              ご予約のキャンセルを承りました。<br>
+              またのご利用を心よりお待ちしております。
             </p>
           </div>
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h2 style="color: #887c5d; margin-top: 0; border-bottom: 2px solid #887c5d; padding-bottom: 10px;">■変更後のお受け取り日時</h2>
-            <p style="font-size: 18px; font-weight: bold; color: #333;">
-              ${formattedDate} ${formattedTime}
+            <h2 style="color: #887c5d; margin-top: 0; border-bottom: 2px solid #887c5d; padding-bottom: 10px;">■キャンセルされたご予約内容</h2>
+            <p style="font-size: 16px; margin-bottom: 10px;">
+              <strong>予定日時：</strong>${formattedDate} ${formattedTime}
             </p>
           </div>
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
-            <h2 style="color: #887c5d; margin-top: 0; border-bottom: 2px solid #887c5d; padding-bottom: 10px;">■変更後のご注文内容</h2>
+            <h2 style="color: #887c5d; margin-top: 0; border-bottom: 2px solid #887c5d; padding-bottom: 10px;">■キャンセルされた商品</h2>
             <ul style="list-style: none; padding: 0;">
               ${items.map((item: OrderItem) => `
                 <li style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 3px;">
@@ -106,15 +105,9 @@ export async function POST(request: Request) {
             </ul>
             <div style="text-align: right; margin-top: 15px; padding-top: 15px; border-top: 2px solid #887c5d;">
               <p style="font-size: 18px; font-weight: bold; color: #887c5d;">
-                合計金額: ¥${total.toLocaleString()}
+                合計金額: ¥${(order.total_price || 0).toLocaleString()}
               </p>
             </div>
-          </div>
-
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
-            <h2 style="color: #887c5d; margin-top: 0; border-bottom: 2px solid #887c5d; padding-bottom: 10px;">■お受け取りについて</h2>
-            <p style="margin-bottom: 10px;">ご予約のお引き取りは、<strong>並ばずにご入店</strong>ください。<br>その時間のご予約の方が優先になります。</p>
-            <p style="font-weight: bold;">ご予約商品のお受け取りの際の路上駐車は絶対にできません。<br>コインパーキングをご利用いただきますようお願い致します。</p>
           </div>
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
@@ -129,10 +122,15 @@ export async function POST(request: Request) {
           </div>
 
           <div style="margin-top: 30px; padding: 20px; background-color: #f0f0f0; border-radius: 5px; text-align: center;">
-            <p style="margin-bottom: 10px;">ご不明な点がございましたら、お気軽にお問い合わせください。</p>
+            <p style="margin-bottom: 10px;">またのご利用をお待ちしております。</p>
             <p style="font-weight: bold; color: #887c5d;">
               BAGELラクダピクニック<br>
               📞 089-904-2666
+            </p>
+            <p style="margin-top: 15px;">
+              <a href="https://rakudapicnic.vercel.app" style="color: #887c5d; text-decoration: underline;">
+                オンラインストアはこちら
+              </a>
             </p>
           </div>
         </div>
@@ -141,7 +139,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('注文変更メール送信エラー:', error);
+    console.error('キャンセルメール送信エラー:', error);
     return NextResponse.json({ error: 'メール送信に失敗しました' }, { status: 500 });
   }
 }

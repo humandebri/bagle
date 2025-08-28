@@ -7,7 +7,7 @@ export const emailConfig = {
   },
   
   // 返信先メールアドレス
-  replyTo: process.env.RESEND_REPLY_TO || 'onboarding@resend.dev',
+  replyTo: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
   
   // メール送信元の形式を生成
   getFromAddress() {

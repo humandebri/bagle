@@ -18,15 +18,35 @@ interface OrderDetails {
 }
 
 interface RequestBody {
-  email: string;
+  userId?: string;
+  email?: string;
   orderDetails: OrderDetails;
 }
 
 export async function POST(request: Request) {
   try {
-    const { email, orderDetails }: RequestBody = await request.json();
+    const { userId, email: providedEmail, orderDetails }: RequestBody = await request.json();
+    
+    // userIdからメールアドレスを取得
+    let email = providedEmail;
+    if (userId && !email) {
+      const { prisma } = await import('@/lib/prisma');
+      const profile = await prisma.profiles.findUnique({
+        where: { user_id: userId },
+        select: { email: true }
+      });
+      email = profile?.email || undefined;
+    }
+    
+    if (!email) {
+      console.error('メールアドレスが見つかりません:', { userId, providedEmail });
+      return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });
+    }
+    
+    console.log('送信先メールアドレス:', email);
+    console.log('送信元設定:', emailConfig.getFromAddress());
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
       replyTo: emailConfig.replyTo,
       to: email,
@@ -59,23 +79,15 @@ export async function POST(request: Request) {
           </div>
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
-            <h2 style="color: #666; margin-top: 0;">■予約キャンセルについて</h2>
-            <p>キャンセル規定によりキャンセル料が発生した場合、直接キャンセル料が請求される場合があります。</p>
-            
-            <h3 style="color: #666; margin-top: 15px;">キャンセル規定</h3>
-            <ul style="list-style: none; padding: 0;">
-              <li style="margin-bottom: 5px;">2日前：合計金額の0%</li>
-              <li style="margin-bottom: 5px;">当日：合計金額の100%</li>
-              <li style="margin-bottom: 5px;">無断：合計金額の100%</li>
-            </ul>
-            
-            <p style="margin-top: 15px; font-weight: bold;">特記事項：</p>
-            <p>前日のキャンセルはお電話ください。ご連絡がない場合は、前日キャンセルとなりキャンセル料をいただきます。</p>
-          </div>
-
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
-            <h2 style="color: #666; margin-top: 0;">■マイページからのキャンセル可能期限</h2>
-            <p>受取日時2日前 23:59</p>
+            <h2 style="color: #666; margin-top: 0;">■キャンセルポリシー</h2>
+            <p style="margin-bottom: 10px;">・キャンセルは<strong>2日前まで</strong>マイページから可能です。</p>
+            <p style="margin-bottom: 10px;">・前日のキャンセルはお電話（📞089-904-2666）でご連絡ください。</p>
+            <p><strong>・当日どうしても来られなくなった場合は、冷凍での後日のお引き取りをお願い致します。必ずお電話でご連絡下さい。</strong></p>
+            <p style="margin-top: 15px;">
+              <a href="https://rakudapicnic.vercel.app/account" style="color: #887c5d; text-decoration: underline;">
+                マイページはこちら
+              </a>
+            </p>
           </div>
 
           <div style="margin-top: 30px; padding: 20px; border-radius: 5px; background-color: #f9f9f9;">
@@ -89,8 +101,10 @@ export async function POST(request: Request) {
         </div>
       `,
     });
+    
+    console.log('メール送信結果:', result);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, messageId: (result as any).id });
   } catch (error) {
     console.error('メール送信エラー:', error);
     return NextResponse.json({ error: 'メール送信に失敗しました' }, { status: 500 });

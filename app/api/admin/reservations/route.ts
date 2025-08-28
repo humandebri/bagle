@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';   // ★ ここを追加
 import { authOptions } from '@/app/lib/auth';        // 設定オブジェクト
 import { createClient } from '@supabase/supabase-js';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
       .from('orders')
       .select(`
         id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
-        profiles(first_name,last_name,phone), shipped, payment_status
+        shipped, payment_status
       `)
       .order('created_at', { ascending: order !== 'desc' });
 
@@ -71,36 +72,45 @@ export async function GET(req: Request) {
       const { data, error } = await q.single();
       if (error) throw error;
       const o = data;
-      const p = Array.isArray(o.profiles)
-        ? o.profiles[0] ?? null
-        : (o.profiles as {
-            first_name: string | null;
-            last_name: string | null;
-            phone: string | null;
-          } | null);
+      
+      // Prismaでprofileを取得
+      const profile = await prisma.profiles.findUnique({
+        where: { user_id: o.user_id },
+        select: {
+          first_name: true,
+          last_name: true,
+          phone: true
+        }
+      });
+      
       const formatted = {
         ...o,
-        customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
-        phone: p?.phone ?? null,
+        customer_name: profile ? `${profile.last_name ?? ''} ${profile.first_name ?? ''}`.trim() : null,
+        phone: profile?.phone ?? null,
       };
       return NextResponse.json(formatted);
     } else {
       const { data, error } = await q;
       if (error) throw error;
-      const formatted = (data ?? []).map((o) => {
-        const p = Array.isArray(o.profiles)
-          ? o.profiles[0] ?? null
-          : (o.profiles as {
-              first_name: string | null;
-              last_name: string | null;
-              phone: string | null;
-            } | null);
+      
+      // 各注文に対してprofileを取得
+      const formatted = await Promise.all((data ?? []).map(async (o) => {
+        const profile = await prisma.profiles.findUnique({
+          where: { user_id: o.user_id },
+          select: {
+            first_name: true,
+            last_name: true,
+            phone: true
+          }
+        });
+        
         return {
           ...o,
-          customer_name: p ? `${p.last_name ?? ''} ${p.first_name ?? ''}`.trim() : null,
-          phone: p?.phone ?? null,
+          customer_name: profile ? `${profile.last_name ?? ''} ${profile.first_name ?? ''}`.trim() : null,
+          phone: profile?.phone ?? null,
         };
-      });
+      }));
+      
       return NextResponse.json(formatted);
     }
   } catch (err) {
