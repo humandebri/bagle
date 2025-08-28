@@ -129,17 +129,19 @@ export default function ReviewPage() {
       }
 
       // 成功後
+      const orderId = orderData.order?.id;  // 注文IDを取得
       resetCart();
       
       // 確認メールを送信
-      // user_idと注文データをAPIに送信（メールアドレスの取得はAPI側で行う）
-      console.log('Sending confirmation email for user_id:', session?.user?.id);
+      // 注文IDと注文データをAPIに送信（send-cancellation-emailと同じ方式）
+      console.log('Sending confirmation email for order_id:', orderId);
 
       const emailRes = await fetch('/api/send-confirmation-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: session?.user?.id,  // user_idを送信
+          orderId: orderId,  // 注文IDを送信（優先）
+          userId: session?.user?.id,  // フォールバック用
           orderDetails: {
             items,
             dispatchDate: formatDate(dispatchDate || ''),

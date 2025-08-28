@@ -18,6 +18,7 @@ interface OrderDetails {
 }
 
 interface RequestBody {
+  orderId?: string;  // 注文IDを追加
   userId?: string;
   email?: string;
   orderDetails: OrderDetails;
@@ -25,26 +26,48 @@ interface RequestBody {
 
 export async function POST(request: Request) {
   try {
-    const { userId, email: providedEmail, orderDetails }: RequestBody = await request.json();
+    const { orderId, userId, email: providedEmail, orderDetails }: RequestBody = await request.json();
     
-    // userIdからメールアドレスを取得
-    let userEmail: string | undefined;
-    if (userId) {
-      // Supabaseから直接取得する方法（プロファイルテーブル経由）
-      const { createServerSupabaseClient } = await import('@/lib/supabase-server');
-      const supabase = await createServerSupabaseClient();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', userId)
-        .single();
+    let email: string | undefined;
+    
+    // 注文IDがある場合は、注文情報からメールアドレスを取得（send-cancellation-emailと同じ方式）
+    if (orderId) {
+      const { prisma } = await import('@/lib/prisma');
+      const order = await prisma.orders.findUnique({
+        where: { id: orderId },
+        include: { 
+          profiles: {
+            select: { email: true }
+          }
+        }
+      });
       
-      if (profile) {
-        userEmail = profile.email;
+      if (order?.profiles?.email) {
+        email = order.profiles.email;
+      }
+    }
+    // 注文IDがない場合は、userIdから取得
+    else if (userId) {
+      const { prisma } = await import('@/lib/prisma');
+      const profile = await prisma.profiles.findUnique({
+        where: { user_id: userId },
+        select: { email: true }
+      });
+      
+      if (profile?.email) {
+        email = profile.email;
       }
     }
     
-    const email = providedEmail || userEmail || 'no-email@example.com';
+    // 最後にprovidedEmailをフォールバックとして使用
+    email = email || providedEmail;
+    
+    if (!email) {
+      console.error('メールアドレスが取得できません:', { orderId, userId, providedEmail });
+      return NextResponse.json({ 
+        error: 'メールアドレスが見つかりません' 
+      }, { status: 400 });
+    }
     
     const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
