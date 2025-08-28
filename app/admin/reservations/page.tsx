@@ -217,6 +217,8 @@ export default function ReservationsPage() {
       const normalizedDate = order.dispatch_date.split('T')[0];
       const formattedTime = order.dispatch_time.split(':').slice(0, 2).join(':');
       const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+      // 苗字を抽出（スペースがある場合は最初の部分、なければ全体）
+      const lastName = order.customer_name ? order.customer_name.split(/[\s　]/)[0] : '未設定';
       
       return {
         title: `${formattedTime} - ${totalItems}個${order.payment_status === 'cancelled' ? ' (キャンセル)' : ''}`,
@@ -225,7 +227,8 @@ export default function ReservationsPage() {
           order,
           time: formattedTime,
           totalItems,
-          customerName: order.customer_name || '未設定'
+          customerName: order.customer_name || '未設定',
+          customerLastName: lastName
         },
         backgroundColor: getStatusColor(order),
         textColor: order.payment_status === 'cancelled' ? '#ffffff' : '#000000',
@@ -398,10 +401,9 @@ export default function ReservationsPage() {
                   {eventInfo.event.extendedProps.time}
                   <span className="mx-1" />
                   {eventInfo.event.extendedProps.totalItems}個
+                  <span className="mx-1" />
+                  {eventInfo.event.extendedProps.customerLastName}様
                 </div>
-                {eventInfo.event.extendedProps.order.payment_status === 'cancelled' && (
-                  <div className="text-xs">キャンセル</div>
-                )}
               </div>
             )}
           />
@@ -530,10 +532,6 @@ export default function ReservationsPage() {
                           </span>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="text-sm text-gray-500">
-                      {order.items.map(item => `${item.name}(${item.quantity}個)`).join(', ')}
                     </div>
                   </div>
                 ))}

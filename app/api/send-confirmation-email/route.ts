@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     
     console.log('メール送信結果:', result);
 
-    return NextResponse.json({ success: true, messageId: (result as any).id });
+    return NextResponse.json({ success: true, messageId: (result as { id?: string }).id });
   } catch (error) {
     console.error('メール送信エラー:', error);
     return NextResponse.json({ error: 'メール送信に失敗しました' }, { status: 500 });

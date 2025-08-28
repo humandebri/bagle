@@ -40,10 +40,11 @@ export async function POST(request: Request) {
     }
     
     // メールアドレスと顧客名を取得
-    const email = order.profiles?.email || order.customer_email;
+    const orderData = order as typeof order & { customer_email?: string | null; customer_name?: string | null };
+    const email = order.profiles?.email || orderData.customer_email;
     const customerName = order.profiles?.last_name 
       ? `${order.profiles.last_name} ${order.profiles.first_name || ''}`
-      : order.customer_name || 'お客様';
+      : orderData.customer_name || 'お客様';
     
     if (!email) {
       return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });

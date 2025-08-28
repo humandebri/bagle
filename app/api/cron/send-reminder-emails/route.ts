@@ -55,10 +55,11 @@ export async function GET() {
     // 各予約にリマインドメールを送信
     const emailPromises = orders.map(async (order) => {
       // メールアドレスと顧客名を取得
-      const email = order.profiles?.email || order.customer_email;
+      const orderData = order as typeof order & { customer_email?: string | null; customer_name?: string | null };
+      const email = order.profiles?.email || orderData.customer_email;
       const customerName = order.profiles?.last_name 
         ? `${order.profiles.last_name} ${order.profiles.first_name || ''}`
-        : order.customer_name || 'お客様';
+        : orderData.customer_name || 'お客様';
       
       if (!email) {
         console.error(`No email found for order ${order.id}`);
