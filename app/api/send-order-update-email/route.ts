@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import { emailConfig } from '@/lib/email-config';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -25,35 +25,25 @@ export async function POST(request: Request) {
   try {
     const { orderId, items, dispatchDate, dispatchTime, total }: RequestBody = await request.json();
     
-    // 注文情報を取得
-    const { data: order, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
-      .single();
+    // Prismaで注文情報とプロフィール情報を一括取得
+    const order = await prisma.orders.findUnique({
+      where: { id: orderId },
+      include: { 
+        profiles: {
+          select: { email: true, first_name: true, last_name: true }
+        }
+      }
+    });
     
-    if (error || !order) {
+    if (!order) {
       return NextResponse.json({ error: '注文情報の取得に失敗しました' }, { status: 404 });
     }
     
-    // Prismaを使ってプロフィール情報を取得
-    let email = order.customer_email;
-    let customerName = order.customer_name || 'お客様';
-    
-    if (order.user_id) {
-      const { prisma } = await import('@/lib/prisma');
-      const profile = await prisma.profiles.findUnique({
-        where: { user_id: order.user_id },
-        select: { email: true, first_name: true, last_name: true }
-      });
-      
-      if (profile) {
-        email = profile.email || email;
-        customerName = profile.last_name 
-          ? `${profile.last_name} ${profile.first_name || ''}`
-          : customerName;
-      }
-    }
+    // メールアドレスと顧客名を取得
+    const email = order.profiles?.email || order.customer_email;
+    const customerName = order.profiles?.last_name 
+      ? `${order.profiles.last_name} ${order.profiles.first_name || ''}`
+      : order.customer_name || 'お客様';
     
     if (!email) {
       return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });

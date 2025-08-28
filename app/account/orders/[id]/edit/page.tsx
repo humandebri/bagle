@@ -317,22 +317,34 @@ export default function EditOrderPage() {
 
     try {
       // 1. タイムスロットを解放（元の予約日時を使用）
-      const { data: slot, error: slotError } = await supabase
-        .from('time_slots')
-        .select('current_bookings')
-        .eq('date', originalDate)
-        .eq('time', originalTime)
-        .single();
-
-      if (!slotError && slot) {
-        const { error: updateSlotError } = await supabase
+      // RPC関数を使用してアトミックに更新
+      const { error: decrementError } = await supabase
+        .rpc('decrement_booking_count', {
+          p_date: originalDate,
+          p_time: originalTime
+        });
+      
+      if (decrementError) {
+        // RPC関数が存在しない場合は従来の方法にフォールバック
+        console.log('RPC function not found, using fallback method');
+        
+        const { data: slot, error: slotError } = await supabase
           .from('time_slots')
-          .update({ current_bookings: Math.max(0, (slot.current_bookings || 0) - 1) })
+          .select('current_bookings')
           .eq('date', originalDate)
-          .eq('time', originalTime);
+          .eq('time', originalTime)
+          .single();
 
-        if (updateSlotError) {
-          console.warn('タイムスロットの解放に失敗しました:', updateSlotError);
+        if (!slotError && slot && slot.current_bookings > 0) {
+          const { error: updateSlotError } = await supabase
+            .from('time_slots')
+            .update({ current_bookings: slot.current_bookings - 1 })
+            .eq('date', originalDate)
+            .eq('time', originalTime);
+
+          if (updateSlotError) {
+            console.warn('タイムスロットの解放に失敗しました:', updateSlotError);
+          }
         }
       }
 

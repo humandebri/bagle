@@ -42,6 +42,11 @@ export async function GET() {
           { payment_status: { not: 'cancelled' } }
         ],
         shipped: false
+      },
+      include: {
+        profiles: {
+          select: { email: true, first_name: true, last_name: true }
+        }
       }
     });
 
@@ -49,26 +54,11 @@ export async function GET() {
 
     // 各予約にリマインドメールを送信
     const emailPromises = orders.map(async (order) => {
-      // Prismaを使ってプロフィール情報を取得
-      let email: string | undefined;
-      let customerName = order.customer_name || 'お客様';
-      
-      if (order.user_id) {
-        const profile = await prisma.profiles.findUnique({
-          where: { user_id: order.user_id },
-          select: { email: true, first_name: true, last_name: true }
-        });
-        
-        if (profile) {
-          email = profile.email || undefined;
-          if (profile.last_name) {
-            customerName = `${profile.last_name} ${profile.first_name || ''}`;
-          }
-        }
-      }
-      
-      // user_idがない場合はcustomer_emailを使用
-      email = email || order.customer_email;
+      // メールアドレスと顧客名を取得
+      const email = order.profiles?.email || order.customer_email;
+      const customerName = order.profiles?.last_name 
+        ? `${order.profiles.last_name} ${order.profiles.first_name || ''}`
+        : order.customer_name || 'お客様';
       
       if (!email) {
         console.error(`No email found for order ${order.id}`);
