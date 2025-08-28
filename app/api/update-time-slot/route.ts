@@ -121,6 +121,30 @@ export async function POST(req: Request): Promise<NextResponse> {
       }
     }
 
+    // 仮予約前に容量チェック
+    const { data: slot, error: slotError } = await supabase
+      .from('time_slots')
+      .select('current_bookings, max_capacity')
+      .eq('date', date)
+      .eq('time', time)
+      .single();
+
+    if (slotError || !slot) {
+      console.error('Failed to fetch time slot:', slotError);
+      return NextResponse.json(
+        { error: '時間枠の確認に失敗しました' },
+        { status: 500 },
+      );
+    }
+
+    // 満員チェック
+    if (slot.current_bookings >= slot.max_capacity) {
+      return NextResponse.json(
+        { error: 'この時間枠は満員です' },
+        { status: 400 },
+      );
+    }
+
     // 時間枠を仮予約（シンプルに1つの関数だけ）
     const { data: result, error } = await supabase
       .rpc('reserve_time_slot', {

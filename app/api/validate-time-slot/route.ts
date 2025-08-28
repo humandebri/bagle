@@ -75,6 +75,18 @@ export async function POST(request: Request) {
       current_bookings: slot.current_bookings
     });
     
+    // 満員チェック（current_bookings >= max_capacity）
+    if (slot.current_bookings >= slot.max_capacity) {
+      console.log('[validate-time-slot] Slot is full');
+      // ユーザーが明示的に選択した場合は、後続の処理で既存予約や仮予約をチェック
+      if (!isUserSelection) {
+        return NextResponse.json({ 
+          valid: false, 
+          message: 'この時間枠は満員です。別の時間枠を選択してください。' 
+        });
+      }
+    }
+    
     // 現在のユーザーセッションを取得
     const session = await getServerSession(authOptions);
     

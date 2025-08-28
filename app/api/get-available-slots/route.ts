@@ -30,16 +30,21 @@ export async function GET() {
       throw error;
     }
 
-    // 予約開始制限をかける
+    // 予約開始制限をかける & 満員の枠を除外
     // 各日付について、ちょうど7日前の0時から予約可能
     const filteredTimeSlots = allTimeSlots.filter((slot) => {
-      // ① 「スロット日の JST 00:00」を "絶対時刻" として取得（UTCに固定される）
+      // ① 満員チェック（current_bookings >= max_capacity なら除外）
+      if (slot.current_bookings >= slot.max_capacity) {
+        return false;
+      }
+
+      // ② 「スロット日の JST 00:00」を "絶対時刻" として取得（UTCに固定される）
       const slotStartJSTMs = Date.parse(`${slot.date}T00:00:00+09:00`);
 
-      // ② そこから 7 日（JSTはDSTが無いので 86400000ms×7 でOK）さかのぼる
+      // ③ そこから 7 日（JSTはDSTが無いので 86400000ms×7 でOK）さかのぼる
       const bookingStartJSTMs = slotStartJSTMs - 7 * 24 * 60 * 60 * 1000;
 
-      // ③ いま（UTCの現在時刻）と絶対時刻（JST 00:00 相当）を ms で比較
+      // ④ いま（UTCの現在時刻）と絶対時刻（JST 00:00 相当）を ms で比較
       return Date.now() >= bookingStartJSTMs;
     });
 

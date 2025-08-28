@@ -74,6 +74,31 @@ export async function POST(req: NextRequest) {
       if (incrementError) {
         console.error('current_bookingsの更新に失敗:', incrementError);
       }
+
+      // 3. 満員になったらis_availableをfalseに更新
+      const { data: updatedSlot, error: slotCheckError } = await supabaseAdmin
+        .from('time_slots')
+        .select('current_bookings, max_capacity')
+        .eq('date', dispatch_date)
+        .eq('time', dispatch_time)
+        .single();
+
+      if (!slotCheckError && updatedSlot) {
+        // current_bookings >= max_capacity の場合、is_availableをfalseに
+        if (updatedSlot.current_bookings >= updatedSlot.max_capacity) {
+          const { error: updateError } = await supabaseAdmin
+            .from('time_slots')
+            .update({ is_available: false })
+            .eq('date', dispatch_date)
+            .eq('time', dispatch_time);
+
+          if (updateError) {
+            console.error('is_availableの更新に失敗:', updateError);
+          } else {
+            console.log(`時間枠 ${dispatch_date} ${dispatch_time} が満員になったため、is_availableをfalseに更新しました`);
+          }
+        }
+      }
     }
 
     const { data, error } = await supabaseAdmin.from('orders').insert({
