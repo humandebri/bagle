@@ -140,7 +140,7 @@ export default function CheckoutPage() {
       });
   
       if (!response.ok) {
-        const error = await response.json();
+        await response.json();
         toast.error('プロフィールの保存に失敗しました');
         return;
       }

@@ -17,7 +17,8 @@ export default function Access() {
                 src="/images/Rakuda Picnic_storefront.png"
                 alt="Rakuda Picnic storefront"
                 width={400}
-                height={4000}
+                height={400}
+                sizes="(max-width: 768px) 100vw, 400px"
                 className="w-full"
               />
               </div>

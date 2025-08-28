@@ -89,7 +89,7 @@ export default function ProfilePage() {
         throw new Error(error.error || '保存に失敗しました');
       }
 
-      const result = await response.json();
+      await response.json();
       
       setMessage('プロフィールを保存しました');
       setInitial({ first_name: firstName, last_name: lastName, phone });

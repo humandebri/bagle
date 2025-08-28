@@ -43,6 +43,7 @@ export default async function Home() {
           src="/images/IMG_1867.jpeg"
           alt="ベーグル専門店"
           fill
+          sizes="100vw"
           className="object-cover"
           priority
         />
@@ -101,6 +102,7 @@ export default async function Home() {
                     src="/images/81929539-44B9-49E0-831E-001BD8A1ECCE.jpeg"
                     alt="焼きたてベーグル"
                     fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 300px"
                     className="object-cover hover:scale-105 transition duration-300"
                   />
                 </div>
@@ -109,6 +111,7 @@ export default async function Home() {
                     src="/images/beagel_plane.jpg"
                     alt="手作りベーグル"
                     fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 300px"
                     className="object-cover hover:scale-105 transition duration-300"
                   />
                 </div>
@@ -117,6 +120,7 @@ export default async function Home() {
                     src="/images/5C56F05A-C8F2-4A1B-8263-906836D633B8.jpeg"
                     alt="ベーグルの種類"
                     fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 300px"
                     className="object-cover hover:scale-105 transition duration-300"
                   />
                 </div>
@@ -125,6 +129,7 @@ export default async function Home() {
                     src="/images/shop_display.jpg"
                     alt="店舗の様子"
                     fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 300px"
                     className="object-cover hover:scale-105 transition duration-300"
                   />
                 </div>

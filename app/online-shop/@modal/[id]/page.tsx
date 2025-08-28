@@ -162,7 +162,9 @@ export default function BagelModalPage() {
             src={product.image ?? "/placeholder.svg"}
             alt={product.name}
             fill
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
+            unoptimized={product.image?.includes('supabase.co') || false}
           />
         </div>
 

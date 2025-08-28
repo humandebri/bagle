@@ -19,7 +19,7 @@ const profileUpdateSchema = z.object({
 });
 
 // GET: プロフィール取得
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 認証チェック
     const session = await getServerSession(authOptions);

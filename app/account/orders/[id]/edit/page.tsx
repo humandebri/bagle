@@ -565,7 +565,9 @@ export default function EditOrderPage() {
                         src={product.image || '/placeholder.svg'}
                         alt={product.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover rounded"
+                        unoptimized={product.image?.includes('supabase.co') || false}
                       />
                     </div>
                     <h3 className="font-semibold">{product.name}</h3>

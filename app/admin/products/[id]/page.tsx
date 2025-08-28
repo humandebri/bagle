@@ -180,6 +180,7 @@ export default function EditProductPage() {
                 width={128}
                 height={128}
                 className="object-cover rounded"
+                unoptimized={product.image?.includes('supabase.co') || false}
               />
             )}
             <input

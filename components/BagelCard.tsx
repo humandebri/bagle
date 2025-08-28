@@ -48,6 +48,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
             fill
             sizes="(max-width: 640px) 120px, (max-width: 768px) 150px, 180px"
             className="object-cover"
+            unoptimized={bagel.image?.includes('supabase.co') || false}
           />
         </div>
       </div>

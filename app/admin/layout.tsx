@@ -55,7 +55,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-100">
       <div className="flex">
         {/* サイドバー */}
-        <div className="w-16 md:w-64 min-h-screen bg-white shadow-sm">
+        <div className="w-12 md:w-64 min-h-screen bg-white shadow-sm">
           <div className="p-4">
             <h1 className="text-xl font-bold text-gray-800 hidden md:block">管理画面</h1>
           </div>
