@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Minus, Plus, ShoppingBag } from 'lucide-react';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import { TimeSlot } from '@/lib/supabase-server';
 import {
   Select,
@@ -44,6 +44,7 @@ export default function EditOrderPage() {
     description: string;
     price: number;
     image: string | null;
+    image_webp?: string | null;
     category: { name: string };
   }>>([]);
   const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
@@ -154,12 +155,13 @@ export default function EditOrderPage() {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(name)')
+        .select('id, name, description, price, image, image_webp, category:categories!inner(name)')
         .eq('is_available', true)
         .order('created_at', { ascending: false });
       
       if (!error && data) {
-        setProducts(data);
+        // Supabaseのレスポンスを正しい型にマッピング
+        setProducts(data as unknown as typeof products);
       }
     };
 
@@ -561,13 +563,12 @@ export default function EditOrderPage() {
                     onClick={() => addProduct(product)}
                   >
                     <div className="relative w-full h-40 mb-3">
-                      <Image
-                        src={product.image || '/placeholder.svg'}
+                      <SafeImage
+                        product={product}
                         alt={product.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover rounded"
-                        unoptimized={product.image?.includes('supabase.co') || false}
                       />
                     </div>
                     <h3 className="font-semibold">{product.name}</h3>

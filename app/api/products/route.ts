@@ -17,6 +17,7 @@ export async function GET(request: Request) {
         long_description,
         price,
         image,
+        image_webp,
         is_available,
         is_limited,
         start_date,

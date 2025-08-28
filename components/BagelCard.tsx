@@ -1,7 +1,7 @@
 // BagelCard.tsx（全体コードを差し替え）
 'use client';
 
-import Image from 'next/image';
+import SafeImage from './SafeImage';
 
 export type Bagel = {
   id: string;
@@ -10,6 +10,7 @@ export type Bagel = {
   longDescription: string;
   price: number;
   image?: string;
+  image_webp?: string;
   tags: string[];
 };
 
@@ -42,13 +43,12 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
       {/* ------- 右 1fr ------- */}
       <div className="flex items-center ">
         <div className="relative w-full aspect-square rounded-full overflow-hidden">
-          <Image
-            src={bagel.image && bagel.image !== '' ? bagel.image : '/placeholder.svg'}
+          <SafeImage
+            product={bagel}
             alt={bagel.name}
             fill
             sizes="(max-width: 640px) 120px, (max-width: 768px) 150px, 180px"
             className="object-cover"
-            unoptimized={bagel.image?.includes('supabase.co') || false}
           />
         </div>
       </div>

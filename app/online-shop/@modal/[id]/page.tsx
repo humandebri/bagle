@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Image from "next/image";
+import SafeImage from "@/components/SafeImage";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
@@ -16,6 +16,7 @@ type Product = {
   long_description: string;
   price: number;
   image: string;
+  image_webp: string | null;
   is_available: boolean;
   is_limited: boolean;
   start_date: string | null;
@@ -158,13 +159,12 @@ export default function BagelModalPage() {
 
         {/* 画像 */}
         <div className="relative w-full aspect-square overflow-hidden">
-          <Image
-            src={product.image ?? "/placeholder.svg"}
+          <SafeImage
+            product={product}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
-            unoptimized={product.image?.includes('supabase.co') || false}
           />
         </div>
 

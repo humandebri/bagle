@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const formattedDate = format(new Date(dispatchDate + 'T00:00:00+09:00'), 'yyyy年MM月dd日(E)', { locale: ja });
     const formattedTime = formatTimeRange(dispatchTime);
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
       replyTo: emailConfig.replyTo,
       to: email,
@@ -130,7 +130,35 @@ export async function POST(request: Request) {
       `,
     });
 
-    return NextResponse.json({ success: true });
+    // Resendのレスポンス構造: { data: { id: "xxx" }, error: null }
+    interface ResendResponse {
+      data?: { id: string };
+      id?: string;
+      error?: unknown;
+    }
+    const typedResult = result as ResendResponse;
+    const messageId = typedResult.data?.id || typedResult.id;
+    
+    if (typedResult.error) {
+      console.error('Resendエラー:', typedResult.error);
+      return NextResponse.json({ 
+        error: 'メール送信に失敗しました',
+        details: typedResult.error 
+      }, { status: 500 });
+    }
+    
+    if (!messageId) {
+      console.error('ResendからメッセージIDが返されませんでした:', result);
+      return NextResponse.json({ 
+        error: 'メール送信に失敗しました',
+        details: result 
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      messageId: messageId 
+    });
   } catch (error) {
     console.error('注文変更メール送信エラー:', error);
     return NextResponse.json({ error: 'メール送信に失敗しました' }, { status: 500 });

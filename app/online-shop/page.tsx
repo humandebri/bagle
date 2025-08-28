@@ -15,6 +15,7 @@ type Product = {
   long_description: string;
   price: number;
   image: string;
+  image_webp: string | null;
   is_available: boolean;
   is_limited: boolean;
   start_date: string | null;
@@ -119,6 +120,7 @@ export default function OnlineShopPage() {
       longDescription: product.long_description,
       price: product.price,
       image: product.image && product.image !== '' ? product.image : undefined,
+      image_webp: product.image_webp || undefined,
       tags: product.is_available ? [] : ['販売停止中'],
     }));
   };

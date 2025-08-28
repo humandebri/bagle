@@ -43,13 +43,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });
     }
     
-    console.log('送信先メールアドレス:', email);
-    console.log('送信元設定:', emailConfig.getFromAddress());
-
     const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
       replyTo: emailConfig.replyTo,
-      to: email,
+      to: [email], // 配列形式で送信
       subject: '【BAGELラクダピクニック】ご予約が確定いたしました',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -102,11 +99,42 @@ export async function POST(request: Request) {
       `,
     });
     
-    console.log('メール送信結果:', result);
+    // Resendのレスポンス構造: { data: { id: "xxx" }, error: null }
+    interface ResendResponse {
+      data?: { id: string };
+      id?: string;
+      error?: unknown;
+    }
+    const typedResult = result as ResendResponse;
+    const messageId = typedResult.data?.id || typedResult.id;
 
-    return NextResponse.json({ success: true, messageId: (result as { id?: string }).id });
+    // 送信結果の検証
+    if (typedResult.error) {
+      console.error('Resendエラー:', typedResult.error);
+      return NextResponse.json({ 
+        error: 'メール送信に失敗しました',
+        details: typedResult.error 
+      }, { status: 500 });
+    }
+    
+    if (!messageId) {
+      console.error('ResendからメッセージIDが返されませんでした:', result);
+      return NextResponse.json({ 
+        error: 'メール送信に失敗しました（IDなし）',
+        details: result 
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      messageId: messageId,
+      sentTo: email
+    });
   } catch (error) {
     console.error('メール送信エラー:', error);
-    return NextResponse.json({ error: 'メール送信に失敗しました' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'メール送信に失敗しました',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
