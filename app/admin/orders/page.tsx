@@ -119,25 +119,130 @@ export default function OrdersAdminPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">注文管理</h1>
+    <div className="px-2 py-3 sm:px-4 sm:py-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold">注文管理</h1>
         {selectedOrders.length > 0 && (
           <button
             onClick={() => setBulkDeleteConfirm(true)}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
           >
             選択した{selectedOrders.length}件を削除
           </button>
         )}
       </div>
+      
       {loading ? (
-        <p>読み込み中...</p>
+        <p className="text-center py-4">読み込み中...</p>
       ) : error ? (
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500 text-center py-4">{error}</p>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          {/* モバイル用カード表示 */}
+          <div className="lg:hidden space-y-3">
+            <div className="flex items-center justify-between mb-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selectedOrders.length === orders.length && orders.length > 0}
+                  onChange={selectAllOrders}
+                  className="rounded"
+                />
+                すべて選択
+              </label>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-600">並び替え:</label>
+                <select
+                  value={sortKey}
+                  onChange={(e) => {
+                    setSortKey(e.target.value);
+                    setPage(0);
+                  }}
+                  className="text-sm border border-[#887c5d]/30 rounded-lg px-2 py-1 bg-white hover:bg-[#f5f2ea] transition-colors focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20"
+                >
+                  <option value="created_at">注文日</option>
+                  <option value="dispatch_date">お渡し日</option>
+                  <option value="total_price">金額</option>
+                  <option value="customer_name">顧客名</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="text-sm border border-[#887c5d]/30 rounded-lg px-2 py-1 hover:bg-[#f5f2ea] transition-colors"
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+            </div>
+            
+            {orders.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">注文がありません</div>
+            ) : (
+              orders.map(order => (
+                <div key={order.id} className="bg-white border rounded-lg shadow-sm p-2">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.includes(order.id)}
+                        onChange={() => toggleSelectOrder(order.id)}
+                        className="mt-1 rounded"
+                      />
+                      <div>
+                        <div className="font-medium text-sm">
+                          {order.customer_name || '顧客名未設定'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ID: {order.id.slice(0, 8)}...
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {order.payment_status === 'cancelled' ? (
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">キャンセル</span>
+                      ) : order.shipped ? (
+                        <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">受渡済み</span>
+                      ) : (
+                        <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded">未受渡</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">注文日:</span>
+                      <span>{order.created_at?.slice(0, 10)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">お渡し日:</span>
+                      <span>{order.dispatch_date || '-'} {order.dispatch_time || ''}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">金額:</span>
+                      <span className="font-medium">{formatYen(order.total_price)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-3 pt-3 border-t">
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      className="flex-1 bg-[#887c5d] text-white text-center py-2 rounded-lg text-sm hover:bg-[#6e634b] transition-colors font-medium"
+                    >
+                      詳細
+                    </Link>
+                    <button
+                      onClick={() => setDeleteConfirmId(order.id)}
+                      className="flex-1 bg-white text-red-500 border border-red-500 py-2 rounded-lg text-sm hover:bg-red-50 transition-colors font-medium"
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* PC用テーブル表示 */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="bg-gray-50">
@@ -148,14 +253,30 @@ export default function OrdersAdminPage() {
                       onChange={selectAllOrders}
                     />
                   </th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('id')}>注文ID</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('customer_name')}>顧客名</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('created_at')}>注文日</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('dispatch_date')}>お渡し日</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('dispatch_time')}>受渡時間</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('total_price')}>合計金額</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('shipped')}>受渡状況</th>
-                  <th className="px-2 py-1 text-left cursor-pointer" onClick={() => handleSort('payment_status')}>状態</th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('id')}>
+                    注文ID {sortKey === 'id' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('customer_name')}>
+                    顧客名 {sortKey === 'customer_name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('created_at')}>
+                    注文日 {sortKey === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('dispatch_date')}>
+                    お渡し日 {sortKey === 'dispatch_date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('dispatch_time')}>
+                    受渡時間 {sortKey === 'dispatch_time' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('total_price')}>
+                    合計金額 {sortKey === 'total_price' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('shipped')}>
+                    受渡状況 {sortKey === 'shipped' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('payment_status')}>
+                    状態 {sortKey === 'payment_status' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="px-2 py-1 text-left">詳細</th>
                   <th className="px-2 py-1 text-left">削除</th>
                 </tr>
@@ -164,7 +285,7 @@ export default function OrdersAdminPage() {
                 {orders.length === 0 ? (
                   <tr><td colSpan={11} className="text-center py-4">注文がありません</td></tr>
                 ) : orders.map(order => (
-                  <tr key={order.id} className="border-b">
+                  <tr key={order.id} className="border-b hover:bg-gray-50">
                     <td className="px-2 py-1">
                       <input
                         type="checkbox"
@@ -187,12 +308,12 @@ export default function OrdersAdminPage() {
                       )}
                     </td>
                     <td className="px-2 py-1 text-left">
-                      <Link href={`/admin/orders/${order.id}`} className="text-blue-600 underline">詳細</Link>
+                      <Link href={`/admin/orders/${order.id}`} className="text-[#887c5d] hover:text-[#6e634b] underline transition-colors">詳細</Link>
                     </td>
                     <td className="px-2 py-1 text-left">
                       <button
                         onClick={() => setDeleteConfirmId(order.id)}
-                        className="text-red-600 hover:underline"
+                        className="text-red-600 hover:text-red-700 hover:underline transition-colors"
                       >
                         削除
                       </button>
@@ -202,41 +323,50 @@ export default function OrdersAdminPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex justify-end gap-2 mt-2">
+          
+          {/* ページネーション */}
+          <div className="flex justify-center sm:justify-end gap-2 mt-4">
             <button
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              className="px-3 py-2 border border-[#887c5d]/30 rounded-lg disabled:opacity-50 text-sm sm:text-base hover:bg-[#f5f2ea] transition-colors font-medium"
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
-            >←</button>
+            >
+              ← 前へ
+            </button>
+            <span className="px-3 py-1 text-sm sm:text-base">
+              ページ {page + 1}
+            </span>
             <button
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              className="px-3 py-2 border border-[#887c5d]/30 rounded-lg disabled:opacity-50 text-sm sm:text-base hover:bg-[#f5f2ea] transition-colors font-medium"
               onClick={() => setPage(p => p + 1)}
               disabled={orders.length < PAGE_SIZE}
-            >→</button>
+            >
+              次へ →
+            </button>
           </div>
         </>
       )}
 
       {/* 個別削除確認ダイアログ */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md">
-            <h2 className="text-xl font-bold mb-4">削除確認</h2>
-            <p className="mb-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3">
+          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">削除確認</h2>
+            <p className="mb-6 text-sm sm:text-base">
               注文ID: {deleteConfirmId.slice(0, 8)}... を削除してもよろしいですか？
               <br />
-              <span className="text-red-600 text-sm">この操作は取り消せません。</span>
+              <span className="text-red-600 text-xs sm:text-sm">この操作は取り消せません。</span>
             </p>
-            <div className="flex gap-4 justify-end">
+            <div className="flex gap-3 sm:gap-4 justify-end">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-3 sm:px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base font-medium"
               >
                 いいえ
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirmId)}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                className="px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
               >
                 はい、削除する
               </button>
@@ -247,24 +377,24 @@ export default function OrdersAdminPage() {
 
       {/* 一括削除確認ダイアログ */}
       {bulkDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md">
-            <h2 className="text-xl font-bold mb-4">一括削除確認</h2>
-            <p className="mb-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3">
+          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">一括削除確認</h2>
+            <p className="mb-6 text-sm sm:text-base">
               選択した{selectedOrders.length}件の注文を削除してもよろしいですか？
               <br />
-              <span className="text-red-600 text-sm">この操作は取り消せません。</span>
+              <span className="text-red-600 text-xs sm:text-sm">この操作は取り消せません。</span>
             </p>
-            <div className="flex gap-4 justify-end">
+            <div className="flex gap-3 sm:gap-4 justify-end">
               <button
                 onClick={() => setBulkDeleteConfirm(false)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-3 sm:px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base font-medium"
               >
                 いいえ
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                className="px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
               >
                 はい、削除する
               </button>
@@ -274,4 +404,4 @@ export default function OrdersAdminPage() {
       )}
     </div>
   );
-} 
+}

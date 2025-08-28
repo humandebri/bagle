@@ -50,8 +50,8 @@ export default function OrderDetailPage() {
   }, [id]);
 
   return (
-    <div className="p-6">
-      <button className="mb-4 text-blue-600 underline" onClick={() => router.back()}>&larr; 戻る</button>
+    <div className="px-2 py-3 sm:px-4 sm:py-4 lg:p-6">
+      <button className="mb-4 text-[#887c5d] hover:text-[#6e634b] underline transition-colors font-medium" onClick={() => router.back()}>&larr; 戻る</button>
       <h1 className="text-2xl font-bold mb-6">注文詳細</h1>
       {loading ? (
         <p>読み込み中...</p>

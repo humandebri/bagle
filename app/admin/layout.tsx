@@ -8,10 +8,11 @@ import {
   HomeIcon, 
   FolderIcon, 
   CubeIcon,
-  CalendarIcon,
   CalendarDaysIcon,
   ShoppingCartIcon,
-  NewspaperIcon
+  NewspaperIcon,
+  ClipboardDocumentListIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({
@@ -29,7 +30,7 @@ export default function AdminLayout({
   }, [session, status, router]);
 
   if (status === 'loading') {
-    return <div className="p-8 text-center">ロード中...</div>;
+    return <div className="p-4 sm:p-8 text-center">ロード中...</div>;
   }
 
   if (status === 'authenticated' && session?.user?.role !== 'admin') {
@@ -42,8 +43,8 @@ export default function AdminLayout({
     { name: 'カテゴリー管理', href: '/admin/categories', icon: FolderIcon },
     { name: '注文管理', href: '/admin/orders', icon: ShoppingCartIcon },
     // { name: 'タグ管理', href: '/admin/tags', icon: TagIcon },
-    { name: '予約管理', href: '/admin/reservations', icon: CalendarIcon },
-    { name: '時間枠管理', href: '/admin/time_slots', icon: CalendarIcon },
+    { name: '予約管理', href: '/admin/reservations', icon: ClipboardDocumentListIcon },
+    { name: '時間枠管理', href: '/admin/time_slots', icon: ClockIcon },
     { name: '営業日カレンダー', href: '/admin/business-calendar', icon: CalendarDaysIcon },
     { name: 'お知らせ管理', href: '/admin/news', icon: NewspaperIcon },
   ];
@@ -73,7 +74,7 @@ export default function AdminLayout({
         </div>
 
         {/* メインコンテンツ */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-3 sm:p-6 lg:p-8">
           {children}
         </div>
       </div>

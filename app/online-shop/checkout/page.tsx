@@ -5,7 +5,6 @@ import { useCartStore } from '@/store/cart-store';
 import { useAuthSession } from '@/lib/auth-compat';
 import { clientSignIn } from '@/lib/next-auth-client';
 import { FcGoogle } from 'react-icons/fc';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import {  DateTimeDisplay_order } from '@/components/DateTimeDisplay';
 import { toast } from 'sonner';
@@ -52,34 +51,37 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    const userId = session?.user?.id;
-    const userMail = session?.user?.email;
-    if (!userId) return;
+    if (status === 'loading') return;
+    if (!session?.user?.id) return;
   
-    const fetch = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+    const fetchProfile = async () => {
+      try {
+        // サーバーサイドAPIを使用してプロフィールを取得
+        const response = await fetch('/api/profile');
+        
+        if (!response.ok) {
+          // エラーの詳細は表示しない
+          return;
+        }
   
-      if (error) {
-        console.error('プロフィール取得失敗:', error.message);
-        return;
-      }
-  
-      if (data) {
-        setFirstName(data.first_name ?? '');
-        setLastName(data.last_name ?? '');
-        setPhone(data.phone ?? '');
-        setEmail(data.email ?? userMail ?? '');
-      } else {
-        setEmail(userMail ?? '');
+        const data = await response.json();
+        
+        if (data) {
+          setFirstName(data.first_name ?? '');
+          setLastName(data.last_name ?? '');
+          setPhone(data.phone ?? '');
+          setEmail(data.email ?? session.user?.email ?? '');
+        } else {
+          setEmail(session.user?.email ?? '');
+        }
+      } catch {
+        // エラーの詳細はログに出力しない（本番環境のため）
+        setEmail(session.user?.email ?? '');
       }
     };
   
-    fetch();
-  }, [session]);
+    fetchProfile();
+  }, [session, status]);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -118,30 +120,35 @@ export default function CheckoutPage() {
       return;
     }
   
-    const userId = session?.user?.id;
-    const userMail = session?.user?.email;
-  
-    if (!userId || !userMail) {
+    if (!session?.user?.id) {
       router.push('/online-shop');
       return;
     }
   
-    const { error } = await supabase.from('profiles').upsert({
-      user_id: userId, // ← Google IDを主キーに
-      email: userMail,
-      first_name: firstName,
-      last_name: lastName,
-      phone,
-    });
+    // サーバーサイドAPIを使用してプロフィールを保存
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+        }),
+      });
   
-    if (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('プロフィール保存失敗:', error.message);
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error('プロフィールの保存に失敗しました');
+        return;
       }
-      return;
-    }
   
-    router.push('/online-shop/review');
+      router.push('/online-shop/review');
+    } catch {
+      toast.error('プロフィールの保存に失敗しました');
+    }
   };
   
 

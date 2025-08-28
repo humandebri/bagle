@@ -150,7 +150,7 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="px-2 py-3 sm:px-4 sm:py-4 lg:p-6">
       <h1 className="text-2xl font-bold mb-6">商品編集</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">

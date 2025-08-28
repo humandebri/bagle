@@ -46,6 +46,7 @@ export default function BagelCard({ bagel }: { bagel: Bagel }) {
             src={bagel.image && bagel.image !== '' ? bagel.image : '/placeholder.svg'}
             alt={bagel.name}
             fill
+            sizes="(max-width: 640px) 120px, (max-width: 768px) 150px, 180px"
             className="object-cover"
           />
         </div>

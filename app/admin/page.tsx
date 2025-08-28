@@ -205,40 +205,50 @@ export default function AdminDashboard() {
 
 
   return (
-    <div>
-
+    <div className="px-2 py-3 sm:px-4 sm:py-4">
+      {/* モバイル用タイトル */}
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:hidden">ダッシュボード</h1>
       
       {/* 期間指定フォーム */}
-      <div className="mb-6 flex flex-wrap gap-4 items-end justify-between">
-        <div className="flex gap-4 items-end">
-          <div>
-            <label className="block text-sm text-gray-600">開始日</label>
-            <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="border rounded px-2 py-1" />
+      <div className="mb-6 flex flex-col lg:flex-row gap-4 lg:items-end lg:justify-between">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-end">
+          <div className="flex-1 sm:flex-initial">
+            <label className="block text-xs sm:text-sm text-gray-600 mb-1">開始日</label>
+            <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="w-full border border-[#887c5d]/30 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20" />
           </div>
-          <div>
-            <label className="block text-sm text-gray-600">終了日</label>
-            <input type="date" value={to} onChange={e => setTo(e.target.value)} className="border rounded px-2 py-1" />
+          <div className="flex-1 sm:flex-initial">
+            <label className="block text-xs sm:text-sm text-gray-600 mb-1">終了日</label>
+            <input type="date" value={to} onChange={e => setTo(e.target.value)} className="w-full border border-[#887c5d]/30 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20" />
           </div>
         </div>
-        <div className="flex gap-6 items-end text-gray-700 text-base font-medium">
-          <div>
-            <span>商品数</span>
+        <div className="grid grid-cols-2 sm:flex gap-3 sm:gap-6 text-gray-700 text-xs sm:text-base font-medium">
+          <div className="bg-white p-2 sm:p-0 rounded-lg border sm:border-0">
+            <span className="text-gray-600">商品</span>
             <span className="font-bold text-green-700 ml-1" title="販売中">{availableProductCount}</span>
             <span className="text-gray-500 mx-1">/</span>
             <span className="font-bold text-gray-500" title="停止中">{unavailableProductCount}</span>
           </div>
-          <div>カテゴリー数 <span className="font-bold text-gray-900">{categoryCount}</span></div>
-          <div title="選択期間内の注文数">注文数 <span className="font-bold text-gray-900">{orderCount}</span></div>
-          <div title="今日以降の予約可能枠">時間枠数 <span className="font-bold text-gray-900">{timeSlotCount}</span></div>
+          <div className="bg-white p-2 sm:p-0 rounded-lg border sm:border-0">
+            <span className="text-gray-600">カテゴリー</span>
+            <span className="font-bold text-gray-900 ml-1">{categoryCount}</span>
+          </div>
+          <div className="bg-white p-2 sm:p-0 rounded-lg border sm:border-0" title="選択期間内の注文数">
+            <span className="text-gray-600">注文</span>
+            <span className="font-bold text-gray-900 ml-1">{orderCount}</span>
+          </div>
+          <div className="bg-white p-2 sm:p-0 rounded-lg border sm:border-0" title="今日以降の予約可能枠">
+            <span className="text-gray-600">時間枠</span>
+            <span className="font-bold text-gray-900 ml-1">{timeSlotCount}</span>
+          </div>
         </div>
       </div>
 
       {/* ダッシュボード上部：購入制限とKPI */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
         {/* 購入制限設定 */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-2">購入制限設定</h3>
-          <div className="space-y-2 text-sm">
+        <div className="bg-white p-2 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 border-b pb-1 sm:pb-2">購入制限設定</h3>
+          <div className="space-y-2 text-xs sm:text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">1注文あたり</span>
               <span className="font-bold text-gray-900">{MAX_BAGEL_PER_ORDER}個</span>
@@ -255,25 +265,25 @@ export default function AdminDashboard() {
         </div>
 
         {/* KPI */}
-        <div className="lg:col-span-2 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-2">概要（KPI）</h3>
+        <div className="lg:col-span-2 bg-white p-2 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 border-b pb-1 sm:pb-2">概要（KPI）</h3>
           {loading ? (
-            <p className="text-gray-500 text-sm">読み込み中...</p>
+            <p className="text-gray-500 text-xs sm:text-sm">読み込み中...</p>
           ) : error ? (
-            <p className="text-red-500 text-sm">{error}</p>
+            <p className="text-red-500 text-xs sm:text-sm">{error}</p>
           ) : kpi ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <div>
                 <p className="text-xs text-gray-500 mb-1">売上合計</p>
-                <p className="text-lg font-bold text-gray-900">{formatYen(kpi.totalSales)}</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-900">{formatYen(kpi.totalSales)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">注文数</p>
-                <p className="text-lg font-bold text-gray-900">{kpi.orderCount}</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-900">{kpi.orderCount}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">新規/リピーター</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs text-gray-500 mb-1">新規/リピート</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-900">
                   <span className="text-blue-600">{kpi.newCustomers}</span>
                   <span className="text-gray-400 mx-1">/</span>
                   <span className="text-green-600">{kpi.repeatCustomers}</span>
@@ -281,7 +291,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">平均注文額</p>
-                <p className="text-lg font-bold text-gray-900">{formatYen(kpi.aov)}</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-900">{formatYen(kpi.aov)}</p>
               </div>
             </div>
           ) : null}
@@ -289,15 +299,15 @@ export default function AdminDashboard() {
       </div>
 
       {/* 注文状況セクション */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">注文状況</h2>
+      <div className="bg-white p-2 sm:p-6 rounded-lg shadow-sm mb-4 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">注文状況</h2>
           <div className="flex items-center">
-            <label className="mr-2 text-sm text-gray-600">注文ステータス:</label>
+            <label className="mr-2 text-xs sm:text-sm text-gray-600">ステータス:</label>
             <select
               value={orderStatus}
               onChange={e => { setOrderStatus(e.target.value); setPage(0); }}
-              className="border rounded px-2 py-1"
+              className="border border-[#887c5d]/30 rounded-lg px-2 py-1 text-xs sm:text-sm bg-white hover:bg-[#f5f2ea] transition-colors focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20"
             >
               {ORDER_STATUS_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -311,8 +321,55 @@ export default function AdminDashboard() {
           <p className="text-red-500">{orderError}</p>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            {/* モバイル用カード表示 */}
+            <div className="sm:hidden space-y-2">
+              {orders.length === 0 ? (
+                <p className="text-center py-4 text-gray-500 text-sm">注文がありません</p>
+              ) : (
+                orders.map(order => (
+                  <div key={order.id} className="bg-gray-50 rounded-lg p-3 space-y-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-xs text-gray-500">ID: {order.id.slice(0, 8)}...</div>
+                        <div className="font-medium text-sm">{order.customer_name || '顧客名未設定'}</div>
+                      </div>
+                      <div className="text-right">
+                        {order.payment_status === 'cancelled' ? (
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">キャンセル</span>
+                        ) : order.shipped ? (
+                          <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">発送済み</span>
+                        ) : (
+                          <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded">未発送</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-500">注文日:</span>
+                        <span className="ml-1">{order.created_at?.slice(0, 10)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`font-medium ${order.payment_status === 'cancelled' ? 'text-red-600 line-through' : ''}`}>
+                          {formatYen(order.total_price)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">配送:</span>
+                        <span className="ml-1">{order.dispatch_date || '-'}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-gray-500">時間:</span>
+                        <span className="ml-1">{order.dispatch_time || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* PC用テーブル表示 */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="px-2 py-1 text-left">注文ID</th>
@@ -352,62 +409,77 @@ export default function AdminDashboard() {
               </table>
             </div>
             {/* ページ送りボタン */}
-            <div className="flex justify-end gap-2 mt-2">
+            <div className="flex justify-center sm:justify-end gap-2 mt-3">
               <button
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className="px-3 py-2 border border-[#887c5d]/30 rounded-lg disabled:opacity-50 hover:bg-[#f5f2ea] transition-colors font-medium text-sm"
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-              >←</button>
+              >← 前へ</button>
+              <span className="px-3 py-2 text-sm">ページ {page + 1}</span>
               <button
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className="px-3 py-2 border border-[#887c5d]/30 rounded-lg disabled:opacity-50 hover:bg-[#f5f2ea] transition-colors font-medium text-sm"
                 onClick={() => setPage(p => p + 1)}
                 disabled={orders.length < PAGE_SIZE}
-              >→</button>
+              >次へ →</button>
             </div>
           </>
         )}
       </div>
 
       {/* マーケティング／分析セクション */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">マーケティング／分析</h2>
-        {/* 粒度・期間切り替え＋ページ送りボタンを同じ行に */}
-        <div className="flex flex-wrap gap-4 items-end mb-4 justify-between">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div>
-              <label className="block text-sm text-gray-600">粒度</label>
-              <select value={salesPeriod} onChange={e => setSalesPeriod(e.target.value as 'daily' | 'monthly')} className="border rounded px-2 py-1">
+      <div className="bg-white p-2 sm:p-6 rounded-lg shadow-sm mb-4 sm:mb-8">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">マーケティング／分析</h2>
+        {/* 粒度・期間切り替え */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4">
+            <div className="col-span-3 sm:col-auto">
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1">粒度</label>
+              <select value={salesPeriod} onChange={e => setSalesPeriod(e.target.value as 'daily' | 'monthly')} className="w-full border border-[#887c5d]/30 rounded-lg px-2 py-2 text-xs sm:text-sm bg-white hover:bg-[#f5f2ea] transition-colors focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20">
                 <option value="daily">日別</option>
                 <option value="monthly">月別</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600">開始日</label>
-              <input type="date" value={salesFrom} onChange={e => setSalesFrom(e.target.value)} className="border rounded px-2 py-1" />
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1">開始日</label>
+              <input type="date" value={salesFrom} onChange={e => setSalesFrom(e.target.value)} className="w-full border border-[#887c5d]/30 rounded-lg px-2 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20" />
             </div>
             <div>
-              <label className="block text-sm text-gray-600">終了日</label>
-              <input type="date" value={salesTo} onChange={e => setSalesTo(e.target.value)} className="border rounded px-2 py-1" />
+              <label className="block text-xs sm:text-sm text-gray-600 mb-1">終了日</label>
+              <input type="date" value={salesTo} onChange={e => setSalesTo(e.target.value)} className="w-full border border-[#887c5d]/30 rounded-lg px-2 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20" />
             </div>
           </div>
-          {/* ここにページ送りボタン等を追加したい場合はこのdivの中に配置 */}
         </div>
         {salesLoading ? (
           <p>読み込み中...</p>
         ) : salesError ? (
           <p className="text-red-500">{salesError}</p>
         ) : (
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={salesStats} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} tickFormatter={v => v.toLocaleString()} />
-              <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-              <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ color: '#374151' }} />
-              <Bar dataKey="totalSales" name="売上合計" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="orderCount" name="注文数" fill="#a5b4fc" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div className="min-w-[300px]">
+              <ResponsiveContainer width="100%" height={240} className="sm:hidden">
+                <BarChart data={salesStats} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" stroke="#6b7280" fontSize={10} />
+                  <YAxis stroke="#6b7280" fontSize={10} tickFormatter={v => v.toLocaleString()} />
+                  <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                  <Legend verticalAlign="top" height={28} iconType="circle" wrapperStyle={{ color: '#374151', fontSize: '12px' }} />
+                  <Bar dataKey="totalSales" name="売上" fill="#887c5d" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="orderCount" name="注文数" fill="#d4c5a9" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={320} className="hidden sm:block">
+                <BarChart data={salesStats} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={v => v.toLocaleString()} />
+                  <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ color: '#374151' }} />
+                  <Bar dataKey="totalSales" name="売上合計" fill="#887c5d" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="orderCount" name="注文数" fill="#d4c5a9" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
       </div>
 

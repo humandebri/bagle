@@ -276,27 +276,27 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">商品管理</h1>
-        <div className="flex gap-4">
+    <div className="px-2 py-3 sm:px-6 sm:py-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">商品管理</h1>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
           {selectedProducts.length > 0 && (
             <>
               <button
                 onClick={() => handleBulkToggleAvailability(false)}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 border border-gray-300"
+                className="w-full sm:w-auto bg-white text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-[#f5f2ea] border border-[#887c5d]/30 transition-colors font-medium text-sm sm:text-base"
               >
                 選択商品を販売停止
               </button>
               <button
                 onClick={() => handleBulkToggleAvailability(true)}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 border border-gray-300"
+                className="w-full sm:w-auto bg-white text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-[#f5f2ea] border border-[#887c5d]/30 transition-colors font-medium text-sm sm:text-base"
               >
                 選択商品を販売再開
               </button>
               <button
                 onClick={handleBulkDeleteClick}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 border border-red-700"
+                className="w-full sm:w-auto bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium text-sm sm:text-base"
               >
                 選択商品を削除 ({selectedProducts.length})
               </button>
@@ -304,14 +304,109 @@ export default function AdminProductsPage() {
           )}
           <button
             onClick={() => router.push('/admin/products/new')}
-            className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 border border-gray-300"
+            className="w-full sm:w-auto bg-[#887c5d] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium text-sm sm:text-base"
           >
             新規商品追加
           </button>
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      {/* モバイル用: 全選択チェックボックス */}
+      <div className="sm:hidden mb-3 flex items-center justify-between bg-white p-2 rounded-lg border border-gray-200">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={selectedProducts.length === products.length && products.length > 0}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+            className="rounded border-gray-300 text-[#887c5d] focus:ring-[#887c5d]"
+          />
+          <span className="text-sm font-medium">すべて選択</span>
+        </label>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-600">並び替え:</label>
+          <select
+            value={sortColumn || 'name'}
+            onChange={(e) => handleSort(e.target.value as SortColumn)}
+            className="text-sm border border-[#887c5d]/30 rounded-lg px-2 py-1 bg-white hover:bg-[#f5f2ea] transition-colors focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20"
+          >
+            <option value="name">商品名</option>
+            <option value="category">カテゴリー</option>
+            <option value="price">価格</option>
+            <option value="is_available">ステータス</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* モバイル用カード表示 */}
+      <div className="sm:hidden space-y-3">
+        {sortedProducts.map((product) => (
+          <div key={product.id} className="bg-white border rounded-lg shadow-sm p-2">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedProducts.includes(product.id)}
+                  onChange={(e) => handleSelectProduct(product.id, e.target.checked)}
+                  className="mt-1 rounded border-gray-300 text-[#887c5d] focus:ring-[#887c5d]"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{product.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    ¥{product.price.toLocaleString('ja-JP')}
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  product.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {product.is_available ? '販売中' : '販売停止'}
+              </span>
+            </div>
+            
+            <div className="mb-3">
+              <label className="text-xs text-gray-600">カテゴリー</label>
+              <select
+                value={product.category?.id || ''}
+                onChange={(e) => handleCategoryChange(product.id, e.target.value)}
+                className="mt-1 block w-full px-2 py-1 text-sm border border-[#887c5d]/30 rounded-lg bg-white hover:bg-[#f5f2ea] transition-colors focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20"
+              >
+                <option value="">カテゴリーなし</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex gap-2 pt-2 border-t">
+              <button
+                onClick={() => handleEdit(product.id)}
+                className="flex-1 bg-[#887c5d] text-white py-1.5 rounded-lg text-xs font-medium hover:bg-[#6e634b] transition-colors"
+              >
+                編集
+              </button>
+              <button
+                onClick={() => handleToggleAvailability(product.id, product.is_available)}
+                className="flex-1 bg-white text-yellow-600 border border-yellow-600 py-1.5 rounded-lg text-xs font-medium hover:bg-yellow-50 transition-colors"
+              >
+                {product.is_available ? '販売停止' : '販売再開'}
+              </button>
+              <button
+                onClick={() => handleDeleteClick(product.id, product.name)}
+                className="flex-1 bg-white text-red-600 border border-red-600 py-1.5 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors"
+              >
+                削除
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* PC用テーブル表示 */}
+      <div className="hidden sm:block bg-white shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -320,7 +415,7 @@ export default function AdminProductsPage() {
                   type="checkbox"
                   checked={selectedProducts.length === products.length && products.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-gray-300 text-[#887c5d] focus:ring-[#887c5d]"
                 />
               </th>
               <th 
@@ -370,7 +465,7 @@ export default function AdminProductsPage() {
                     type="checkbox"
                     checked={selectedProducts.includes(product.id)}
                     onChange={(e) => handleSelectProduct(product.id, e.target.checked)}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-[#887c5d] focus:ring-[#887c5d]"
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -381,7 +476,7 @@ export default function AdminProductsPage() {
                     <select
                       value={product.category?.id || ''}
                       onChange={(e) => handleCategoryChange(product.id, e.target.value)}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                      className="mt-1 block w-full px-3 py-2 text-sm border border-[#887c5d]/30 rounded-lg bg-white hover:bg-[#f5f2ea] transition-colors focus:outline-none focus:ring-2 focus:ring-[#887c5d]/20"
                     >
                       <option value="">カテゴリーなし</option>
                       {categories.map((category) => (
@@ -407,19 +502,19 @@ export default function AdminProductsPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => handleEdit(product.id)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    className="text-[#887c5d] hover:text-[#6e634b] mr-4 transition-colors font-medium"
                   >
                     編集
                   </button>
                   <button
                     onClick={() => handleToggleAvailability(product.id, product.is_available)}
-                    className="text-yellow-600 hover:text-yellow-700 mr-4"
+                    className="text-yellow-600 hover:text-yellow-700 mr-4 transition-colors font-medium"
                   >
                     {product.is_available ? '販売停止' : '販売再開'}
                   </button>
                   <button
                     onClick={() => handleDeleteClick(product.id, product.name)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-red-600 hover:text-red-700 transition-colors font-medium"
                   >
                     削除
                   </button>

@@ -336,14 +336,14 @@ export default function ReservationsPage() {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center">ロード中...</div>;
+    return <div className="p-4 sm:p-8 text-center">ロード中...</div>;
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">予約管理</h1>
-        <div className="flex gap-4 items-center">
+    <div className="px-2 py-3 sm:px-4 sm:py-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-8 gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">予約管理</h1>
+        <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
           <div className="flex gap-2 items-center">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FCD34D' }}></div>
@@ -370,7 +370,7 @@ export default function ReservationsPage() {
           </select>
           <button
             // onClick={() => setIsEditing(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-gray-400 bg-gray-100 cursor-not-allowed"
+            className="inline-flex items-center px-3 py-2 border border-transparent text-xs sm:text-sm font-medium rounded-lg shadow-sm text-gray-400 bg-gray-100 cursor-not-allowed"
             disabled={true}
             title="現在、新規予約の作成はできません"
           >
@@ -382,7 +382,7 @@ export default function ReservationsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* カレンダー */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+        <div className="lg:col-span-2 bg-white p-3 sm:p-6 rounded-lg shadow-sm">
           <FullCalendar
             plugins={[dayGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
@@ -432,7 +432,7 @@ export default function ReservationsPage() {
         </div>
 
         {/* 予約詳細 */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
               {selectedDate ? format(new Date(selectedDate), 'yyyy年MM月dd日', { locale: ja }) : '日付を選択'}
@@ -608,7 +608,7 @@ export default function ReservationsPage() {
           onClick={() => setShowConfirmModal(false)}
         >
           <div 
-            className="bg-white p-6 rounded-lg max-w-md w-full"
+            className="bg-white p-3 sm:p-6 rounded-lg max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold mb-4">商品受け渡し完了の確認</h3>
@@ -642,7 +642,7 @@ export default function ReservationsPage() {
           onClick={() => setShowTimeEditModal(false)}
         >
           <div 
-            className="bg-white p-6 rounded-lg max-w-md w-full"
+            className="bg-white p-3 sm:p-6 rounded-lg max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold mb-4">受け取り時間の変更</h3>

@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuthSession } from '@/lib/auth-compat';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 export default function ProfilePage() {
-  const { data: session } = useAuthSession();
+  const { data: session, status } = useAuthSession();
   const router = useRouter();
 
   const [firstName, setFirstName] = useState('');
@@ -24,69 +23,79 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const userId = session?.user?.id;
-      const userEmail = session?.user?.email;
-
-      if (!userId || !userEmail) {
-        console.warn('ログインセッションが見つかりません');
+      if (status === 'loading') return;
+      
+      if (status === 'unauthenticated' || !session?.user) {
         setLoading(false);
         return;
       }
 
-      setEmail(userEmail);
+      try {
+        // サーバーサイドAPIを使用してプロフィールを取得
+        const response = await fetch('/api/profile');
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/auth/signin');
+            return;
+          }
+          throw new Error('プロフィールの取得に失敗しました');
+        }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, phone')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('プロフィール取得エラー:', error.message);
-        setLoading(false);
-        return;
-      }
-
-      if (data) {
+        const data = await response.json();
+        
         setFirstName(data.first_name ?? '');
         setLastName(data.last_name ?? '');
         setPhone(data.phone ?? '');
+        setEmail(data.email ?? session.user.email ?? '');
         setInitial({
           first_name: data.first_name ?? '',
           last_name: data.last_name ?? '',
           phone: data.phone ?? '',
         });
+      } catch {
+        // エラーの詳細はログに出力しない（本番環境のため）
+        setMessage('プロフィールの取得に失敗しました');
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchProfile();
-  }, [session]);
+  }, [session, status, router]);
 
   const handleSave = async () => {
-    const userId = (session?.user as { id: string })?.id;
-    const userEmail = session?.user?.email;
-
-    if (!userId || !userEmail) {
-      setMessage('ログイン情報が不足しています');
+    if (!session?.user) {
+      setMessage('ログインが必要です');
       return;
     }
 
-    const { error } = await supabase.from('profiles').upsert({
-      user_id: userId,
-      email: userEmail,
-      first_name: firstName,
-      last_name: lastName,
-      phone,
-    });
+    try {
+      // サーバーサイドAPIを使用してプロフィールを更新
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+        }),
+      });
 
-    if (error) {
-      console.error('プロフィール保存エラー:', error.message);
-      setMessage('保存に失敗しました');
-    } else {
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '保存に失敗しました');
+      }
+
+      const result = await response.json();
+      
       setMessage('プロフィールを保存しました');
       setInitial({ first_name: firstName, last_name: lastName, phone });
+    } catch (error) {
+      // エラーの詳細はログに出力しない（本番環境のため）
+      setMessage(error instanceof Error ? error.message : '保存に失敗しました');
     }
   };
 

@@ -352,24 +352,24 @@ export default function TimeSlotsPage() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">時間枠カレンダー</h1>
+    <div className="px-2 py-3 sm:px-4 sm:py-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">時間枠カレンダー</h1>
         <div className="flex gap-2">
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium"
             onClick={() => setShowModal(true)}
           >
             一括作成
           </button>
           <button
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium"
             onClick={() => setShowEditModal(true)}
           >
             一括編集
           </button>
           <button
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
             onClick={() => setShowDeleteModal(true)}
           >
             一括削除
@@ -377,10 +377,10 @@ export default function TimeSlotsPage() {
         </div>
       </div>
       <div className="flex items-center gap-4 mb-4">
-        <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goPrevWeek}>前の2週間</button>
-        <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={goToday}>今週</button>
+        <button className="px-3 py-2 border border-[#887c5d]/30 bg-white rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={goPrevWeek}>前の2週間</button>
+        <button className="px-3 py-2 bg-[#887c5d] text-white rounded-lg hover:bg-[#6e634b] transition-colors font-medium" onClick={goToday}>今週</button>
         <span className="font-bold">{weekDates[0]} 〜 {weekDates[13]}</span>
-        <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={goNextWeek}>次の2週間</button>
+        <button className="px-3 py-2 border border-[#887c5d]/30 bg-white rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={goNextWeek}>次の2週間</button>
       </div>
       {showModal && (
         <div
@@ -445,8 +445,8 @@ export default function TimeSlotsPage() {
               </div>
               {bulkError && <div className="text-red-600">{bulkError}</div>}
               <div className="flex gap-2 justify-end">
-                <button type="button" className="px-4 py-2" onClick={() => setShowModal(false)}>キャンセル</button>
-                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded" disabled={bulkLoading}>
+                <button type="button" className="px-4 py-2 border border-[#887c5d]/30 rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={() => setShowModal(false)}>キャンセル</button>
+                <button type="submit" className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium disabled:opacity-50" disabled={bulkLoading}>
                   {bulkLoading ? "作成中..." : "一括作成"}
                 </button>
               </div>
@@ -522,8 +522,8 @@ export default function TimeSlotsPage() {
               </div>
               {editError && <div className="text-red-600">{editError}</div>}
               <div className="flex gap-2 justify-end">
-                <button type="button" className="px-4 py-2" onClick={() => setShowEditModal(false)}>キャンセル</button>
-                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded" disabled={editLoading}>
+                <button type="button" className="px-4 py-2 border border-[#887c5d]/30 rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={() => setShowEditModal(false)}>キャンセル</button>
+                <button type="submit" className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium disabled:opacity-50" disabled={editLoading}>
                   {editLoading ? "編集中..." : "一括編集"}
                 </button>
               </div>
@@ -587,8 +587,8 @@ export default function TimeSlotsPage() {
               </div>
               {deleteError && <div className="text-red-600">{deleteError}</div>}
               <div className="flex gap-2 justify-end">
-                <button type="button" className="px-4 py-2" onClick={() => setShowDeleteModal(false)}>キャンセル</button>
-                <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded" disabled={deleteLoading}>
+                <button type="button" className="px-4 py-2 border border-[#887c5d]/30 rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={() => setShowDeleteModal(false)}>キャンセル</button>
+                <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50" disabled={deleteLoading}>
                   {deleteLoading ? "削除中..." : "一括削除"}
                 </button>
               </div>
@@ -738,8 +738,8 @@ export default function TimeSlotsPage() {
             )}
             {editDetailError && <div className="text-red-600 mb-2">{editDetailError}</div>}
             <div className="flex justify-end mt-4 gap-2">
-              <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setDetailSlot(null)}>閉じる</button>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={handleDetailEditSave}>保存</button>
+              <button className="px-4 py-2 border border-[#887c5d]/30 rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={() => setDetailSlot(null)}>閉じる</button>
+              <button className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium" onClick={handleDetailEditSave}>保存</button>
             </div>
           </div>
         </div>
