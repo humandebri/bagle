@@ -28,20 +28,23 @@ export async function POST(request: Request) {
     const { userId, email: providedEmail, orderDetails }: RequestBody = await request.json();
     
     // userIdからメールアドレスを取得
-    let email = providedEmail;
-    if (userId && !email) {
-      const { prisma } = await import('@/lib/prisma');
-      const profile = await prisma.profiles.findUnique({
-        where: { user_id: userId },
-        select: { email: true }
-      });
-      email = profile?.email || undefined;
+    let userEmail: string | undefined;
+    if (userId) {
+      // Supabaseから直接取得する方法（プロファイルテーブル経由）
+      const { createServerSupabaseClient } = await import('@/lib/supabase-server');
+      const supabase = await createServerSupabaseClient();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .single();
+      
+      if (profile) {
+        userEmail = profile.email;
+      }
     }
     
-    if (!email) {
-      console.error('メールアドレスが見つかりません:', { userId, providedEmail });
-      return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });
-    }
+    const email = providedEmail || userEmail || 'no-email@example.com';
     
     const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
@@ -63,16 +66,34 @@ export async function POST(request: Request) {
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
             <h2 style="color: #666; margin-top: 0;">■ご注文内容</h2>
-            <ul style="list-style: none; padding: 0;">
-              ${orderDetails.items.map((item: OrderItem) => `
-                <li style="margin-bottom: 10px;">
-                  ${item.name} × ${item.quantity} - ¥${(item.price * item.quantity).toLocaleString()}
-                </li>
-              `).join('')}
-            </ul>
-            <div style="text-align: right; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
-              <p style="font-weight: bold;">合計金額: ¥${orderDetails.total.toLocaleString()}</p>
-            </div>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid #ddd;">
+                  <th style="text-align: left; padding: 8px 4px;">商品名</th>
+                  <th style="text-align: right; padding: 8px 4px;">数量</th>
+                  <th style="text-align: right; padding: 8px 4px;">金額</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orderDetails.items.map((item: OrderItem) => `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 8px 4px;">${item.name}</td>
+                    <td style="text-align: right; padding: 8px 4px;">${item.quantity}</td>
+                    <td style="text-align: right; padding: 8px 4px;">¥${item.price.toLocaleString()}</td>
+                  </tr>
+                `).join('')}
+                <tr>
+                  <td colspan="2" style="padding: 8px 4px; font-weight: bold;">合計</td>
+                  <td style="text-align: right; padding: 8px 4px; font-weight: bold;">¥${orderDetails.total.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+            <p style="margin: 0; color: #856404;">
+              <strong>※ お支払いは来店時に現金でお願いいたします</strong>
+            </p>
           </div>
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
@@ -95,6 +116,15 @@ export async function POST(request: Request) {
             <p style="margin-bottom: 15px;">ご不明な点がございましたら、お気軽にお問い合わせください。</p>
             <p>お電話：089-904-2666</p>
           </div>
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; line-height: 1.6;">
+            <p>ご来店を心よりお待ちしております。</p>
+            <p>
+              <strong>BAGELラクダピクニック</strong><br>
+              📍 愛媛県松山市道後北代1-10<br>
+              📞 089-904-2666
+            </p>
+          </div>
         </div>
       `,
     });
@@ -113,18 +143,16 @@ export async function POST(request: Request) {
       console.error('Resendエラー:', typedResult.error);
       return NextResponse.json({ 
         error: 'メール送信に失敗しました',
-        details: typedResult.error 
+        details: typedResult.error
       }, { status: 500 });
     }
     
     if (!messageId) {
-      console.error('ResendからメッセージIDが返されませんでした:', result);
       return NextResponse.json({ 
-        error: 'メール送信に失敗しました（IDなし）',
-        details: result 
+        error: 'メール送信の確認ができませんでした' 
       }, { status: 500 });
     }
-
+    
     return NextResponse.json({ 
       success: true, 
       messageId: messageId,
