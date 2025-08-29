@@ -30,11 +30,39 @@ export async function GET() {
       throw error;
     }
 
+    // 仮予約数を取得（slot_reservationsテーブル）
+    const { data: tempReservations } = await supabase
+      .from('slot_reservations')
+      .select('date, time')
+      .gte('expires_at', new Date().toISOString());
+
+    // テーブルが存在しない場合もあるのでnullチェック
+    const reservations = tempReservations || [];
+
+    // 各time_slotに仮予約数を追加
+    const timeSlotsWithTemp = allTimeSlots?.map(slot => {
+      // 仮予約数をカウント
+      const tempCount = reservations.filter(res => {
+        const resDateStr = typeof res.date === 'string' 
+          ? res.date 
+          : new Date(res.date).toISOString().split('T')[0];
+        const resTimeStr = typeof res.time === 'string' 
+          ? res.time.slice(0, 8) 
+          : new Date(res.time).toISOString().split('T')[1].slice(0, 8);
+        return resDateStr === slot.date && resTimeStr === slot.time;
+      }).length || 0;
+
+      return {
+        ...slot,
+        temp_bookings: tempCount  // 仮予約数を追加
+      };
+    }) || [];
+
     // 予約開始制限をかける & 満員の枠を除外
     // 各日付について、ちょうど7日前の0時から予約可能
-    const filteredTimeSlots = allTimeSlots.filter((slot) => {
-      // ① 満員チェック（current_bookings >= max_capacity なら除外）
-      if (slot.current_bookings >= slot.max_capacity) {
+    const filteredTimeSlots = timeSlotsWithTemp.filter((slot) => {
+      // ① 満員チェック（current_bookings + temp_bookings >= max_capacity なら除外）
+      if ((slot.current_bookings + (slot.temp_bookings || 0)) >= slot.max_capacity) {
         return false;
       }
 

@@ -21,6 +21,7 @@ export default function CartPage() {
   const dispatchTime = useCartStore((state) => state.dispatchTime);
   
   const [availableSlotsCount, setAvailableSlotsCount] = useState<number | null>(null);
+  const [availableCapacityTotal, setAvailableCapacityTotal] = useState<number | null>(null);
   const [checkingSlots, setCheckingSlots] = useState(true);
 
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function CartPage() {
       const data = await response.json();
       
       // 利用可能な時間枠をカウント（ユーザーが選択済みの枠も利用可能とみなす）
-      const availableCount = data.timeSlots?.filter((slot: { is_available: boolean; date: string; time: string }) => {
+      const availableSlots = data.timeSlots?.filter((slot: { is_available: boolean; date: string; time: string; max_capacity: number; current_bookings: number; temp_bookings?: number }) => {
         // ユーザーが選択している時間枠の場合は常に利用可能とみなす
         if (dispatchDate && dispatchTime && 
             slot.date === dispatchDate && 
@@ -47,14 +48,24 @@ export default function CartPage() {
         }
         // それ以外は通常の利用可能性チェック
         return slot.is_available;
-      }).length || 0;
+      }) || [];
       
-      setAvailableSlotsCount(availableCount);
+      // 時間枠の数をカウント
+      setAvailableSlotsCount(availableSlots.length);
+      
+      // 実際の予約可能数（各スロットの残り容量の合計）を計算（仮予約分も考慮）
+      const totalCapacity = availableSlots.reduce((sum: number, slot: { max_capacity: number; current_bookings: number; temp_bookings?: number }) => {
+        const remainingCapacity = Math.max(0, slot.max_capacity - slot.current_bookings - (slot.temp_bookings ?? 0));
+        return sum + remainingCapacity;
+      }, 0);
+      
+      setAvailableCapacityTotal(totalCapacity);
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('時間枠データの取得に失敗しました:', error);
       }
       setAvailableSlotsCount(0);
+      setAvailableCapacityTotal(0);
     } finally {
       setCheckingSlots(false);
     }
@@ -153,13 +164,13 @@ export default function CartPage() {
       )}
       
       {/* 予約枠が少ない場合の警告（ユーザーが時間枠を選択していない場合のみ表示） */}
-      {!checkingSlots && availableSlotsCount !== null && availableSlotsCount > 0 && availableSlotsCount <= 3 && !dispatchDate && (
+      {!checkingSlots && availableCapacityTotal !== null && availableCapacityTotal > 0 && availableCapacityTotal <= 5 && !dispatchDate && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
           <div className="flex items-start">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
             <div className="text-sm">
               <p className="text-amber-800 font-semibold">
-                残りわずか！予約可能な時間枠は残り{availableSlotsCount}枠です
+                残りわずか！予約可能な時間枠は残り{availableCapacityTotal}枠です
               </p>
               <p className="text-amber-700">
                 お早めのご予約をおすすめします。
