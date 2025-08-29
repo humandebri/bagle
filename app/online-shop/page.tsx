@@ -168,17 +168,14 @@ export default function OnlineShopPage() {
             </div>
           )}
           
-          {/* 予約枠が少ない場合の警告（ユーザーが時間枠を選択していない場合のみ表示） */}
+          {/* 予約枠が少ない場合の通知（ユーザーが時間枠を選択していない場合のみ表示） */}
           {!checkingSlots && availableCapacityTotal !== null && availableCapacityTotal > 0 && availableCapacityTotal <= 5 && !dispatchDate && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
               <div className="flex items-start">
                 <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div className="text-sm">
-                  <p className="text-amber-800 font-semibold">
-                    残りわずか！予約可能な時間枠は残り{availableCapacityTotal}枠です
-                  </p>
-                  <p className="text-amber-700">
-                    お早めのご予約をおすすめします。
+                  <p className="text-amber-800">
+                    予約可能な時間枠は残り{availableCapacityTotal}枠になりました。
                   </p>
                 </div>
               </div>
