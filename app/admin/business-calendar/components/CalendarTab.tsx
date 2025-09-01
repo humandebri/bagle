@@ -44,6 +44,7 @@ export default function CalendarTab() {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null);
 
   // 営業日データを取得
   const fetchBusinessDays = useCallback(async (start: Date, end: Date) => {
@@ -57,20 +58,24 @@ export default function CalendarTab() {
       }
 
       const data = await response.json();
-      const calendarEvents: CalendarEvent[] = data.days.map((day: BusinessDay) => ({
-        id: day.id,
-        title: day.is_open ? (day.is_special ? '特別営業' : '営業日') : '休業日',
-        date: day.date,
-        backgroundColor: day.is_open ? (day.is_special ? '#3b82f6' : '#4ade80') : '#f87171',
-        borderColor: day.is_open ? (day.is_special ? '#2563eb' : '#22c55e') : '#ef4444',
-        textColor: '#ffffff',
-        classNames: day.notes ? ['has-notes'] : [],
-        extendedProps: {
-          is_open: day.is_open,
-          is_special: day.is_special,
-          notes: day.notes
-        }
-      }));
+      const calendarEvents: CalendarEvent[] = data.days.map((day: BusinessDay) => {
+        const isClosed = !day.is_open;
+        return {
+          id: day.id,
+          title: isClosed ? '休業日' : (day.is_special ? '特別営業' : '営業日'),
+          date: day.date,
+          // 休業日はトーンを落とした薄いグレーに変更
+          backgroundColor: isClosed ? '#e5e7eb' : (day.is_special ? '#3b82f6' : '#4ade80'),
+          borderColor: isClosed ? '#d1d5db' : (day.is_special ? '#2563eb' : '#22c55e'),
+          textColor: isClosed ? '#1f2937' : '#ffffff',
+          classNames: day.notes ? ['has-notes'] : [],
+          extendedProps: {
+            is_open: day.is_open,
+            is_special: day.is_special,
+            notes: day.notes
+          }
+        };
+      });
 
       setEvents(calendarEvents);
     } catch (error) {
@@ -79,14 +84,18 @@ export default function CalendarTab() {
     }
   }, []);
 
-  // 月が変わったときにデータを再取得
+  // 表示範囲が変わったときにデータを再取得（前後月の表示領域も含める）
   useEffect(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const start = new Date(year, month, 1);
-    const end = new Date(year, month + 1, 0);
-    fetchBusinessDays(start, end);
-  }, [currentMonth, fetchBusinessDays]);
+    if (visibleRange) {
+      fetchBusinessDays(visibleRange.start, visibleRange.end);
+    } else {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 0);
+      fetchBusinessDays(start, end);
+    }
+  }, [visibleRange, currentMonth, fetchBusinessDays]);
 
   // 日付をクリックしたとき
   const handleDateClick = (info: { dateStr: string }) => {
@@ -147,12 +156,16 @@ export default function CalendarTab() {
 
       toast.success('営業日情報を更新しました');
       
-      // 現在の月のデータを再取得
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      const start = new Date(year, month, 1);
-      const end = new Date(year, month + 1, 0);
-      await fetchBusinessDays(start, end);
+      // 現在表示中の範囲で再取得（前後月の表示分も含める）
+      if (visibleRange) {
+        await fetchBusinessDays(visibleRange.start, visibleRange.end);
+      } else {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const start = new Date(year, month, 1);
+        const end = new Date(year, month + 1, 0);
+        await fetchBusinessDays(start, end);
+      }
       
       setIsModalOpen(false);
     } catch (error) {
@@ -188,6 +201,8 @@ export default function CalendarTab() {
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale={jaLocale}
+          fixedWeekCount={false}
+          showNonCurrentDates={true}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
@@ -199,6 +214,7 @@ export default function CalendarTab() {
           height="auto"
           datesSet={(arg) => {
             setCurrentMonth(arg.view.currentStart);
+            setVisibleRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
           }}
           eventContent={(eventInfo) => {
             const notes = eventInfo.event.extendedProps.notes;
@@ -220,7 +236,7 @@ export default function CalendarTab() {
           <span>営業日</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-400 rounded"></div>
+          <div className="w-4 h-4 rounded border border-gray-300 bg-gray-100"></div>
           <span>休業日</span>
         </div>
         <div className="flex items-center gap-2">
@@ -243,11 +259,15 @@ export default function CalendarTab() {
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
         onComplete={async () => {
-          const year = currentMonth.getFullYear();
-          const month = currentMonth.getMonth();
-          const start = new Date(year, month, 1);
-          const end = new Date(year, month + 1, 0);
-          await fetchBusinessDays(start, end);
+          if (visibleRange) {
+            await fetchBusinessDays(visibleRange.start, visibleRange.end);
+          } else {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const start = new Date(year, month, 1);
+            const end = new Date(year, month + 1, 0);
+            await fetchBusinessDays(start, end);
+          }
         }}
         currentMonth={currentMonth}
       />
@@ -256,11 +276,15 @@ export default function CalendarTab() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onComplete={async () => {
-          const year = currentMonth.getFullYear();
-          const month = currentMonth.getMonth();
-          const start = new Date(year, month, 1);
-          const end = new Date(year, month + 1, 0);
-          await fetchBusinessDays(start, end);
+          if (visibleRange) {
+            await fetchBusinessDays(visibleRange.start, visibleRange.end);
+          } else {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const start = new Date(year, month, 1);
+            const end = new Date(year, month + 1, 0);
+            await fetchBusinessDays(start, end);
+          }
         }}
       />
     </>

@@ -27,29 +27,41 @@ interface BusinessDay {
 export default function BusinessCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     const fetchBusinessDays = async () => {
       try {
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-        const start = new Date(year, month, 1).toISOString().split('T')[0];
-        const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+        let start: string;
+        let end: string;
+        if (visibleRange) {
+          start = new Date(visibleRange.start).toISOString().split('T')[0];
+          end = new Date(visibleRange.end).toISOString().split('T')[0];
+        } else {
+          const year = currentMonth.getFullYear();
+          const month = currentMonth.getMonth();
+          start = new Date(year, month, 1).toISOString().split('T')[0];
+          end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+        }
 
         const response = await fetch(`/api/business-calendar?start=${start}&end=${end}`);
         const data = await response.json();
 
-        const calendarEvents: CalendarEvent[] = data.days.map((day: BusinessDay) => ({
-          title: day.is_open ? (day.is_special ? '特別営業' : '営業日') : '休業日',
-          date: day.date,
-          backgroundColor: day.is_open ? (day.is_special ? '#3b82f6' : '#4ade80') : '#f87171',
-          borderColor: day.is_open ? (day.is_special ? '#2563eb' : '#22c55e') : '#ef4444',
-          textColor: '#ffffff',
-          classNames: day.notes ? ['has-notes'] : [],
-          extendedProps: {
-            notes: day.notes
-          }
-        }));
+        const calendarEvents: CalendarEvent[] = data.days.map((day: BusinessDay) => {
+          const isClosed = !day.is_open;
+          return {
+            title: isClosed ? '休業日' : (day.is_special ? '特別営業' : '営業日'),
+            date: day.date,
+            // 休業日はトーンを落とした薄いグレーに変更
+            backgroundColor: isClosed ? '#e5e7eb' : (day.is_special ? '#3b82f6' : '#4ade80'),
+            borderColor: isClosed ? '#d1d5db' : (day.is_special ? '#2563eb' : '#22c55e'),
+            textColor: isClosed ? '#1f2937' : '#ffffff',
+            classNames: day.notes ? ['has-notes'] : [],
+            extendedProps: {
+              notes: day.notes
+            }
+          };
+        });
 
         setEvents(calendarEvents);
       } catch (error) {
@@ -60,7 +72,7 @@ export default function BusinessCalendar() {
     };
 
     fetchBusinessDays();
-  }, [currentMonth]);
+  }, [currentMonth, visibleRange]);
 
   return (
     <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
@@ -69,6 +81,8 @@ export default function BusinessCalendar() {
           plugins={[dayGridPlugin]}
           initialView="dayGridMonth"
           locale={jaLocale}
+          fixedWeekCount={false}
+          showNonCurrentDates={true}
           headerToolbar={{
             left: 'prev,next',
             center: 'title',
@@ -87,6 +101,7 @@ export default function BusinessCalendar() {
           aspectRatio={1.2}
           datesSet={(arg) => {
             setCurrentMonth(arg.view.currentStart);
+            setVisibleRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
           }}
           eventContent={(eventInfo) => {
             const notes = eventInfo.event.extendedProps.notes;
@@ -107,7 +122,7 @@ export default function BusinessCalendar() {
           <span>営業日</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-400 rounded"></div>
+          <div className="w-4 h-4 rounded border border-gray-300 bg-gray-100"></div>
           <span>休業日</span>
         </div>
       </div>
