@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export default function CheckoutPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const items        = useCartStore((s) => s.items);
   const router       = useRouter();
   const { data: session, status } = useAuthSession();
 
@@ -173,34 +174,95 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <main className="pb-20 md:pb-5 min-h-[calc(100vh-7rem)] px-6 py-5 bg-white">
-        <h1 className="text-3xl pb-4">注文手続き</h1>
+      <main className="pb-24 md:pb-8 min-h-[calc(100vh-7rem)] px-4 md:px-6 py-5 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-semibold pb-4 md:pb-6">注文手続き</h1>
 
-        <section className="pb-5 text-gray-700 space-y-2">
-          <p className="text-lg">受取場所 : </p>
-          <p>店舗</p>
-          <p className="text-lg">受取日時 : </p>
-          <button 
-            onClick={() => router.push(`/online-shop/dispatch`)}
-            className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
-          >
-            {dispatchDate && dispatchTime ? (
-              <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
-            ) : (
-              "日時を選択してください"
-            )}
-          </button>
-        </section>
+          <div className="md:grid md:grid-cols-12 md:gap-8">
+            {/* Left: Inputs */}
+            <div className="md:col-span-7 lg:col-span-8">
+              <section className="mb-6 text-gray-700">
+                <div className="mb-4">
+                  <p className="text-base md:text-lg font-medium">受取場所</p>
+                  <p className="text-gray-800">店舗</p>
+                </div>
+                <div>
+                  <p className="text-base md:text-lg font-medium mb-2">受取日時</p>
+                  <button
+                    onClick={() => router.push(`/online-shop/dispatch`)}
+                    className="w-full border-2 rounded-md p-3 text-center hover:bg-gray-50 transition-colors"
+                  >
+                    {dispatchDate && dispatchTime ? (
+                      <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+                    ) : (
+                      '日時を選択してください'
+                    )}
+                  </button>
+                </div>
+              </section>
 
-        <section className="pb-5">
-          <h2 className="text-lg pb-5">連絡先情報</h2>
-          <div className="space-y-6">
-            <InputField label="姓" value={lastName} onChange={setLastName} error={errors.lastName} placeholder="例：山田" />
-            <InputField label="名" value={firstName} onChange={setFirstName} error={errors.firstName} placeholder="例：太郎" />
-            <InputField label="電話番号" value={phone} onChange={setPhone} error={errors.phone} placeholder="例：09012345678(ハイフンなし)" type="tel" />
-            <InputField label="メールアドレス" value={email} onChange={setEmail} error={errors.email} placeholder="例：example@email.com" type="email" />
+              <section className="mb-8">
+                <h2 className="text-lg md:text-xl font-medium mb-4">連絡先情報</h2>
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-2 md:gap-4">
+                    <InputField label="姓" value={lastName} onChange={setLastName} error={errors.lastName} placeholder="例：山田" />
+                    <InputField label="名" value={firstName} onChange={setFirstName} error={errors.firstName} placeholder="例：太郎" />
+                  </div>
+                  <InputField label="電話番号" value={phone} onChange={setPhone} error={errors.phone} placeholder="例：09012345678(ハイフンなし)" type="tel" />
+                  <InputField label="メールアドレス" value={email} onChange={setEmail} error={errors.email} placeholder="例：example@email.com" type="email" />
+                </div>
+              </section>
+            </div>
+
+            {/* Right: Summary (desktop only sticky) */}
+            <aside className="md:col-span-5 lg:col-span-4">
+              <div className="hidden md:block sticky top-4">
+                <div className="border rounded-md p-4 bg-white shadow-sm">
+                  <h3 className="text-lg font-medium mb-3">ご注文内容</h3>
+                  <div className="text-sm text-gray-700 space-y-2 mb-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">受取日時</span>
+                      <span className="font-medium">
+                        {dispatchDate && dispatchTime ? (
+                          <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+                        ) : (
+                          '未選択'
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <ul className="divide-y">
+                    {items.length === 0 && (
+                      <li className="py-3 text-gray-500 text-sm">カートに商品がありません</li>
+                    )}
+                    {items.map((it) => (
+                      <li key={it.id} className="py-3 flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">{it.name}</p>
+                          <p className="text-xs text-gray-500">× {it.quantity}</p>
+                        </div>
+                        <div className="text-sm text-gray-900">¥{(it.price * it.quantity).toLocaleString()}</div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="border-t mt-3 pt-3 flex items-center justify-between text-base">
+                    <span className="font-medium">合計</span>
+                    <span className="font-semibold">¥{items.reduce((s, it) => s + it.price * it.quantity, 0).toLocaleString()}</span>
+                  </div>
+
+                  <button
+                    onClick={handleSubmit}
+                    className="mt-4 w-full py-3 bg-[#887c5d] text-white text-base rounded-md hover:bg-[#6f6550]"
+                  >
+                    次へ
+                  </button>
+                </div>
+              </div>
+            </aside>
           </div>
-        </section>
+        </div>
       </main>
 
       {/* スマートフォン用の固定ボタン */}
@@ -213,15 +275,7 @@ export default function CheckoutPage() {
         </button>
       </div>
 
-      {/* PC用のボタン */}
-      <div className="hidden md:block px-6 py-3">
-        <button
-          onClick={handleSubmit}
-          className="w-full max-w-md py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
-        >
-          次へ
-        </button>
-      </div>
+      {/* PC用のボタンはサマリー内に統合済み */}
     </>
   );
 }

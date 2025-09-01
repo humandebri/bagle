@@ -57,12 +57,15 @@ export async function GET(request: NextRequest) {
     }
 
     // 日付をフォーマット
-    const formattedDays = days?.map(day => ({
+    const formattedDays = (days?.map(day => ({
       ...day,
       date: new Date(day.date).toISOString().split('T')[0]
-    })) || [];
+    })) || []);
 
-    return NextResponse.json({ days: formattedDays });
+    // 指定期間にレコードが無い日付は「休業日」として補完
+    const filled = fillMissingDaysWithClosed(formattedDays, start, end);
+
+    return NextResponse.json({ days: filled });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(
@@ -70,6 +73,29 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// 補助: 期間内でDB未登録の日付を休業日として補完
+function fillMissingDaysWithClosed(
+  days: Array<{ id?: string; date: string; is_open: boolean; is_special: boolean; notes: string | null }>,
+  start: string,
+  end: string
+) {
+  const map = new Map<string, { id?: string; date: string; is_open: boolean; is_special: boolean; notes: string | null }>();
+  for (const d of days) {
+    map.set(d.date, d);
+  }
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+    const iso = new Date(dt).toISOString().split('T')[0];
+    if (!map.has(iso)) {
+      map.set(iso, { id: '', date: iso, is_open: false, is_special: false, notes: null });
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
 // POST /api/admin/business-calendar/days

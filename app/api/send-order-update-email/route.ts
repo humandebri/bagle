@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
 import { prisma } from '@/lib/prisma';
 import { emailConfig } from '@/lib/email-config';
 
@@ -50,9 +48,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'メールアドレスが見つかりません' }, { status: 400 });
     }
     
-    // 日時のフォーマット
-    const formattedDate = format(new Date(dispatchDate + 'T00:00:00+09:00'), 'yyyy年MM月dd日(E)', { locale: ja });
-    const formattedTime = formatTimeRange(dispatchTime);
+    // DBに保存されている値を優先（dispatch_dateはJST想定のためDB値を使用）
+    const dbDate = order.dispatch_date || dispatchDate;
+    const dbTime = order.dispatch_time || dispatchTime;
+
+    // JSTで安全にフォーマット（サーバーTZに依存しない）
+    const formattedDate = formatDateJST(dbDate);
+    const formattedTime = formatTimeRange(dbTime);
 
     const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
@@ -184,4 +186,23 @@ function formatTimeRange(time: string): string {
   const endMin = min === ':45' ? ':00' : min === ':30' ? ':45' : min === ':15' ? ':30' : ':15';
   
   return `${hour}${min}〜${endHour}${endMin}`;
+}
+
+// JSTの「YYYY年MM月DD日(曜)」表記に整形
+function formatDateJST(isoDate: string | null | undefined): string {
+  if (!isoDate) return '';
+  const d = new Date(`${isoDate}T00:00:00+09:00`);
+  const parts = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  }).formatToParts(d);
+
+  const y = parts.find(p => p.type === 'year')?.value || '';
+  const m = parts.find(p => p.type === 'month')?.value || '';
+  const day = parts.find(p => p.type === 'day')?.value || '';
+  const w = parts.find(p => p.type === 'weekday')?.value || '';
+  return `${y}年${m}月${day}日(${w})`;
 }

@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
 import { emailConfig } from '@/lib/email-config';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -23,15 +21,8 @@ export async function GET() {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    // 現在の日時を取得（日本時間）
-    const now = new Date();
-    const jstOffset = 9 * 60; // JST is UTC+9
-    const jstNow = new Date(now.getTime() + (now.getTimezoneOffset() + jstOffset) * 60 * 1000);
-    
-    // 翌日の日付を計算
-    const tomorrow = new Date(jstNow);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowDateStr = format(tomorrow, 'yyyy-MM-dd');
+    // 翌日（JST）の日付文字列を取得（サーバーTZに依存しない）
+    const tomorrowDateStr = getTomorrowDateJST();
     
     // 翌日の予約を取得（キャンセル済みと受取済みを除く）
     const orders = await prisma.orders.findMany({
@@ -68,7 +59,7 @@ export async function GET() {
 
       // itemsをパース（JSONとして保存されている）
       const items = (order.items as unknown) as OrderItem[];
-      const dispatchDate = format(new Date(order.dispatch_date + 'T00:00:00+09:00'), 'yyyy年MM月dd日(E)', { locale: ja });
+      const dispatchDate = formatDateJST(order.dispatch_date || '');
       const dispatchTime = formatTimeRange(order.dispatch_time || '');
 
       try {
@@ -219,4 +210,46 @@ function formatTimeRange(time: string): string {
   const endMin = min === ':45' ? ':00' : min === ':30' ? ':45' : min === ':15' ? ':30' : ':15';
   
   return `${hour}${min}〜${endHour}${endMin}`;
+}
+
+// JSTの「YYYY年MM月DD日(曜)」表記に整形
+function formatDateJST(isoDate: string | null | undefined): string {
+  if (!isoDate) return '';
+  const d = new Date(`${isoDate}T00:00:00+09:00`);
+  const parts = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  }).formatToParts(d);
+
+  const y = parts.find(p => p.type === 'year')?.value || '';
+  const m = parts.find(p => p.type === 'month')?.value || '';
+  const day = parts.find(p => p.type === 'day')?.value || '';
+  const w = parts.find(p => p.type === 'weekday')?.value || '';
+  return `${y}年${m}月${day}日(${w})`;
+}
+
+// 翌日（JST）の yyyy-MM-dd を返す
+function getTomorrowDateJST(): string {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(now);
+
+  const y = Number(parts.find(p => p.type === 'year')?.value || '0');
+  const m = Number(parts.find(p => p.type === 'month')?.value || '1');
+  const d = Number(parts.find(p => p.type === 'day')?.value || '1');
+
+  // UTC基準でカレンダー演算（ローカルTZの影響を避ける）
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  utc.setUTCDate(utc.getUTCDate() + 1);
+  const y2 = utc.getUTCFullYear();
+  const m2 = String(utc.getUTCMonth() + 1).padStart(2, '0');
+  const d2 = String(utc.getUTCDate()).padStart(2, '0');
+  return `${y2}-${m2}-${d2}`;
 }

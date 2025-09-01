@@ -46,9 +46,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ days: [] });
     }
 
-    return NextResponse.json({ days: days || [] });
+    // 指定期間にレコードが無い日付は「休業日」として補完して返す
+    const result = fillMissingDaysWithClosed(days || [], start, end);
+    return NextResponse.json({ days: result });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json({ days: [] });
   }
+}
+
+// 補助: 期間内でDB未登録の日付を休業日として補完
+function fillMissingDaysWithClosed(
+  days: Array<{ date: string; is_open: boolean; is_special?: boolean | null; notes?: string | null }>,
+  start: string,
+  end: string
+) {
+  const map = new Map<string, { date: string; is_open: boolean; is_special?: boolean | null; notes?: string | null }>();
+  for (const d of days) {
+    map.set(d.date, { date: d.date, is_open: d.is_open, is_special: !!d.is_special, notes: d.notes ?? null });
+  }
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+    const iso = new Date(dt).toISOString().split('T')[0];
+    if (!map.has(iso)) {
+      map.set(iso, { date: iso, is_open: false, is_special: false, notes: null });
+    }
+  }
+
+  // ソートして配列化
+  return Array.from(map.values()).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
