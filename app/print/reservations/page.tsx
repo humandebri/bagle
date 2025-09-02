@@ -179,7 +179,9 @@ function PrintPageContent() {
             </tr>
           </thead>
           <tbody>
-            {sortedOrders.map((order) => (
+            {sortedOrders
+              .filter(order => order.payment_status !== 'cancelled')
+              .map((order) => (
               <tr 
                 key={order.id} 
                 className={order.payment_status === 'cancelled' ? 'bg-gray-100 text-gray-500' : ''}

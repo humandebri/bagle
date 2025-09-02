@@ -113,11 +113,7 @@ export async function POST(request: Request) {
             </table>
           </div>
 
-          <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
-            <p style="margin: 0; color: #856404;">
-              <strong>※ お支払いは来店時に現金でお願いいたします</strong>
-            </p>
-          </div>
+          
 
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
             <h2 style="color: #666; margin-top: 0;">■キャンセルポリシー</h2>

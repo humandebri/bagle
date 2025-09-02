@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     }
 
     // 指定された日付の注文を取得
-    const { data, error } = await supabase
+  const { data, error } = await supabase
       .from('orders')
       .select(`
         id,
@@ -35,6 +35,7 @@ export async function GET(req: Request) {
         payment_status
       `)
       .eq('dispatch_date', date)
+      .or('payment_status.is.null,payment_status.neq.cancelled')
       .order('dispatch_time', { ascending: true });
 
     if (error) {
