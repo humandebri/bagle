@@ -25,7 +25,8 @@ type OrderItem = {
 type DateOption = { iso: string; label: string };
 
 export default function EditOrderPage() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id ?? '';
   const router = useRouter();
 
   const [items, setItems] = useState<OrderItem[]>([]);

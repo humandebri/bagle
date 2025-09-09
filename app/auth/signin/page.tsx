@@ -7,8 +7,8 @@ import { signIn } from 'next-auth/react';
 
 function SignInContent() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
-  const error = searchParams.get('error');
+  const callbackUrl = searchParams?.get('callbackUrl') || '/';
+  const error = searchParams?.get('error') || null;
 
   useEffect(() => {
     // エラーがない場合のみ自動リダイレクト

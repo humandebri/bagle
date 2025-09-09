@@ -26,8 +26,8 @@ type Order = {
 
 export default function OrderDetailPage() {
   const router = useRouter();
-  const params = useParams();
-  const orderId = params.id as string;
+  const params = useParams<{ id: string }>();
+  const orderId = params?.id ?? '';
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);

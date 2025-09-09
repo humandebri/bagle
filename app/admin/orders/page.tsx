@@ -29,6 +29,9 @@ export default function OrdersAdminPage() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [bulkShipProcessing, setBulkShipProcessing] = useState(false);
+  const [filterDate, setFilterDate] = useState<string>('');
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -40,6 +43,10 @@ export default function OrdersAdminPage() {
         params.append('sortKey', sortKey);
         params.append('limit', PAGE_SIZE.toString());
         params.append('offset', (page * PAGE_SIZE).toString());
+        if (filterDate) {
+          params.append('startDate', filterDate);
+          params.append('endDate', filterDate);
+        }
         const res = await fetch(`/api/admin/reservations?${params.toString()}`);
         if (!res.ok) throw new Error("注文一覧の取得に失敗しました");
         const data = await res.json();
@@ -51,7 +58,7 @@ export default function OrdersAdminPage() {
       }
     };
     fetchOrders();
-  }, [page, sortKey, sortOrder]);
+  }, [page, sortKey, sortOrder, filterDate]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -118,17 +125,114 @@ export default function OrdersAdminPage() {
     }
   };
 
+  const handleMarkShipped = async (orderId: string) => {
+    if (!orderId) return;
+    const confirmed = window.confirm('この注文を受渡済に更新しますか？');
+    if (!confirmed) return;
+
+    try {
+      setProcessingOrderId(orderId);
+      const res = await fetch('/api/admin/complete-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      if (!res.ok) throw new Error('受渡済の更新に失敗しました');
+
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, shipped: true } : o)));
+    } catch (e) {
+      console.error('Mark shipped error:', e);
+      alert('受渡済の更新に失敗しました');
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  const handleBulkMarkShipped = async () => {
+    if (selectedOrders.length === 0) return;
+    const eligibleIds = selectedOrders.filter(id => {
+      const o = orders.find(x => x.id === id);
+      return o && !o.shipped && o.payment_status !== 'cancelled';
+    });
+
+    if (eligibleIds.length === 0) {
+      alert('受渡済にできる注文がありません（未受渡・未キャンセルのみ対象）');
+      return;
+    }
+
+    const confirmed = window.confirm(`選択中 ${selectedOrders.length} 件のうち、${eligibleIds.length} 件を受渡済にします。よろしいですか？`);
+    if (!confirmed) return;
+
+    setBulkShipProcessing(true);
+    try {
+      const results = await Promise.allSettled(
+        eligibleIds.map(async (orderId) => {
+          const res = await fetch('/api/admin/complete-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          });
+          if (!res.ok) throw new Error('failed');
+          return orderId;
+        })
+      );
+
+      const successIds = results
+        .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+        .map(r => r.value);
+
+      if (successIds.length > 0) {
+        setOrders(prev => prev.map(o => (successIds.includes(o.id) ? { ...o, shipped: true } : o)));
+      }
+
+      if (successIds.length < eligibleIds.length) {
+        alert(`一部の注文で更新に失敗しました（成功: ${successIds.length} / 予定: ${eligibleIds.length}）`);
+      }
+    } catch (e) {
+      console.error('Bulk mark shipped error:', e);
+      alert('一括受渡済の更新に失敗しました');
+    } finally {
+      setBulkShipProcessing(false);
+    }
+  };
+
   return (
     <div className="px-2 py-3 sm:px-4 sm:py-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">注文管理</h1>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-700">お渡し日:</label>
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => { setPage(0); setFilterDate(e.target.value); }}
+            className="border border-[#887c5d]/30 rounded-lg px-2 py-1 text-sm"
+          />
+          {filterDate && (
+            <button
+              onClick={() => { setFilterDate(''); setPage(0); }}
+              className="text-sm px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            >
+              クリア
+            </button>
+          )}
+        </div>
         {selectedOrders.length > 0 && (
-          <button
-            onClick={() => setBulkDeleteConfirm(true)}
-            className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
-          >
-            選択した{selectedOrders.length}件を削除
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkMarkShipped}
+              disabled={bulkShipProcessing}
+              className="bg-indigo-600 disabled:opacity-50 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm sm:text-base font-medium"
+            >
+              {bulkShipProcessing ? '一括更新中...' : `選択を受渡済にする`}
+            </button>
+            <button
+              onClick={() => setBulkDeleteConfirm(true)}
+              className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
+            >
+              選択した{selectedOrders.length}件を削除
+            </button>
+          </div>
         )}
       </div>
       
@@ -223,6 +327,14 @@ export default function OrdersAdminPage() {
                   </div>
                   
                   <div className="flex gap-2 mt-3 pt-3 border-t">
+                    {order.payment_status !== 'cancelled' && !order.shipped && (
+                      <button
+                        onClick={() => handleMarkShipped(order.id)}
+                        className="flex-1 bg-indigo-600 text-white text-center py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors font-medium"
+                      >
+                        受渡済にする
+                      </button>
+                    )}
                     <Link
                       href={`/admin/orders/${order.id}`}
                       className="flex-1 bg-[#887c5d] text-white text-center py-2 rounded-lg text-sm hover:bg-[#6e634b] transition-colors font-medium"
@@ -259,9 +371,7 @@ export default function OrdersAdminPage() {
                   <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('customer_name')}>
                     顧客名 {sortKey === 'customer_name' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('created_at')}>
-                    注文日 {sortKey === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {/* 注文日は表では非表示に変更 */}
                   <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('dispatch_date')}>
                     お渡し日 {sortKey === 'dispatch_date' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
@@ -277,6 +387,7 @@ export default function OrdersAdminPage() {
                   <th className="px-2 py-1 text-left cursor-pointer hover:bg-gray-100" onClick={() => handleSort('payment_status')}>
                     状態 {sortKey === 'payment_status' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="px-2 py-1 text-left">受渡操作</th>
                   <th className="px-2 py-1 text-left">詳細</th>
                   <th className="px-2 py-1 text-left">削除</th>
                 </tr>
@@ -295,7 +406,7 @@ export default function OrdersAdminPage() {
                     </td>
                     <td className="px-2 py-1 text-left">{order.id.slice(0, 8)}...</td>
                     <td className="px-2 py-1 text-left">{order.customer_name || '-'}</td>
-                    <td className="px-2 py-1 text-left">{order.created_at?.slice(0, 10)}</td>
+                    {/* 注文日は表では非表示に変更 */}
                     <td className="px-2 py-1 text-left">{order.dispatch_date || '-'}</td>
                     <td className="px-2 py-1 text-left">{order.dispatch_time || '-'}</td>
                     <td className="px-2 py-1 text-left">{formatYen(order.total_price)}</td>
@@ -305,6 +416,19 @@ export default function OrdersAdminPage() {
                         <span className="text-red-600 font-medium">キャンセル</span>
                       ) : (
                         <span className="text-green-600">有効</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-1 text-left">
+                      {order.payment_status !== 'cancelled' && !order.shipped ? (
+                        <button
+                          onClick={() => handleMarkShipped(order.id)}
+                          disabled={processingOrderId === order.id}
+                          className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 text-sm"
+                        >
+                          {processingOrderId === order.id ? '更新中...' : '受渡済にする'}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
                       )}
                     </td>
                     <td className="px-2 py-1 text-left">

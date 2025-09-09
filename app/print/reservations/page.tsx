@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { formatTimeRange } from '@/components/DateTimeDisplay';
 
 type OrderItem = {
   id: string;
@@ -28,7 +29,7 @@ type Order = {
 
 function PrintPageContent() {
   const searchParams = useSearchParams();
-  const date = searchParams.get('date');
+  const date = searchParams?.get('date');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -169,7 +170,7 @@ function PrintPageContent() {
         <table className="w-full border-collapse border">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border p-2 text-left">受渡時間</th>
+              <th className="border p-2 text-left">受渡枠</th>
               <th className="border p-2 text-left">お客様名</th>
               <th className="border p-2 text-left">電話番号</th>
               <th className="border p-2 text-left">商品</th>
@@ -187,7 +188,7 @@ function PrintPageContent() {
                 className={order.payment_status === 'cancelled' ? 'bg-gray-100 text-gray-500' : ''}
               >
                 <td className="border p-2">
-                  {order.dispatch_time ? format(new Date(`2000-01-01T${order.dispatch_time}`), 'HH:mm') : '-'}
+                  {order.dispatch_time ? formatTimeRange(order.dispatch_time) : '-'}
                 </td>
                 <td className="border p-2">
                   {order.payment_status === 'cancelled' && (

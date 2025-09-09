@@ -26,8 +26,8 @@ type Product = {
 }
 
 export default function EditProductPage() {
-  const { id } = useParams();
-  const productId = id as string;
+  const params = useParams<{ id: string }>();
+  const productId = params?.id ?? '';
 
   const [product, setProduct] = useState<Product | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
