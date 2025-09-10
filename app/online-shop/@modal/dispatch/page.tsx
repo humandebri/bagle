@@ -162,7 +162,7 @@ export default function DispatchModalPage() {
           onClick={close}
         >
           <div
-            className="relative mx-auto w-full max-w-lg bg-white overflow-y-auto md:h-auto md:rounded-lg md:shadow-lg"
+            className="relative mx-auto w-full max-w-lg bg-white overflow-y-auto max-h-screen touch-pan-y overscroll-contain md:max-h-none md:h-auto md:rounded-lg md:shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
         {/* ✕ボタン */}
@@ -175,14 +175,14 @@ export default function DispatchModalPage() {
         </button>
 
         {/* コンテンツ */}
-        <div className="p-6 pt-14 text-gray-400 text-xl">
-          <h1 className="text-center text-3xl mb-8">
-            どのように注文を受け取りますか？
+        <div className="px-6 pt-14 pb-28 md:pb-0 text-gray-400 text-xl">
+          <h1 className="text-center text-2xl mb-8">
+            注文日時を選択してください
           </h1>
 
           <div className="mb-6">
-            <h2 className="mb-1">受取場所</h2>
-            <p>店舗住所</p>
+            <h2 className="mb-1">受取場所 : 店舗住所</h2>
+            <p className="text-md  mt-2"></p>
           </div>
 
           <div className="mb-6">
@@ -243,21 +243,7 @@ export default function DispatchModalPage() {
           </div>
         </div>
 
-        {/* スマホ固定フッター */}
-        <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-[1002]">
-          <button
-            className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
-            onClick={close}
-          >
-            キャンセル
-          </button>
-          <button
-            className="flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
-            onClick={save}
-          >
-            保存
-          </button>
-        </div>
+        {/* スマホ固定フッターはモーダル外に配置 */}
 
         {/* PC用フッター */}
         <div className="hidden md:flex w-full max-w-lg px-6 py-7 border-t border-gray-300 bg-white space-x-4">
@@ -275,6 +261,21 @@ export default function DispatchModalPage() {
           </button>
         </div>
           </div>
+        </div>
+        {/* スマホ固定フッター（モーダル外・最前面） */}
+        <div className="md:hidden z-[10001] fixed bottom-0 w-full bg-white border-t border-gray-300 flex space-x-4 px-6 py-5">
+          <button
+            className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
+            onClick={close}
+          >
+            キャンセル
+          </button>
+          <button
+            className="flex-1 py-3 bg-[#887c5d] text-gray-200 text-lg hover:bg-gray-600"
+            onClick={save}
+          >
+            保存
+          </button>
         </div>
       </RemoveScroll>
     </Portal>
