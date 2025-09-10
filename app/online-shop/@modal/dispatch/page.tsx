@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useCartStore } from '@/store/cart-store';
 import { TimeSlot } from '@/lib/supabase-server';
+import { RemoveScroll } from 'react-remove-scroll';
 
 type DateOption = { iso: string; label: string };
 
@@ -104,11 +105,19 @@ export default function DispatchModalPage() {
 
   }, [selectedDate, timeSlots]);
 
-  /** モーダル外スクロール禁止 */
+  // 背景スクロールロックはライブラリに委譲（react-remove-scroll）
+  // かつ、モーダルクローズ時にスクロール位置を復元
+  const restoreYRef = useRef(0);
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    try {
+      restoreYRef.current = window.scrollY || 0;
+    } catch {}
     return () => {
-      document.body.style.overflow = '';
+      const y = restoreYRef.current || 0;
+      requestAnimationFrame(() => {
+        window.scrollTo(0, y);
+        setTimeout(() => window.scrollTo(0, y), 0);
+      });
     };
   }, []);
 
@@ -142,12 +151,13 @@ export default function DispatchModalPage() {
 
   /* ---------- JSX (省略なしで掲載) ---------- */
   return (
+    <RemoveScroll>
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
       onClick={close}
     >
       <div
-        className="relative w-full h-full bg-white overflow-y-auto md:w-full md:max-w-lg md:h-auto md:shadow-lg"
+        className="relative mx-auto w-full max-w-lg bg-white overflow-y-auto md:h-auto md:rounded-lg md:shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ✕ボタン */}
@@ -261,5 +271,6 @@ export default function DispatchModalPage() {
         </div>
       </div>
     </div>
+    </RemoveScroll>
   );
 }

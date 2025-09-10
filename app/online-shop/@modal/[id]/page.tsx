@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import SafeImage from "@/components/SafeImage";
 import { Minus, Plus } from "lucide-react";
@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
 import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING } from "@/lib/constants";
 import { toast } from "sonner";
+import { RemoveScroll } from "react-remove-scroll";
 
 type Product = {
   id: string;
@@ -63,10 +64,20 @@ export default function BagelModalPage() {
     fetchProduct();
   }, [id]);
 
+  // 背景スクロールのロックはライブラリで実施（react-remove-scroll）
+  // かつ、モーダルクローズ時にスクロール位置を復元
+  const restoreYRef = useRef(0);
   useEffect(() => {
-    document.body.style.overflow = "hidden";
+    try {
+      restoreYRef.current = window.scrollY || 0;
+    } catch {}
     return () => {
-      document.body.style.overflow = "";
+      const y = restoreYRef.current || 0;
+      // レイアウト適用後に復元（2段階で安全側）
+      requestAnimationFrame(() => {
+        window.scrollTo(0, y);
+        setTimeout(() => window.scrollTo(0, y), 0);
+      });
     };
   }, []);
 
@@ -139,13 +150,13 @@ export default function BagelModalPage() {
   }
 
   return (
-    <>
+    <RemoveScroll>
     <div
       className="fixed inset-0 z-[60] bg-black/50 flex flex-col overflow-y-auto md:items-center md:justify-center transition-opacity duration-150"
       onClick={handleBackgroundClick}
     >
     <div
-      className="relative mx-auto w-full max-w-md md:max-w-[500px] bg-white"
+      className="relative mx-auto w-full max-w-md md:max-w-[500px] bg-white md:rounded-lg md:shadow-lg overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
         {/* ✕ボタン（スマホのみ表示） */}
@@ -219,6 +230,6 @@ export default function BagelModalPage() {
       注文に追加する ¥{quantity * product.price}
     </button>
   </div>
-  </>
+  </RemoveScroll>
   );
 }
