@@ -14,6 +14,11 @@ export default function BagelMenu({ bagels, link = true }: Props) {
             key={b.id}
             href={`/online-shop/${b.id}`}
             scroll={false}
+            onClick={() => {
+              try {
+                sessionStorage.setItem('online-shop-scroll', String(window.scrollY));
+              } catch {}
+            }}
             className="text-left block h-full"
           >
             <BagelCard bagel={b} />

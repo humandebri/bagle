@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
@@ -27,6 +27,7 @@ type Product = {
 
 export default function OnlineShopPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +107,65 @@ export default function OnlineShopPage() {
 
   useEffect(() => {
     setMounted(true);
+
+    // ブラウザの自動復元を止める
+    let prevVal: ScrollRestoration | undefined;
+    try {
+      if ('scrollRestoration' in history) {
+        const hist = history as History & { scrollRestoration?: ScrollRestoration };
+        prevVal = hist.scrollRestoration;
+        hist.scrollRestoration = 'manual';
+      }
+    } catch {}
+
+    const restoreFromSession = () => {
+      try {
+        const yStr = sessionStorage.getItem('online-shop-scroll');
+        if (!yStr) return;
+
+        // CSSの smooth スクロールの影響を回避
+        const html = document.documentElement as HTMLElement;
+        const prevScrollBehavior = html.style.scrollBehavior;
+        html.style.scrollBehavior = 'auto';
+
+        const target = Math.max(0, parseInt(yStr, 10) || 0);
+        let tries = 0;
+
+        const tick = () => {
+          window.scrollTo(0, target);
+          tries += 1;
+          // 画像レイアウトの揺れ対策：最大10フレーム粘る
+          if (Math.abs(window.scrollY - target) > 1 && tries < 10) {
+            requestAnimationFrame(tick);
+          } else {
+            sessionStorage.removeItem('online-shop-scroll');
+            // 元に戻す
+            html.style.scrollBehavior = prevScrollBehavior;
+          }
+        };
+        requestAnimationFrame(tick);
+      } catch {}
+    };
+
+    const onPopState = () => restoreFromSession();
+    const onModalClosed = () => restoreFromSession();
+
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('online-shop:modal-closed', onModalClosed as EventListener);
+
+    // フォールバック：push で閉じた場合にも効くよう、初回マウントで一度復元を試す
+    restoreFromSession();
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('online-shop:modal-closed', onModalClosed as EventListener);
+      try {
+        if ('scrollRestoration' in history) {
+          const hist = history as History & { scrollRestoration?: ScrollRestoration };
+          hist.scrollRestoration = prevVal ?? 'auto';
+        }
+      } catch {}
+    };
   }, []);
 
   useEffect(() => {
@@ -122,6 +182,36 @@ export default function OnlineShopPage() {
     
     return () => clearInterval(interval);
   }, [dispatchDate, dispatchTime, checkAvailableSlots]);
+
+  // App Routerの経路変更（popstateが飛ばない場合）でも復元
+  useEffect(() => {
+    // モーダルを閉じて一覧に戻った瞬間のみ走らせる
+    if (pathname !== '/online-shop') return;
+    if (loading) return;
+    // 一覧のDOMと商品データが揃ってから復元
+    try {
+      const yStr = sessionStorage.getItem('online-shop-scroll');
+      if (!yStr) return;
+
+      const html = document.documentElement as HTMLElement;
+      const prevScrollBehavior = html.style.scrollBehavior;
+      html.style.scrollBehavior = 'auto';
+
+      const target = Math.max(0, parseInt(yStr, 10) || 0);
+      let tries = 0;
+      const tick = () => {
+        window.scrollTo(0, target);
+        tries += 1;
+        if (Math.abs(window.scrollY - target) > 1 && tries < 10) {
+          requestAnimationFrame(tick);
+        } else {
+          sessionStorage.removeItem('online-shop-scroll');
+          html.style.scrollBehavior = prevScrollBehavior;
+        }
+      };
+      requestAnimationFrame(tick);
+    } catch {}
+  }, [pathname, loading, products.length]);
 
   const convertToBagels = (products: Product[]): Bagel[] => {
     return products.map(product => ({
@@ -147,7 +237,7 @@ export default function OnlineShopPage() {
   return (
     <>
       <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-24">
-        <div className="relative z-10 mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+        <div className="mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
           {/* 予約枠の警告メッセージ（ユーザーが時間枠を選択していない場合のみ表示） */}
           {!checkingSlots && availableSlotsCount === 0 && !dispatchDate && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
@@ -185,7 +275,12 @@ export default function OnlineShopPage() {
           <div className="max-w-4xl mx-auto mb-6">
             {mounted && (
               <button 
-                onClick={() => router.push(`/online-shop/dispatch`)}
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem('online-shop-scroll', String(window.scrollY));
+                  } catch {}
+                  router.push(`/online-shop/dispatch`, { scroll: false });
+                }}
                 className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
               >
                 {dispatchDate && dispatchTime ? (

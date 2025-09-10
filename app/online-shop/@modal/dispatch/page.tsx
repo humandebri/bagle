@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -12,8 +12,16 @@ import {
 import { useCartStore } from '@/store/cart-store';
 import { TimeSlot } from '@/lib/supabase-server';
 import { RemoveScroll } from 'react-remove-scroll';
+import { createPortal } from 'react-dom';
 
 type DateOption = { iso: string; label: string };
+
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
 
 export default function DispatchModalPage() {
   const router = useRouter();
@@ -106,22 +114,15 @@ export default function DispatchModalPage() {
   }, [selectedDate, timeSlots]);
 
   // 背景スクロールロックはライブラリに委譲（react-remove-scroll）
-  // かつ、モーダルクローズ時にスクロール位置を復元
-  const restoreYRef = useRef(0);
-  useEffect(() => {
-    try {
-      restoreYRef.current = window.scrollY || 0;
-    } catch {}
-    return () => {
-      const y = restoreYRef.current || 0;
-      requestAnimationFrame(() => {
-        window.scrollTo(0, y);
-        setTimeout(() => window.scrollTo(0, y), 0);
-      });
-    };
-  }, []);
 
-  const close = () => router.back();
+  const close = () => {
+    try {
+      sessionStorage.setItem('online-shop-scroll', String(window.scrollY));
+      window.dispatchEvent(new Event('online-shop:modal-closed'));
+    } catch {}
+    if (typeof window !== 'undefined' && window.history.length > 1) router.back();
+    else router.push('/online-shop', { scroll: false });
+  };
 
   const save = async () => {
     if (!selectedDate || !selectedTime) return;
@@ -151,15 +152,19 @@ export default function DispatchModalPage() {
 
   /* ---------- JSX (省略なしで掲載) ---------- */
   return (
-    <RemoveScroll>
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-      onClick={close}
-    >
-      <div
-        className="relative mx-auto w-full max-w-lg bg-white overflow-y-auto md:h-auto md:rounded-lg md:shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Portal>
+      <RemoveScroll>
+        {/* overlay */}
+        <div className="fixed inset-0 z-[9999] bg-black/50" onClick={close} aria-hidden="true" />
+        {/* panel */}
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center"
+          onClick={close}
+        >
+          <div
+            className="relative mx-auto w-full max-w-lg bg-white overflow-y-auto md:h-auto md:rounded-lg md:shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
         {/* ✕ボタン */}
         <button
           onClick={close}
@@ -239,7 +244,7 @@ export default function DispatchModalPage() {
         </div>
 
         {/* スマホ固定フッター */}
-        <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-[70]">
+        <div className="fixed bottom-0 w-full bg-white border-t border-gray-300 flex md:hidden space-x-4 px-6 py-5 z-[1002]">
           <button
             className="flex-1 py-3 text-[#887c5d] text-lg hover:bg-gray-600 border border-[#887c5d]"
             onClick={close}
@@ -269,8 +274,9 @@ export default function DispatchModalPage() {
             保存
           </button>
         </div>
-      </div>
-    </div>
-    </RemoveScroll>
+          </div>
+        </div>
+      </RemoveScroll>
+    </Portal>
   );
 }
