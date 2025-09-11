@@ -99,7 +99,7 @@ export default function ReviewPage() {
         setLoading(false);
         // 無効な時間枠の場合、日時選択画面へ誘導
         setTimeout(() => {
-          router.push('/online-shop/dispatch');
+          router.push('/dispatch');
         }, 2000);
         return;
       }
@@ -158,7 +158,7 @@ export default function ReviewPage() {
         console.log('Confirmation email sent successfully');
       }
 
-      router.push('/online-shop/success');
+      router.push('/success');
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('注文処理エラー:', error);

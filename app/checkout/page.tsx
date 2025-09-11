@@ -111,7 +111,7 @@ export default function CheckoutPage() {
           description: result.message,
         });
         // 無効な時間枠の場合、日時選択画面へ誘導
-        router.push('/online-shop/dispatch');
+        router.push('/dispatch');
         return;
       }
     } catch {
@@ -146,7 +146,7 @@ export default function CheckoutPage() {
         return;
       }
   
-      router.push('/online-shop/review');
+      router.push('/review');
     } catch {
       toast.error('プロフィールの保存に失敗しました');
     }
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
                 <div>
                   <p className="text-base md:text-lg font-medium mb-2">受取日時</p>
                   <button
-                    onClick={() => router.push(`/online-shop/dispatch`)}
+                    onClick={() => router.push(`/dispatch`)}
                     className="w-full border-2 rounded-md p-3 text-center hover:bg-gray-50 transition-colors"
                   >
                     {dispatchDate && dispatchTime ? (

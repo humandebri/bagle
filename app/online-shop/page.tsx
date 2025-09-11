@@ -279,7 +279,7 @@ export default function OnlineShopPage() {
                   try {
                     sessionStorage.setItem('online-shop-scroll', String(window.scrollY));
                   } catch {}
-                  router.push(`/online-shop/dispatch`, { scroll: false });
+                  router.push(`/dispatch`, { scroll: false });
                 }}
                 className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
               >
@@ -307,7 +307,7 @@ export default function OnlineShopPage() {
       {mounted && totalQuantity > 0 && (
         <CartFooter
           totalQuantity={totalQuantity}
-          onClick={() => router.push('/online-shop/cart')}
+          onClick={() => router.push('/cart')}
           disabled={availableSlotsCount === 0 && !dispatchDate}
         />
       )}

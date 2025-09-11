@@ -122,11 +122,11 @@ export default function CartPage() {
           description: result.message,
         });
         // 無効な時間枠の場合、日時選択画面へ誘導
-        router.push('/online-shop/dispatch');
+        router.push('/dispatch');
         return;
       }
 
-      router.push('/online-shop/checkout');
+      router.push('/checkout');
     } catch {
       toast.error("エラーが発生しました", {
         description: "もう一度お試しください。",
@@ -178,7 +178,7 @@ export default function CartPage() {
             {/* 予約日時の表示 */}
             {dispatchDate && dispatchTime && (
               <button
-                onClick={() => router.push('/online-shop/dispatch')}
+                onClick={() => router.push('/dispatch')}
                 className="w-full border-2 border-[#887c5d]/60 p-4 mb-6 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
               >
                 <div className="flex items-center gap-2 text-[#887c5d]">
@@ -195,7 +195,7 @@ export default function CartPage() {
                   <Clock className="w-5 h-5" />
                   <span className="text-base">予約日時を選択してください</span>
                   <button
-                    onClick={() => router.push('/online-shop/dispatch')}
+                    onClick={() => router.push('/dispatch')}
                     className="ml-auto text-sm underline hover:no-underline"
                   >
                     選択する
