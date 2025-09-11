@@ -279,7 +279,7 @@ export default function OnlineShopPage() {
                   try {
                     sessionStorage.setItem('online-shop-scroll', String(window.scrollY));
                   } catch {}
-                  router.push(`/dispatch`, { scroll: false });
+                  router.push(`/online-shop/dispatch`, { scroll: false });
                 }}
                 className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
               >
