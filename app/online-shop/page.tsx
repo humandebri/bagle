@@ -237,7 +237,13 @@ export default function OnlineShopPage() {
   return (
     <>
       <main className="min-h-[calc(100vh-7rem)] pb-20 md:pb-24">
-        <div className="mx-auto mt-5 bg-white text-gray-400 p-6 rounded-sm">
+        <div className="mx-auto bg-white text-gray-600 p-2 rounded-sm">
+          <div className="mx-auto max-w-2xl rounded-md  p-5 text-sm text-gray-400 ">
+            <ul className="list-disc space-y-2 pl-5 md:text-lg">
+              <li>10/2〜10/11 ご来店分は、店舗休業のためご予約が出来ません。</li>
+              <li>10/16のご予約を10/9から受付再開させて頂きます。</li>
+            </ul>
+          </div>
           {/* 予約枠の警告メッセージ（ユーザーが時間枠を選択していない場合のみ表示） */}
           {!checkingSlots && availableSlotsCount === 0 && !dispatchDate && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
