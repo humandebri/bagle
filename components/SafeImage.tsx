@@ -95,9 +95,9 @@ export default function SafeImage({
     }
   }, [product, getImageUrl, onLoadSuccess]);
   
-  // Supabase画像の最適化を無効化（すでにWebPの場合は特に）
-  const isSupabaseImage = getImageUrl()?.includes('supabase.co');
-  const shouldUnoptimize = isSupabaseImage || getImageUrl()?.endsWith('.webp');
+  // Supabase画像はCDN最適化を使い、SVGなど再エンコード不要な形式のみ無効化
+  const isSVG = getImageUrl()?.endsWith('.svg');
+  const shouldUnoptimize = isSVG;
   
   return (
     <Image
