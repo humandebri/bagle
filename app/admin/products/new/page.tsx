@@ -209,6 +209,16 @@ export default function NewProductPage() {
                 hover:file:bg-gray-600"
             />
           </div>
+          {product.image && (
+            <div className="mt-3">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
+                画像URL
+              </label>
+              <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 break-all">
+                {product.image}
+              </div>
+            </div>
+          )}
         </div>
 
         <div>

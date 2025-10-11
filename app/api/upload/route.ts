@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/auth';
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 import type { Session } from 'next-auth';
 
 
@@ -34,22 +35,24 @@ export async function POST(request: Request) {
     if (!buckets?.find(b => b.name === 'product-images')) {
       const { error: createBucketError } = await supabase.storage.createBucket('product-images', {
         public: true,
-        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif'],
+        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
         fileSizeLimit: 5 * 1024 * 1024,
       });
       if (createBucketError) throw createBucketError;
     }
 
-    // ✅ ファイル名生成とアップロード
+    // ✅ ファイル名生成と WebP 変換してアップロード
     const timestamp = Date.now();
-    const extension = (file as File).name?.split('.')?.pop() || 'jpg';
-    const fileName = `${productId}_${timestamp}.${extension}`;
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const webpBuffer = await sharp(fileBuffer).webp().toBuffer();
+    const fileName = `${productId}_${timestamp}.webp`;
 
     const { error: uploadError } = await supabase.storage
       .from('product-images')
-      .upload(fileName, file, {
+      .upload(fileName, webpBuffer, {
         cacheControl: '3600',
         upsert: false,
+        contentType: 'image/webp',
       });
 
     if (uploadError) throw uploadError;
