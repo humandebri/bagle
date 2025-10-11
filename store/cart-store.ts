@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  DEFAULT_SLOT_CATEGORY,
+  SlotCategory,
+} from "@/lib/categories";
 
 
 // カートアイテム型
@@ -18,18 +22,21 @@ type CartState = {
   items: CartItem[];
   dispatchDate: string | null;
   dispatchTime: string | null;
+  dispatchCategory: SlotCategory;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   setDispatchDate: (date: string | null) => void;
   setDispatchTime: (time: string | null) => void;
+  setDispatchCategory: (category: SlotCategory | null) => void;
   reset: () => void;
 };
 
 // 初期受け取り日時
 export const initialDispatchDate = null;
 export const initialDispatchTime = null;
+export const initialDispatchCategory = DEFAULT_SLOT_CATEGORY;
 
 // Zustandストア
 export const useCartStore = create<CartState>()(
@@ -38,6 +45,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       dispatchDate: initialDispatchDate,
       dispatchTime: initialDispatchTime,
+      dispatchCategory: initialDispatchCategory,
 
       addItem: (item) =>
         set((state) => {
@@ -49,28 +57,65 @@ export const useCartStore = create<CartState>()(
         }),
 
       removeItem: (id) =>
-        set((state) => ({
-          items: state.items.filter((i) => i.id !== id),
-        })),
+        set((state) => {
+          const nextItems = state.items.filter((i) => i.id !== id);
+          if (nextItems.length === 0) {
+            return {
+              items: [],
+              dispatchDate: initialDispatchDate,
+              dispatchTime: initialDispatchTime,
+              dispatchCategory: initialDispatchCategory,
+            };
+          }
+          return { items: nextItems };
+        }),
 
       updateQuantity: (id, quantity) =>
+        set((state) => {
+          const nextItems = state.items
+            .filter((i) => i.id !== id || quantity > 0)
+            .map((i) => (i.id === id ? { ...i, quantity } : i));
+          const filteredItems = nextItems.filter((i) => i.quantity > 0);
+          if (filteredItems.length === 0) {
+            return {
+              items: [],
+              dispatchDate: initialDispatchDate,
+              dispatchTime: initialDispatchTime,
+              dispatchCategory: initialDispatchCategory,
+            };
+          }
+          return { items: filteredItems };
+        }),
+
+      clearCart: () =>
+        set({
+          items: [],
+          dispatchDate: initialDispatchDate,
+          dispatchTime: initialDispatchTime,
+          dispatchCategory: initialDispatchCategory,
+        }),
+
+      setDispatchDate: (date) =>
         set((state) => ({
-          items: state.items.filter((i) => i.id !== id || quantity > 0).map((i) =>
-            i.id === id ? { ...i, quantity } : i
-          ),
+          dispatchDate: date,
+          ...(date === null
+            ? { dispatchCategory: initialDispatchCategory }
+            : { dispatchCategory: state.dispatchCategory }),
         })),
 
-      clearCart: () => set({ items: [] }),
-
-      setDispatchDate: (date) => set({ dispatchDate: date }),
-
       setDispatchTime: (time) => set({ dispatchTime: time }),
+
+      setDispatchCategory: (category) =>
+        set({
+          dispatchCategory: category ?? initialDispatchCategory,
+        }),
 
       reset: () =>
         set({
           items: [],
           dispatchDate: initialDispatchDate,
           dispatchTime: initialDispatchTime,
+          dispatchCategory: initialDispatchCategory,
         }),
     }),
     {

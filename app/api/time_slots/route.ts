@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { normalizeSlotCategory } from '@/lib/categories';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -60,6 +61,8 @@ export async function POST(req: Request) {
       timeValue = `${timeValue}:00`;
     }
     
+    const allowedCategory = normalizeSlotCategory(body.allowed_category);
+
     const { data, error } = await supabase
       .from('time_slots')
       .insert([
@@ -69,6 +72,7 @@ export async function POST(req: Request) {
           max_capacity: body.max_capacity !== undefined ? body.max_capacity : 1,
           current_bookings: 0, // 新規作成時は常に0（実際の予約数は動的に計算される）
           is_available: body.is_available ?? true,
+          allowed_category: allowedCategory,
         },
       ])
       .select()
@@ -92,12 +96,18 @@ export async function PUT(req: Request) {
       timeValue = `${timeValue}:00`;
     }
     
+    const updates: Record<string, unknown> = {
+      max_capacity: body.max_capacity,
+      is_available: body.is_available,
+    };
+
+    if (body.allowed_category !== undefined) {
+      updates.allowed_category = normalizeSlotCategory(body.allowed_category);
+    }
+
     const { data, error } = await supabase
       .from('time_slots')
-      .update({
-        max_capacity: body.max_capacity,
-        is_available: body.is_available,
-      })
+      .update(updates)
       .eq('date', body.date)
       .eq('time', timeValue)
       .select();

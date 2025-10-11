@@ -13,7 +13,7 @@ export const ALLOWED_SLOT_CATEGORIES: SlotCategory[] = [
 ];
 
 export const SLOT_CATEGORY_LABELS: Record<SlotCategory, string> = {
-  [SLOT_CATEGORY_STANDARD]: 'BAGEL(税込価格)',
+  [SLOT_CATEGORY_STANDARD]: 'BAGEL',
   [SLOT_CATEGORY_RICE_FLOUR]: '米粉ベーグル',
 };
 

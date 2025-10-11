@@ -8,6 +8,8 @@ export type TimeSlot = {
   max_capacity: number;
   current_bookings: number;
   is_available: boolean;
+  allowed_category?: string | null;
+  temp_bookings?: number | null;
 };
 
 export const createServerSupabaseClient = async () => {

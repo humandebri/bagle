@@ -2,6 +2,12 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { TIME_RANGE_MAP, formatDate, formatTimeRange } from "@/components/DateTimeDisplay";
+import {
+  ALLOWED_SLOT_CATEGORIES,
+  SLOT_CATEGORY_LABELS,
+  SLOT_CATEGORY_STANDARD,
+  normalizeSlotCategory,
+} from "@/lib/categories";
 
 interface TimeSlot {
   id: string;
@@ -12,6 +18,7 @@ interface TimeSlot {
   temp_bookings?: number;  // 仮予約数を追加
   is_available?: boolean;
   created_at?: string;
+  allowed_category?: string | null;
 }
 
 // 2週間分の日付配列を生成
@@ -32,7 +39,7 @@ const DEFAULT_TIME_SLOTS = [
   { time: "11:15", max_capacity: 1 },
   { time: "11:30", max_capacity: 1 },
   { time: "11:45", max_capacity: 1 },
-  { time: "12:00", max_capacity: 8 },  // 12:00-15:00の枠として8人
+  { time: "12:00", max_capacity: 6 },  // 12:00-15:00の枠として8人
 ];
 
 // デフォルト日付計算
@@ -59,6 +66,7 @@ export default function TimeSlotsPage() {
   const [bulkStart, setBulkStart] = useState<string>(sunday);
   const [bulkEnd, setBulkEnd] = useState<string>(saturday);
   const [bulkTimeSlots, setBulkTimeSlots] = useState(DEFAULT_TIME_SLOTS);
+  const [bulkCategory, setBulkCategory] = useState<string>(SLOT_CATEGORY_STANDARD);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -74,6 +82,7 @@ export default function TimeSlotsPage() {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
   const [editCount, setEditCount] = useState(0);
+  const [editAllowedCategory, setEditAllowedCategory] = useState<string>("keep");
   const editFormRef = useRef<HTMLFormElement>(null);
 
   const [deleteDays, setDeleteDays] = useState<number[]>([4, 6]);
@@ -189,18 +198,19 @@ export default function TimeSlotsPage() {
         if (bulkDays.includes(d.getDay())) {
           for (const slot of bulkTimeSlots) {
             // 0枠のスロットは作成しない
-            if (slot.max_capacity > 0) {
-              slots.push({
-                date: d.toISOString().split("T")[0],
-                time: slot.time,
-                max_capacity: slot.max_capacity,
-                current_bookings: 0,
-                is_available: true,
-              });
+              if (slot.max_capacity > 0) {
+                slots.push({
+                  date: d.toISOString().split("T")[0],
+                  time: slot.time,
+                  max_capacity: slot.max_capacity,
+                  current_bookings: 0,
+                  is_available: true,
+                  allowed_category: normalizeSlotCategory(bulkCategory),
+                });
+              }
             }
           }
         }
-      }
       // 既存APIにPOST連打
       for (const slot of slots) {
         const res = await fetch("/api/time_slots", {
@@ -243,14 +253,18 @@ export default function TimeSlotsPage() {
         }
       }
       for (const u of updates) {
+        const payload: Record<string, unknown> = {
+          ...u,
+          max_capacity: editMaxCapacity,
+          is_available: editIsAvailable,
+        };
+        if (editAllowedCategory !== "keep") {
+          payload.allowed_category = normalizeSlotCategory(editAllowedCategory);
+        }
         await fetch("/api/time_slots", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...u,
-            max_capacity: editMaxCapacity,
-            is_available: editIsAvailable,
-          }),
+          body: JSON.stringify(payload),
         });
       }
       setShowEditModal(false);
@@ -314,12 +328,16 @@ export default function TimeSlotsPage() {
   // 詳細モーダルの編集用state
   const [editDetailMax, setEditDetailMax] = useState<number | null>(null);
   const [editDetailAvail, setEditDetailAvail] = useState<boolean | null>(null);
+  const [editDetailCategory, setEditDetailCategory] = useState<string | null>(null);
   const [editDetailError, setEditDetailError] = useState<string>("");
   useEffect(() => {
     if (detailSlot) {
       setEditDetailMax(detailSlot.max_capacity);
       setEditDetailAvail(detailSlot.is_available ?? true);
+      setEditDetailCategory(normalizeSlotCategory(detailSlot.allowed_category));
       setEditDetailError("");
+    } else {
+      setEditDetailCategory(null);
     }
   }, [detailSlot]);
 
@@ -340,6 +358,9 @@ export default function TimeSlotsPage() {
         max_capacity: editDetailMax,
         is_available: editDetailAvail,
         current_bookings: detailSlot.current_bookings ?? 0,
+        allowed_category: normalizeSlotCategory(
+          editDetailCategory ?? SLOT_CATEGORY_STANDARD,
+        ),
       }),
     });
     if (!res.ok) {
@@ -364,7 +385,10 @@ export default function TimeSlotsPage() {
           </button>
           <button
             className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium"
-            onClick={() => setShowEditModal(true)}
+            onClick={() => {
+              setEditAllowedCategory("keep");
+              setShowEditModal(true);
+            }}
           >
             一括編集
           </button>
@@ -440,6 +464,20 @@ export default function TimeSlotsPage() {
                   ))}
                 </div>
               </div>
+              <div>
+                <label className="block mb-1">カテゴリ</label>
+                <select
+                  className="border px-2 py-1 w-full"
+                  value={bulkCategory}
+                  onChange={(e) => setBulkCategory(e.target.value)}
+                >
+                  {ALLOWED_SLOT_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {SLOT_CATEGORY_LABELS[category]}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className={bulkCreateCount >= 100 ? "text-red-600 font-bold" : "text-gray-600"}>
                 この条件で作成される時間帯枠：{bulkCreateCount}件{bulkCreateCount >= 100 && "（作りすぎ注意！）"}
               </div>
@@ -455,7 +493,7 @@ export default function TimeSlotsPage() {
         </div>
       )}
       {showEditModal && (
-        <div className="fixed inset-0  bg-black/30 flex items-center justify-center z-50" onClick={() => setShowEditModal(false)}>
+        <div className="fixed inset-0  bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowEditModal(false); setEditAllowedCategory("keep"); }}>
           <div className="bg-white p-6 rounded shadow max-w-lg w-full" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4">予約枠一括編集</h2>
             <form ref={editFormRef} onSubmit={handleBulkEdit} className="space-y-4">
@@ -517,12 +555,36 @@ export default function TimeSlotsPage() {
                   <option value="false">利用不可</option>
                 </select>
               </div>
+              <div>
+                <label className="block mb-1">カテゴリ</label>
+                <select
+                  value={editAllowedCategory}
+                  onChange={(e) => setEditAllowedCategory(e.target.value)}
+                  className="border px-2 py-1 w-full"
+                >
+                  <option value="keep">変更しない</option>
+                  {ALLOWED_SLOT_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {SLOT_CATEGORY_LABELS[category]}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className={editCount >= 100 ? "text-red-600 font-bold" : "text-gray-600"}>
                 この条件で編集される枠数：{editCount}件{editCount >= 100 && "（作りすぎ注意！）"}
               </div>
               {editError && <div className="text-red-600">{editError}</div>}
               <div className="flex gap-2 justify-end">
-                <button type="button" className="px-4 py-2 border border-[#887c5d]/30 rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={() => setShowEditModal(false)}>キャンセル</button>
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-[#887c5d]/30 rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditAllowedCategory("keep");
+                  }}
+                >
+                  キャンセル
+                </button>
                 <button type="submit" className="bg-[#887c5d] text-white px-4 py-2 rounded-lg hover:bg-[#6e634b] transition-colors font-medium disabled:opacity-50" disabled={editLoading}>
                   {editLoading ? "編集中..." : "一括編集"}
                 </button>
@@ -617,11 +679,20 @@ export default function TimeSlotsPage() {
                   <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
                   {weekDates.slice(0, 7).map((date) => {
                     const slot = slotMap[date][time];
+                    const slotCategory = slot
+                      ? normalizeSlotCategory(slot.allowed_category)
+                      : SLOT_CATEGORY_STANDARD;
+                    const categoryBadge =
+                      slotCategory !== SLOT_CATEGORY_STANDARD ? (
+                        <span className="text-[10px] text-amber-700">
+                          {SLOT_CATEGORY_LABELS[slotCategory]}
+                        </span>
+                      ) : null;
                     let cell;
                     if (!slot) {
                       cell = (
                         <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
-                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true })}>
+                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true, allowed_category: SLOT_CATEGORY_STANDARD })}>
                           -
                         </span>
                       );
@@ -647,7 +718,10 @@ export default function TimeSlotsPage() {
                     }
                     return (
                       <td key={date} className="border px-2 py-1 text-center align-middle">
-                        {cell}
+                        <div className="flex flex-col items-center gap-1">
+                          {cell}
+                          {categoryBadge}
+                        </div>
                       </td>
                     );
                   })}
@@ -679,11 +753,20 @@ export default function TimeSlotsPage() {
                   <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
                   {weekDates.slice(7, 14).map((date) => {
                     const slot = slotMap[date][time];
+                    const slotCategory = slot
+                      ? normalizeSlotCategory(slot.allowed_category)
+                      : SLOT_CATEGORY_STANDARD;
+                    const categoryBadge =
+                      slotCategory !== SLOT_CATEGORY_STANDARD ? (
+                        <span className="text-[10px] text-amber-700">
+                          {SLOT_CATEGORY_LABELS[slotCategory]}
+                        </span>
+                      ) : null;
                     let cell;
                     if (!slot) {
                       cell = (
                         <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
-                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true })}>
+                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true, allowed_category: SLOT_CATEGORY_STANDARD })}>
                           -
                         </span>
                       );
@@ -709,7 +792,10 @@ export default function TimeSlotsPage() {
                     }
                     return (
                       <td key={date} className="border px-2 py-1 text-center align-middle">
-                        {cell}
+                        <div className="flex flex-col items-center gap-1">
+                          {cell}
+                          {categoryBadge}
+                        </div>
                       </td>
                     );
                   })}
@@ -731,6 +817,20 @@ export default function TimeSlotsPage() {
               {detailSlot.temp_bookings ? (
                 <span className="text-orange-600 ml-2">(仮予約: {detailSlot.temp_bookings})</span>
               ) : null}
+            </div>
+            <div className="mb-2">
+              カテゴリ:
+              <select
+                value={editDetailCategory ?? SLOT_CATEGORY_STANDARD}
+                onChange={(e) => setEditDetailCategory(e.target.value)}
+                className="border px-2 py-1 w-32 ml-2"
+              >
+                {ALLOWED_SLOT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {SLOT_CATEGORY_LABELS[category]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="mb-2">利用可否: <select value={editDetailAvail ? 'true' : 'false'} onChange={e => setEditDetailAvail(e.target.value === 'true')} className="border px-2 py-1 w-24 ml-2"><option value="true">利用可</option><option value="false">利用不可</option></select></div>
             {detailSlot.created_at && (

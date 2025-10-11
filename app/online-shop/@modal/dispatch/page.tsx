@@ -10,7 +10,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCartStore } from '@/store/cart-store';
+import { useMenuStore } from '@/store/menu-store';
 import { TimeSlot } from '@/lib/supabase-server';
+import {
+  normalizeSlotCategory,
+  SLOT_CATEGORY_RICE_FLOUR,
+} from '@/lib/categories';
 import { RemoveScroll } from 'react-remove-scroll';
 import { createPortal } from 'react-dom';
 
@@ -29,13 +34,27 @@ export default function DispatchModalPage() {
   const dispatchTime = useCartStore((s) => s.dispatchTime);           // '11:00' など
   const setDispatchDate = useCartStore((s) => s.setDispatchDate);
   const setDispatchTime = useCartStore((s) => s.setDispatchTime);
+  const dispatchCategory = useCartStore((s) => s.dispatchCategory);
+  const setDispatchCategory = useCartStore((s) => s.setDispatchCategory);
+  const activeCategory = useMenuStore((s) => s.activeCategory);
+  const setActiveCategory = useMenuStore((s) => s.setActiveCategory);
 
   const [selectedDate, setSelectedDate] = useState<string>(dispatchDate || '');
-  const [selectedTime, setSelectedTime] = useState<string>(dispatchTime || '');
+  const toSelectTimeValue = (time: string | null) =>
+    time ? (time.length === 5 ? `${time}:00` : time) : '';
+  const [selectedTime, setSelectedTime] = useState<string>(
+    toSelectTimeValue(dispatchTime),
+  );
 
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [availableDates, setAvailableDates] = useState<DateOption[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (dispatchCategory === SLOT_CATEGORY_RICE_FLOUR) {
+      setActiveCategory(SLOT_CATEGORY_RICE_FLOUR);
+    }
+  }, [dispatchCategory, setActiveCategory]);
 
   const TIME_RANGE_MAP = {
     '11:00': '11:15',
@@ -73,14 +92,19 @@ export default function DispatchModalPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/get-available-slots');
-        const { timeSlots } = await res.json();
-        setTimeSlots(timeSlots);
+        const res = await fetch(
+          `/api/get-available-slots?category=${encodeURIComponent(activeCategory)}`,
+        );
+        if (!res.ok) {
+          throw new Error('時間枠データの取得に失敗しました');
+        }
+        const payload = await res.json();
+        const fetchedSlots: TimeSlot[] = payload.timeSlots || [];
+        setTimeSlots(fetchedSlots);
 
-        // ---- 重複しない日付(ISO)を抽出 ----
         const isoDates = Array.from(
           new Set(
-            timeSlots
+            fetchedSlots
               .filter((s: TimeSlot) => s.is_available)
               .map((s: TimeSlot) => s.date),
           ),
@@ -92,26 +116,36 @@ export default function DispatchModalPage() {
             label: formatDate(iso),
           })),
         );
+
+        if (selectedDate && !isoDates.includes(selectedDate)) {
+          setSelectedDate('');
+          setSelectedTime('');
+        }
       } catch (err) {
         console.error('Error fetching time slots:', err);
+        setTimeSlots([]);
+        setAvailableDates([]);
+        setAvailableTimes([]);
       }
     })();
-  }, []);
+  }, [activeCategory, selectedDate]);
 
   /** 日付が決まったら時間リストを作る */
   useEffect(() => {
-    if (!selectedDate) return;
+    if (!selectedDate) {
+      setAvailableTimes([]);
+      return;
+    }
 
     const times = timeSlots
-      .filter(
-        (s) => s.date === selectedDate && s.is_available,
-      )
+      .filter((s) => s.date === selectedDate && s.is_available)
       .map((s) => s.time);
 
     setAvailableTimes(times);
-    // 先に日付を変更した時は時間を空に戻す
-
-  }, [selectedDate, timeSlots]);
+    if (selectedTime && !times.includes(selectedTime)) {
+      setSelectedTime('');
+    }
+  }, [selectedDate, selectedTime, timeSlots]);
 
   // 背景スクロールロックはライブラリに委譲（react-remove-scroll）
 
@@ -140,9 +174,20 @@ export default function DispatchModalPage() {
         return;
       }
 
+      const matchedSlot = timeSlots.find(
+        (slot) =>
+          slot.date === selectedDate &&
+          slot.time.slice(0, 5) === selectedTime.slice(0, 5),
+      );
+      const slotCategory = matchedSlot
+        ? normalizeSlotCategory(matchedSlot.allowed_category)
+        : normalizeSlotCategory(activeCategory);
+
       setDispatchDate(selectedDate); // Zustand に保存
       // 時間を "10:00:00" から "10:00" 形式に変換して保存
       setDispatchTime(selectedTime.slice(0, 5)); // Zustand に保存
+      setDispatchCategory(slotCategory);
+      setActiveCategory(slotCategory);
       router.back();
     } catch (err) {
       console.error('Error updating time slot:', err);

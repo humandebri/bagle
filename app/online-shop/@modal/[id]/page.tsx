@@ -10,6 +10,13 @@ import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING } f
 import { toast } from "sonner";
 import { RemoveScroll } from "react-remove-scroll";
 import { createPortal } from "react-dom";
+import {
+  SLOT_CATEGORY_LABELS,
+  SLOT_CATEGORY_RICE_FLOUR,
+  isProductAllowedInSlot,
+  inferSlotCategoryFromProductCategory,
+} from "@/lib/categories";
+import type { SlotCategory } from "@/lib/categories";
 
 type Product = {
   id: string;
@@ -45,6 +52,7 @@ export default function BagelModalPage() {
 
   const cartItems = useCartStore((s) => s.items);
   const addToCart = useCartStore((s) => s.addItem);
+  const dispatchCategory = useCartStore((s) => s.dispatchCategory);
 
   // すでにカートにある場合、その個数を初期値に
   const existingItem = cartItems.find((item) => item.id.toString() === id);
@@ -107,7 +115,36 @@ export default function BagelModalPage() {
   const dec = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
   const add = () => {
     if (!product) return;
-    
+
+    const newProductCategory = inferSlotCategoryFromProductCategory(
+      product.category?.name,
+    );
+    const conflictingCategory = cartItems
+      .map((item) =>
+        inferSlotCategoryFromProductCategory(item.category?.name),
+      )
+      .find(
+        (category) =>
+          category !== newProductCategory &&
+          // ignore cases where category might be undefined fallback (already normalized)
+          category !== undefined,
+      );
+
+    if (conflictingCategory) {
+      const toDisplayLabel = (category: SlotCategory) =>
+        category === SLOT_CATEGORY_RICE_FLOUR ? "米粉ベーグル" : "通常ベーグル";
+      toast.error(
+        `${toDisplayLabel(newProductCategory)}と${toDisplayLabel(
+          conflictingCategory,
+        )}は同時にカートに追加できません。`,
+        {
+          description:
+            "カート内の商品を空にするか、同じ種類の商品をご選択ください。",
+        },
+      );
+      return;
+    }
+
     const totalQuantity = cartItems.reduce((sum, item) => {
       // 現在の商品以外の合計を計算
       if (item.id === product.id) return sum;
@@ -117,6 +154,14 @@ export default function BagelModalPage() {
     if (totalQuantity + quantity > MAX_BAGEL_PER_ORDER) {
       toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
         description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+      });
+      return;
+    }
+
+    if (!isProductAllowedInSlot(product.category?.name, dispatchCategory)) {
+      const riceLabel = SLOT_CATEGORY_LABELS[SLOT_CATEGORY_RICE_FLOUR];
+      toast.error(`${riceLabel}限定日のため、対象商品のみご予約いただけます。`, {
+        description: `${riceLabel}以外の商品は別日の枠でご予約ください。`,
       });
       return;
     }
