@@ -16,12 +16,13 @@ interface RequestBody {
   items: OrderItem[];
   dispatchDate: string;
   dispatchTime: string;
+  dispatchEndTime?: string | null;
   total: number;
 }
 
 export async function POST(request: Request) {
   try {
-    const { orderId, items, dispatchDate, dispatchTime, total }: RequestBody = await request.json();
+    const { orderId, items, dispatchDate, dispatchTime, dispatchEndTime, total }: RequestBody = await request.json();
     
     // Prismaで注文情報とプロフィール情報を一括取得
     const order = await prisma.orders.findUnique({
@@ -51,10 +52,11 @@ export async function POST(request: Request) {
     // DBに保存されている値を優先（dispatch_dateはJST想定のためDB値を使用）
     const dbDate = order.dispatch_date || dispatchDate;
     const dbTime = order.dispatch_time || dispatchTime;
+    const dbEndTime = order.dispatch_end_time || dispatchEndTime;
 
     // JSTで安全にフォーマット（サーバーTZに依存しない）
     const formattedDate = formatDateJST(dbDate);
-    const formattedTime = formatTimeRange(dbTime);
+    const formattedTime = formatTimeRange(dbTime, dbEndTime);
 
     const result = await resend.emails.send({
       from: emailConfig.getFromAddress(),
@@ -168,24 +170,15 @@ export async function POST(request: Request) {
 }
 
 // 時間範囲のフォーマット関数
-function formatTimeRange(time: string): string {
-  if (!time) return '';
-  
-  // time が "HH:MM" または "HH:MM:SS" 形式の場合
-  const [hours, minutes] = time.split(':');
-  const hour = parseInt(hours);
-  const min = minutes === '00' ? '' : `:${minutes}`;
-  
-  // 12:00の場合は特別な表記
-  if (hour === 12) {
-    return '12:00〜15:00';
+function formatTimeRange(start?: string | null, end?: string | null): string {
+  if (!start) return '';
+  const normalize = (value: string) => value.slice(0, 5);
+  const normalizedStart = normalize(start);
+  const normalizedEnd = end ? normalize(end) : null;
+  if (normalizedEnd && normalizedEnd !== normalizedStart) {
+    return `${normalizedStart}〜${normalizedEnd}`;
   }
-  
-  // その他の時間は15分枠として表示
-  const endHour = min === ':45' ? hour + 1 : hour;
-  const endMin = min === ':45' ? ':00' : min === ':30' ? ':45' : min === ':15' ? ':30' : ':15';
-  
-  return `${hour}${min}〜${endHour}${endMin}`;
+  return normalizedStart;
 }
 
 // JSTの「YYYY年MM月DD日(曜)」表記に整形

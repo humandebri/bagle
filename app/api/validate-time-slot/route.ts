@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/lib/auth';
+import { normalizeSlotCategory } from '@/lib/categories';
+import { isTimeRangeWithinCategory } from '@/lib/slot-rules';
 
 export async function POST(request: Request) {
   try {
@@ -70,10 +72,25 @@ export async function POST(request: Request) {
     console.log('[validate-time-slot] Slot found:', { 
       date: slot.date,
       time: slot.time,
+      end_time: slot.end_time,
       is_available: slot.is_available,
       max_capacity: slot.max_capacity,
       current_bookings: slot.current_bookings
     });
+
+    const slotCategory = normalizeSlotCategory(slot.allowed_category);
+    if (
+      !isTimeRangeWithinCategory(
+        slotCategory,
+        slot.time.slice(0, 5),
+        slot.end_time.slice(0, 5),
+      )
+    ) {
+      return NextResponse.json({
+        valid: false,
+        message: 'このカテゴリでは選択した時間枠を利用できません。',
+      });
+    }
     
     // 満員チェック（current_bookings >= max_capacity）
     if (slot.current_bookings >= slot.max_capacity) {

@@ -19,9 +19,20 @@ type Order = {
   items: OrderItem[];
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   total_price: number;
   payment_status: string;
   shipped: boolean;
+};
+
+const normalizeDate = (value: string) => value.split('T')[0] ?? value;
+
+const toTimeWithSeconds = (time: string) =>
+  time.length === 5 ? `${time}:00` : time;
+
+const toHHMM = (time: string | null | undefined) => {
+  if (!time) return null;
+  return time.slice(0, 5);
 };
 
 export default function OrderDetailPage() {
@@ -38,7 +49,7 @@ export default function OrderDetailPage() {
     const fetchOrder = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, items, dispatch_date, dispatch_time, total_price, payment_status, shipped')
+        .select('id, created_at, items, dispatch_date, dispatch_time, dispatch_end_time, total_price, payment_status, shipped')
         .eq('id', orderId)
         .single();
 
@@ -46,7 +57,41 @@ export default function OrderDetailPage() {
         console.error('注文詳細取得エラー:', error.message);
         setError('注文の詳細取得に失敗しました');
       } else if (data) {
-        setOrder(data as Order);
+        let resolvedOrder = data as Order;
+
+        if (!resolvedOrder.dispatch_end_time && resolvedOrder.dispatch_date && resolvedOrder.dispatch_time) {
+          const date = normalizeDate(resolvedOrder.dispatch_date);
+          const time = toHHMM(resolvedOrder.dispatch_time) ?? resolvedOrder.dispatch_time;
+
+          const { data: slot, error: slotError } = await supabase
+            .from('time_slots')
+            .select('end_time')
+            .eq('date', date)
+            .eq('time', toTimeWithSeconds(time))
+            .maybeSingle();
+
+          if (slotError) {
+            console.warn('Failed to resolve dispatch_end_time for order detail', {
+              orderId,
+              date,
+              time,
+              error: slotError,
+            });
+          }
+
+          if (slot?.end_time) {
+            const formatted =
+              typeof slot.end_time === 'string'
+                ? slot.end_time.slice(0, 5)
+                : new Date(slot.end_time).toISOString().slice(11, 16);
+            resolvedOrder = {
+              ...resolvedOrder,
+              dispatch_end_time: formatted,
+            };
+          }
+        }
+
+        setOrder(resolvedOrder);
         // 受取日が現在日時から次の日かどうかをチェック
         const dispatchDate = new Date(data.dispatch_date);
         const tomorrow = new Date();
@@ -102,7 +147,7 @@ export default function OrderDetailPage() {
       </ul>
 
       <p className="text-sm text-gray-600 mb-1">
-        受取日時: {formatDate(order.dispatch_date)} {formatTimeRange(order.dispatch_time)}
+        受取日時: {formatDate(order.dispatch_date)} {formatTimeRange(order.dispatch_time, order.dispatch_end_time ?? undefined)}
       </p>
       <p className="text-right font-bold">
         合計: ¥{order.total_price.toLocaleString()}

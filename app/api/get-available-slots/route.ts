@@ -1,9 +1,20 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import {
+  normalizeSlotCategory,
+  isSlotCategory,
+  SLOT_CATEGORY_RICE_FLOUR,
+} from '@/lib/categories';
+import { isTimeRangeWithinCategory } from '@/lib/slot-rules';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
+    const { searchParams } = new URL(request.url);
+    const categoryParam = searchParams.get('category');
+    const filteredCategory = isSlotCategory(categoryParam)
+      ? normalizeSlotCategory(categoryParam)
+      : null;
     
     // 現在の日時を取得（日本時間）
     const now = new Date();
@@ -61,6 +72,11 @@ export async function GET() {
     // 予約開始制限をかける & 満員の枠を除外
     // 各日付について、ちょうど7日前の0時から予約可能
     const filteredTimeSlots = timeSlotsWithTemp.filter((slot) => {
+      const slotCategory = normalizeSlotCategory(slot.allowed_category);
+      if (filteredCategory && slotCategory !== filteredCategory) {
+        return false;
+      }
+
       // ① 満員チェック（current_bookings + temp_bookings >= max_capacity なら除外）
       if ((slot.current_bookings + (slot.temp_bookings || 0)) >= slot.max_capacity) {
         return false;
@@ -73,7 +89,23 @@ export async function GET() {
       const bookingStartJSTMs = slotStartJSTMs - 7 * 24 * 60 * 60 * 1000;
 
       // ④ いま（UTCの現在時刻）と絶対時刻（JST 00:00 相当）を ms で比較
-      return Date.now() >= bookingStartJSTMs;
+      if (Date.now() < bookingStartJSTMs) {
+        return false;
+      }
+
+      // ⑤ カテゴリ特有の営業時間制約
+      if (
+        slotCategory === SLOT_CATEGORY_RICE_FLOUR &&
+        !isTimeRangeWithinCategory(
+          slotCategory,
+          slot.time.slice(0, 5),
+          slot.end_time.slice(0, 5),
+        )
+      ) {
+        return false;
+      }
+
+      return true;
     });
 
     return NextResponse.json({ 

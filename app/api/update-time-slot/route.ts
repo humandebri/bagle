@@ -124,7 +124,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     // 仮予約前に容量チェック
     const { data: slot, error: slotError } = await supabase
       .from('time_slots')
-      .select('current_bookings, max_capacity')
+      .select('current_bookings, max_capacity, allowed_category')
       .eq('date', date)
       .eq('time', time)
       .single();

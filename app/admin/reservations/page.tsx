@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -21,6 +21,7 @@ type Order = {
   user_id: string;
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   shipped: boolean;
   items: {
     id: string;
@@ -66,6 +67,7 @@ export default function ReservationsPage() {
   
   // 予約データの取得
   const fetchOrders = async () => {
+    let fetched: Order[] = [];
     try {
       const response = await fetch('/api/admin/reservations');
       if (!response.ok) {
@@ -73,13 +75,16 @@ export default function ReservationsPage() {
       }
       const data = await response.json();
 
-      setOrders(Array.isArray(data) ? data : []);
+      fetched = Array.isArray(data) ? data : [];
+      setOrders(fetched);
     } catch (error) {
       console.error('予約データの取得に失敗しました:', error);
+      fetched = [];
       setOrders([]);
     } finally {
       setIsLoading(false);
     }
+    return fetched;
   };
 
   // 利用可能な時間枠を取得
@@ -134,7 +139,7 @@ export default function ReservationsPage() {
       // 2. 新しいタイムスロットを予約
       const { data: newSlot, error: newSlotError } = await supabase
         .from('time_slots')
-        .select('current_bookings')
+        .select('current_bookings, end_time')
         .eq('date', selectedNewDate)
         .eq('time', selectedNewTime)
         .single();
@@ -148,11 +153,18 @@ export default function ReservationsPage() {
         .eq('time', selectedNewTime);
 
       // 3. 注文情報を更新
+      const nextDispatchEndTime = newSlot?.end_time
+        ? typeof newSlot.end_time === 'string'
+          ? newSlot.end_time.slice(0, 5)
+          : new Date(newSlot.end_time).toISOString().slice(11, 16)
+        : null;
+
       const { error: orderError } = await supabase
         .from('orders')
         .update({
           dispatch_date: selectedNewDate,
           dispatch_time: selectedNewTime,
+          dispatch_end_time: nextDispatchEndTime,
         })
         .eq('id', selectedOrder.id);
 
@@ -177,6 +189,78 @@ export default function ReservationsPage() {
     setShowTimeEditModal(true);
   };
 
+  const unshippedOrdersForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    return orders.filter(order => {
+      const orderDate = order.dispatch_date.split('T')[0];
+      return (
+        orderDate === selectedDate &&
+        !order.shipped &&
+        order.payment_status !== 'cancelled'
+      );
+    });
+  }, [orders, selectedDate]);
+
+  const handleBulkCompleteByDate = async () => {
+    if (!selectedDate) return;
+    const targets = unshippedOrdersForSelectedDate;
+    if (targets.length === 0) {
+      alert('未受取の予約はありません');
+      return;
+    }
+
+    const formattedDate = format(new Date(selectedDate), 'yyyy年MM月dd日', { locale: ja });
+    const confirmMessage = `${formattedDate} の未受取予約 ${targets.length}件を受取済に更新しますか？`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/admin/reservations/mark-shipped', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ date: selectedDate }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        const message =
+          (errorBody && typeof errorBody.error === 'string' && errorBody.error) ||
+          '一括更新に失敗しました';
+        throw new Error(message);
+      }
+
+      const result = await response.json().catch(() => ({}));
+      const updatedOrders = await fetchOrders();
+
+      setSelectedOrder(prev => {
+        if (!selectedDate) return null;
+        const ordersForDate = updatedOrders.filter(order => order.dispatch_date.split('T')[0] === selectedDate);
+        const sortedForDate = [...ordersForDate].sort((a, b) => a.dispatch_time.localeCompare(b.dispatch_time));
+        if (!prev) {
+          return sortedForDate[0] ?? null;
+        }
+        const updated = updatedOrders.find(order => order.id === prev.id);
+        return updated ?? (sortedForDate[0] ?? null);
+      });
+
+      const updatedCount = typeof result.updatedCount === 'number' ? result.updatedCount : targets.length;
+      if (updatedCount === 0) {
+        alert('対象の未受取予約はありませんでした');
+      } else {
+        alert(`${formattedDate} の未受取予約 ${updatedCount}件を受取済に更新しました`);
+      }
+    } catch (error) {
+      console.error('一括受取エラー:', error);
+      alert(error instanceof Error ? error.message : '一括更新に失敗しました');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -194,13 +278,22 @@ export default function ReservationsPage() {
 
 
   // 受取ステータスの日本語表示
-  const getShippedStatusLabel = (order: Order) => {
-    if (order.payment_status === 'cancelled') {
-      return 'キャンセル済';
-    }
-    const shipped = order.shipped === true;
-    return shipped ? '受取済' : '未受取';
-  };
+const getShippedStatusLabel = (order: Order) => {
+  if (order.payment_status === 'cancelled') {
+    return 'キャンセル済';
+  }
+  const shipped = order.shipped === true;
+  return shipped ? '受取済' : '未受取';
+};
+
+const formatOrderTimeRange = (order: Order) => {
+  const start = order.dispatch_time?.slice(0, 5) ?? '';
+  const end = order.dispatch_end_time?.slice(0, 5);
+  if (end && end !== start) {
+    return `${start}〜${end}`;
+  }
+  return start;
+};
   
 
   // カレンダーに表示するイベントデータを作成
@@ -215,13 +308,18 @@ export default function ReservationsPage() {
     .map(order => {
       // 日付を正規化（YYYY-MM-DD形式に）
       const normalizedDate = order.dispatch_date.split('T')[0];
-      const formattedTime = order.dispatch_time.split(':').slice(0, 2).join(':');
+      const startTime = order.dispatch_time
+        ? order.dispatch_time.slice(0, 5)
+        : '';
+      const formattedTime = startTime || formatOrderTimeRange(order);
       const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
       // 苗字を抽出（スペースがある場合は最初の部分、なければ全体）
       const lastName = order.customer_name ? order.customer_name.split(/[\s　]/)[0] : '未設定';
       
+      const customerLabel = order.customer_name ? `${lastName}様` : '未設定';
+
       return {
-        title: `${formattedTime} - ${totalItems}個${order.payment_status === 'cancelled' ? ' (キャンセル)' : ''}`,
+        title: `${formattedTime} ${customerLabel} ${totalItems}個`,
         date: normalizedDate,
         extendedProps: { 
           order,
@@ -440,6 +538,24 @@ export default function ReservationsPage() {
             <div className="flex gap-2">
               {selectedDate && (
                 <button
+                  onClick={handleBulkCompleteByDate}
+                  className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                  disabled={unshippedOrdersForSelectedDate.length === 0 || isProcessing}
+                  title={
+                    unshippedOrdersForSelectedDate.length === 0
+                      ? '未受取の予約がありません'
+                      : '選択した日付の未受取予約を一括で受取済に更新します'
+                  }
+                >
+                  <CheckCircleIcon className="h-4 w-4" />
+                  <span>
+                    一括受取
+                    {unshippedOrdersForSelectedDate.length > 0 && ` (${unshippedOrdersForSelectedDate.length})`}
+                  </span>
+                </button>
+              )}
+              {selectedDate && (
+                <button
                   onClick={() => window.open(`/print/reservations?date=${selectedDate}`, '_blank')}
                   className="p-2 text-blue-600 hover:text-blue-700"
                   title="印刷用ページを開く"
@@ -516,7 +632,7 @@ export default function ReservationsPage() {
                   >
                     <div className="flex justify-between items-center mb-1">
                       <div className="font-medium text-sm text-gray-800">
-                        {order.dispatch_time.split(':').slice(0, 2).join(':')} {order.customer_name || '未設定'}様
+                        {formatOrderTimeRange(order)} {order.customer_name || '未設定'}様
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-700">{order.items.reduce((sum, item) => sum + item.quantity, 0)}個</span>
@@ -557,6 +673,7 @@ export default function ReservationsPage() {
                       <DateTimeDisplay_order 
                         date={selectedOrder.dispatch_date} 
                         time={selectedOrder.dispatch_time} 
+                        endTime={selectedOrder.dispatch_end_time ?? undefined}
                       />
                     </span>
                   </div>

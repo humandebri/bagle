@@ -13,10 +13,9 @@ export default function SuccessPage() {
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const resetCart = useCartStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
-
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   useEffect(() => {
     const parseJapaneseDate = (jpDate: string): string => {
@@ -38,6 +37,7 @@ export default function SuccessPage() {
           items,
           dispatch_date: parseJapaneseDate(dispatchDate || ''),
           dispatch_time: dispatchTime,
+          dispatch_end_time: dispatchEndTime,
         }),
       });
 
@@ -53,7 +53,7 @@ export default function SuccessPage() {
     };
 
     saveOrder();
-  }, [session, items, dispatchDate, dispatchTime, total, saved, resetCart]);
+  }, [session, items, dispatchDate, dispatchTime, dispatchEndTime, saved, resetCart]);
 
   return (
     <main className="max-w-md mx-auto p-6 text-center">

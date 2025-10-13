@@ -9,6 +9,7 @@ export default function NewTimeSlotPage() {
     staff_id: "",
     date: "",
     time: "",
+    end_time: "",
     is_reserved: false,
   });
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,10 @@ export default function NewTimeSlotPage() {
         <div>
           <label className="block mb-1">時間</label>
           <input name="time" type="time" value={form.time} onChange={handleChange} className="border px-2 py-1 w-full" required />
+        </div>
+        <div>
+          <label className="block mb-1">終了時間</label>
+          <input name="end_time" type="time" value={form.end_time} onChange={handleChange} className="border px-2 py-1 w-full" required />
         </div>
         <div>
           <label className="inline-flex items-center">

@@ -32,6 +32,7 @@ export default function EditOrderPage() {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [dispatchDate, setDispatchDate] = useState('');
   const [dispatchTime, setDispatchTime] = useState('');
+  const [dispatchEndTime, setDispatchEndTime] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editAllowed, setEditAllowed] = useState(false);
@@ -51,17 +52,7 @@ export default function EditOrderPage() {
   const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
   const [originalDate, setOriginalDate] = useState('');
   const [originalTime, setOriginalTime] = useState('');
-
-  const TIME_RANGE_MAP = {
-    '11:00': '11:15',
-    '11:15': '11:30',
-    '11:30': '11:45',
-    '11:45': '12:00',
-    '12:00': '13:00',
-    '13:00': '14:00',
-    '14:00': '15:00',
-  };
-  type TimeRangeKey = keyof typeof TIME_RANGE_MAP;
+  const [originalEndTime, setOriginalEndTime] = useState('');
 
   /** 日付を日本語形式に変換 */
   function formatDate(isoDate: string): string {
@@ -81,16 +72,19 @@ export default function EditOrderPage() {
   }
 
   function formatTimeRange(startTime: string): string {
-    const start = startTime.slice(0, 5) as TimeRangeKey;
-    const end = TIME_RANGE_MAP[start];
-    return end ? `${start} - ${end}` : start;
+    const normalized = startTime.slice(0, 5);
+    const slot = timeSlots.find(
+      (s) => s.time.slice(0, 5) === normalized,
+    );
+    const end = slot?.end_time?.slice(0, 5);
+    return end ? `${normalized} - ${end}` : normalized;
   }
 
   useEffect(() => {
     const fetchOrder = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('items, dispatch_date, dispatch_time, shipped, total_price, payment_intent_id, payment_status')
+        .select('items, dispatch_date, dispatch_time, dispatch_end_time, shipped, total_price, payment_intent_id, payment_status')
         .eq('id', id)
         .single();
 
@@ -104,8 +98,12 @@ export default function EditOrderPage() {
       setOriginalItems(itemsData); // 元の内容を保存
       setOriginalDate(data.dispatch_date);
       setOriginalTime(data.dispatch_time);
+      const endTimeValue = (data.dispatch_end_time as string | null | undefined) ?? '';
+      const normalizedEndTime = endTimeValue ? endTimeValue.slice(0, 5) : '';
+      setOriginalEndTime(normalizedEndTime);
       setDispatchDate(data.dispatch_date);
       setDispatchTime(data.dispatch_time);
+      setDispatchEndTime(normalizedEndTime);
 
       // 編集可能かどうかを判定
       const today = new Date();
@@ -176,13 +174,23 @@ export default function EditOrderPage() {
     if (!dispatchDate) return;
 
     const times = timeSlots
-      .filter(
-        (s) => s.date === dispatchDate && s.is_available,
-      )
-      .map((s) => s.time);
+      .filter((s) => s.date === dispatchDate && s.is_available)
+      .map((s) => s.time.slice(0, 5));
 
     setAvailableTimes(times);
   }, [dispatchDate, timeSlots]);
+
+  useEffect(() => {
+    if (!dispatchDate || !dispatchTime) return;
+    const slot = timeSlots.find(
+      (s) =>
+        s.date === dispatchDate &&
+        s.time.slice(0, 5) === dispatchTime.slice(0, 5),
+    );
+    if (slot?.end_time) {
+      setDispatchEndTime(slot.end_time.slice(0, 5));
+    }
+  }, [dispatchDate, dispatchTime, timeSlots]);
 
   const increase = (index: number) => {
     setItems(prev =>
@@ -231,19 +239,31 @@ export default function EditOrderPage() {
 
   const save = async () => {
     const newTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const normalizedSelectedTime = dispatchTime.slice(0, 5);
+    const matchedSlot = timeSlots.find(
+      (slot) =>
+        slot.date === dispatchDate &&
+        slot.time.slice(0, 5) === normalizedSelectedTime,
+    );
+    const nextDispatchEndTime = matchedSlot?.end_time
+      ? matchedSlot.end_time.slice(0, 5)
+      : (dispatchEndTime || '');
+
     const hasChanges = JSON.stringify(items) !== JSON.stringify(originalItems) ||
-                      dispatchDate !== originalDate ||
-                      dispatchTime !== originalTime;
-    
+      dispatchDate !== originalDate ||
+      dispatchTime !== originalTime ||
+      nextDispatchEndTime !== originalEndTime;
+
     try {
-      // 日時が変更された場合のみタイムスロットを更新
       if (dispatchDate !== originalDate || dispatchTime !== originalTime) {
-        // 1. 古いタイムスロットを解放
+        const originalTimeWithSeconds = originalTime.length === 5 ? `${originalTime}:00` : originalTime;
+        const newTimeWithSeconds = dispatchTime.length === 5 ? `${dispatchTime}:00` : dispatchTime;
+
         const { data: oldSlot, error: oldSlotError } = await supabase
           .from('time_slots')
           .select('current_bookings')
           .eq('date', originalDate)
-          .eq('time', originalTime)
+          .eq('time', originalTimeWithSeconds)
           .single();
 
         if (!oldSlotError && oldSlot) {
@@ -251,15 +271,14 @@ export default function EditOrderPage() {
             .from('time_slots')
             .update({ current_bookings: Math.max(0, (oldSlot.current_bookings || 0) - 1) })
             .eq('date', originalDate)
-            .eq('time', originalTime);
+            .eq('time', originalTimeWithSeconds);
         }
 
-        // 2. 新しいタイムスロットを予約
         const { data: newSlot, error: newSlotError } = await supabase
           .from('time_slots')
           .select('current_bookings')
           .eq('date', dispatchDate)
-          .eq('time', dispatchTime)
+          .eq('time', newTimeWithSeconds)
           .single();
 
         if (newSlotError) {
@@ -271,7 +290,7 @@ export default function EditOrderPage() {
           .from('time_slots')
           .update({ current_bookings: (newSlot?.current_bookings || 0) + 1 })
           .eq('date', dispatchDate)
-          .eq('time', dispatchTime);
+          .eq('time', newTimeWithSeconds);
 
         if (updateNewSlotError) {
           console.error('新しいタイムスロットの予約に失敗:', updateNewSlotError);
@@ -279,19 +298,18 @@ export default function EditOrderPage() {
         }
       }
 
-      // 3. 注文情報を更新
       const { error: orderError } = await supabase
         .from('orders')
         .update({
           items,
           dispatch_date: dispatchDate,
           dispatch_time: dispatchTime,
+          dispatch_end_time: nextDispatchEndTime || null,
           total_price: newTotal,
         })
         .eq('id', id);
       if (orderError) throw new Error('注文情報の更新に失敗しました');
-      
-      // 変更確認メールを送信
+
       if (hasChanges) {
         await fetch('/api/send-order-update-email', {
           method: 'POST',
@@ -301,11 +319,12 @@ export default function EditOrderPage() {
             items,
             dispatchDate,
             dispatchTime,
-            total: newTotal
-          })
+            dispatchEndTime: nextDispatchEndTime,
+            total: newTotal,
+          }),
         });
       }
-      
+
       router.push(`/account/orders/${id}`);
     } catch (error) {
       console.error('注文更新エラーの詳細:', error);
@@ -424,7 +443,15 @@ export default function EditOrderPage() {
           <label className="block text-sm text-gray-700 mt-4">受取時間</label>
           <Select
             value={dispatchTime}
-            onValueChange={(v) => setDispatchTime(v)}
+            onValueChange={(v) => {
+              setDispatchTime(v);
+              const slot = timeSlots.find(
+                (s) =>
+                  s.date === dispatchDate &&
+                  s.time.slice(0, 5) === v.slice(0, 5),
+              );
+              setDispatchEndTime(slot?.end_time?.slice(0, 5) ?? '');
+            }}
           >
             <SelectTrigger className="w-full items-center border-2 border-gray-300 h-15 text-xl">
               <SelectValue placeholder="時間を選択してください">

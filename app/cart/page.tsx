@@ -4,12 +4,15 @@ import { useCartStore } from '@/store/cart-store';
 import { Minus, Plus, AlertCircle, Calendar, Clock } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
-import { MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING, MAX_BAGEL_PER_ORDER } from "@/lib/constants";
-import { useEffect, useState, useCallback } from 'react';
+import { MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING, getMaxBagelPerOrder } from "@/lib/constants";
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
-
-
-
+import {
+  inferSlotCategoryFromProductCategory,
+  SLOT_CATEGORY_STANDARD,
+  SLOT_CATEGORY_LABELS,
+} from '@/lib/categories';
+import type { SlotCategory } from '@/lib/categories';
 
 export default function CartPage() {
     
@@ -19,6 +22,8 @@ export default function CartPage() {
   const removeItem = useCartStore((state) => state.removeItem);
   const dispatchDate = useCartStore((state) => state.dispatchDate);
   const dispatchTime = useCartStore((state) => state.dispatchTime);
+  const dispatchEndTime = useCartStore((state) => state.dispatchEndTime);
+  const dispatchCategory = useCartStore((state) => state.dispatchCategory);
   
   const [availableSlotsCount, setAvailableSlotsCount] = useState<number | null>(null);
   const [availableCapacityTotal, setAvailableCapacityTotal] = useState<number | null>(null);
@@ -29,10 +34,40 @@ export default function CartPage() {
     router.push('/online-shop');
   };
 
+  const hasSelectedSlot = Boolean(dispatchDate && dispatchTime);
+
+  const effectiveCategory = useMemo<SlotCategory>(() => {
+    if (hasSelectedSlot) {
+      return dispatchCategory;
+    }
+    const categories = new Set<SlotCategory>();
+    items.forEach((item) => {
+      categories.add(
+        inferSlotCategoryFromProductCategory(item.category?.name),
+      );
+    });
+    if (categories.size === 0) {
+      return SLOT_CATEGORY_STANDARD;
+    }
+    if (categories.size === 1) {
+      return categories.values().next().value as SlotCategory;
+    }
+    return dispatchCategory;
+  }, [hasSelectedSlot, dispatchCategory, items]);
+
+  const effectiveCategoryLabel =
+    SLOT_CATEGORY_LABELS[effectiveCategory] ?? SLOT_CATEGORY_LABELS[SLOT_CATEGORY_STANDARD];
+  const maxBagelsPerOrder = useMemo(
+    () => getMaxBagelPerOrder(effectiveCategory),
+    [effectiveCategory],
+  );
+
   // ページロード時に利用可能な時間枠をチェック
   const checkAvailableSlots = useCallback(async () => {
     try {
-      const response = await fetch('/api/get-available-slots');
+      const response = await fetch(
+        `/api/get-available-slots?category=${encodeURIComponent(effectiveCategory)}`,
+      );
       if (!response.ok) {
         throw new Error('時間枠データの取得に失敗しました');
       }
@@ -69,7 +104,7 @@ export default function CartPage() {
     } finally {
       setCheckingSlots(false);
     }
-  }, [dispatchDate, dispatchTime]);
+  }, [dispatchDate, dispatchTime, effectiveCategory]);
 
   useEffect(() => {
     checkAvailableSlots();
@@ -78,9 +113,9 @@ export default function CartPage() {
   const handleCheckout = async () => {
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     
-    if (totalQuantity > MAX_BAGEL_PER_ORDER) {
-      toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
-        description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+    if (totalQuantity > maxBagelsPerOrder) {
+      toast.error(`予約できる個数は最大${maxBagelsPerOrder}個までです！`, {
+        description: `お一人様${maxBagelsPerOrder}個までご予約いただけます。`,
       });
       return;
     }
@@ -156,8 +191,12 @@ export default function CartPage() {
                 <div className="flex items-start">
                   <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
                   <div className="text-sm">
-                    <p className="text-red-800 font-semibold mb-1">現在、予約可能な時間枠がありません</p>
-                    <p className="text-red-700">後日、再度ご確認下さい。空き枠が出る場合もあります。</p>
+                    <p className="text-red-800 font-semibold mb-1">
+                      現在、{effectiveCategoryLabel}の予約可能な時間枠がありません
+                    </p>
+                    <p className="text-red-700">
+                      後日、再度ご確認下さい。空き枠が出る場合もあります。
+                    </p>
                   </div>
                 </div>
               </div>
@@ -169,7 +208,9 @@ export default function CartPage() {
                 <div className="flex items-start">
                   <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                   <div className="text-sm">
-                    <p className="text-amber-800">予約可能な時間枠は残り{availableCapacityTotal}枠になりました。</p>
+                    <p className="text-amber-800">
+                      {effectiveCategoryLabel}の予約可能な時間枠は残り{availableCapacityTotal}枠になりました。
+                    </p>
                   </div>
                 </div>
               </div>
@@ -183,7 +224,12 @@ export default function CartPage() {
               >
                 <div className="flex items-center gap-2 text-[#887c5d]">
                   <Calendar className="w-5 h-5" />
-                  <DateTimeDisplay date={dispatchDate} time={dispatchTime} className="text-base" />
+                <DateTimeDisplay
+                  date={dispatchDate}
+                  time={dispatchTime}
+                  endTime={dispatchEndTime}
+                  className="text-base"
+                />
                 </div>
               </button>
             )}
@@ -261,7 +307,11 @@ export default function CartPage() {
                     <span className="text-gray-600">受取日時</span>
                     <span className="font-medium">
                       {dispatchDate && dispatchTime ? (
-                        <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
+                        <DateTimeDisplay
+                          date={dispatchDate}
+                          time={dispatchTime}
+                          endTime={dispatchEndTime}
+                        />
                       ) : (
                         '未選択'
                       )}

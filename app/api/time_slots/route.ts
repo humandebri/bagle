@@ -1,5 +1,12 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { normalizeSlotCategory } from '@/lib/categories';
+import { isTimeRangeWithinCategory } from '@/lib/slot-rules';
 import { NextResponse } from 'next/server';
+
+function normalizeTimeValue(timeValue?: string | null): string | null {
+  if (!timeValue) return null;
+  return timeValue.length === 5 ? `${timeValue}:00` : timeValue;
+}
 
 export async function GET() {
   try {
@@ -54,21 +61,35 @@ export async function POST(req: Request) {
     const body = await req.json();
     const supabase = await createServerSupabaseClient();
     
-    // 時間フォーマットを正規化（"11:00" → "11:00:00"）
-    let timeValue = body.time;
-    if (timeValue && timeValue.length === 5) {
-      timeValue = `${timeValue}:00`;
+    const allowedCategory = normalizeSlotCategory(body.allowed_category);
+    const timeValue = normalizeTimeValue(body.time);
+    const endTimeValue = normalizeTimeValue(body.end_time);
+
+    if (!timeValue || !endTimeValue) {
+      return NextResponse.json(
+        { error: '開始時間と終了時間の両方を指定してください' },
+        { status: 400 },
+      );
     }
-    
+
+    if (!isTimeRangeWithinCategory(allowedCategory, timeValue.slice(0, 5), endTimeValue.slice(0, 5))) {
+      return NextResponse.json(
+        { error: 'このカテゴリでは指定した時間帯を利用できません' },
+        { status: 400 },
+      );
+    }
+
     const { data, error } = await supabase
       .from('time_slots')
       .insert([
         {
           date: body.date,
           time: timeValue,
+          end_time: endTimeValue,
           max_capacity: body.max_capacity !== undefined ? body.max_capacity : 1,
           current_bookings: 0, // 新規作成時は常に0（実際の予約数は動的に計算される）
           is_available: body.is_available ?? true,
+          allowed_category: allowedCategory,
         },
       ])
       .select()
@@ -86,18 +107,63 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const supabase = await createServerSupabaseClient();
     
-    // 時間フォーマットを正規化
-    let timeValue = body.time;
-    if (timeValue && timeValue.length === 5) {
-      timeValue = `${timeValue}:00`;
+    const timeValue = normalizeTimeValue(body.time);
+    const endTimeValue = normalizeTimeValue(body.end_time);
+
+    if (!timeValue) {
+      return NextResponse.json(
+        { error: '開始時間を指定してください' },
+        { status: 400 },
+      );
     }
     
+    const updates: Record<string, unknown> = {};
+
+    if (body.max_capacity !== undefined) {
+      updates.max_capacity = body.max_capacity;
+    }
+    if (body.is_available !== undefined) {
+      updates.is_available = body.is_available;
+    }
+
+    if (body.allowed_category !== undefined) {
+      const category = normalizeSlotCategory(body.allowed_category);
+      updates.allowed_category = category;
+      if (endTimeValue) {
+        if (!isTimeRangeWithinCategory(category, timeValue.slice(0, 5), endTimeValue.slice(0, 5))) {
+          return NextResponse.json(
+            { error: 'このカテゴリでは指定した時間帯を利用できません' },
+            { status: 400 },
+          );
+        }
+        updates.end_time = endTimeValue;
+      }
+    } else if (endTimeValue) {
+      const { data: slot, error: slotError } = await supabase
+        .from('time_slots')
+        .select('allowed_category')
+        .eq('date', body.date)
+        .eq('time', timeValue)
+        .single();
+      if (slotError) {
+        return NextResponse.json(
+          { error: '時間枠の確認に失敗しました' },
+          { status: 500 },
+        );
+      }
+      const category = normalizeSlotCategory(slot?.allowed_category);
+      if (!isTimeRangeWithinCategory(category, timeValue.slice(0, 5), endTimeValue.slice(0, 5))) {
+        return NextResponse.json(
+          { error: 'このカテゴリでは指定した時間帯を利用できません' },
+          { status: 400 },
+        );
+      }
+      updates.end_time = endTimeValue;
+    }
+
     const { data, error } = await supabase
       .from('time_slots')
-      .update({
-        max_capacity: body.max_capacity,
-        is_available: body.is_available,
-      })
+      .update(updates)
       .eq('date', body.date)
       .eq('time', timeValue)
       .select();
@@ -114,10 +180,12 @@ export async function DELETE(req: Request) {
     const body = await req.json();
     const supabase = await createServerSupabaseClient();
     
-    // 時間フォーマットを正規化
-    let timeValue = body.time;
-    if (timeValue && timeValue.length === 5) {
-      timeValue = `${timeValue}:00`;
+    const timeValue = normalizeTimeValue(body.time);
+    if (!timeValue) {
+      return NextResponse.json(
+        { error: '開始時間を指定してください' },
+        { status: 400 },
+      );
     }
     
     const { error } = await supabase

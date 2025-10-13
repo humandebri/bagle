@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export default function CheckoutPage() {
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const items        = useCartStore((s) => s.items);
   const router       = useRouter();
   const { data: session, status } = useAuthSession();
@@ -193,7 +194,11 @@ export default function CheckoutPage() {
                     className="w-full border-2 rounded-md p-3 text-center hover:bg-gray-50 transition-colors"
                   >
                     {dispatchDate && dispatchTime ? (
-                      <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+                      <DateTimeDisplay_order
+                        date={dispatchDate}
+                        time={dispatchTime}
+                        endTime={dispatchEndTime}
+                      />
                     ) : (
                       '日時を選択してください'
                     )}
@@ -224,7 +229,11 @@ export default function CheckoutPage() {
                       <span className="text-gray-600">受取日時</span>
                       <span className="font-medium">
                         {dispatchDate && dispatchTime ? (
-                          <DateTimeDisplay_order date={dispatchDate} time={dispatchTime} />
+                          <DateTimeDisplay_order
+                            date={dispatchDate}
+                            time={dispatchTime}
+                            endTime={dispatchEndTime}
+                          />
                         ) : (
                           '未選択'
                         )}

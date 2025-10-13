@@ -1,12 +1,21 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import BagelMenu from '@/components/BagelMenu';
 import { DateTimeDisplay } from '@/components/DateTimeDisplay';
 import { Bagel } from '@/components/BagelCard';
+import { useMenuStore } from '@/store/menu-store';
+import {
+  SLOT_CATEGORY_LABELS,
+  SLOT_CATEGORY_RICE_FLOUR,
+  SLOT_CATEGORY_STANDARD,
+  SlotCategory,
+  ALLOWED_SLOT_CATEGORIES,
+  inferSlotCategoryFromProductCategory,
+} from '@/lib/categories';
 
 type Product = {
   id: string;
@@ -25,6 +34,28 @@ type Product = {
   };
 };
 
+type AvailableSlot = {
+  is_available: boolean;
+  date: string;
+  time: string;
+  max_capacity: number;
+  current_bookings: number;
+  temp_bookings?: number;
+};
+
+function convertToBagels(products: Product[]): Bagel[] {
+  return products.map((product) => ({
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    longDescription: product.long_description,
+    price: product.price,
+    image: product.image && product.image !== '' ? product.image : undefined,
+    image_webp: product.image_webp || undefined,
+    tags: product.is_available ? [] : ['販売停止中'],
+  }));
+}
+
 export default function OnlineShopPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,6 +71,11 @@ export default function OnlineShopPage() {
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
+  const dispatchCategory = useCartStore((s) => s.dispatchCategory);
+  const activeCategory = useMenuStore((s) => s.activeCategory);
+  const setActiveCategory = useMenuStore((s) => s.setActiveCategory);
+  const activeCategoryRef = useRef<SlotCategory>(activeCategory);
 
   const fetchProducts = async () => {
     try {
@@ -60,50 +96,85 @@ export default function OnlineShopPage() {
     }
   };
 
-  const checkAvailableSlots = useCallback(async () => {
-    try {
-      const response = await fetch('/api/get-available-slots');
-      if (!response.ok) {
-        throw new Error('時間枠データの取得に失敗しました');
-      }
-      const data = await response.json();
-      
-      // ユーザーが既に選択している時間枠を取得
-      const userDispatchDate = dispatchDate;
-      const userDispatchTime = dispatchTime;
-      
-      // 利用可能な時間枠をカウント（ユーザーが選択済みの枠も利用可能とみなす）
-      const availableSlots = data.timeSlots?.filter((slot: { is_available: boolean; date: string; time: string; max_capacity: number; current_bookings: number; temp_bookings?: number }) => {
-        // ユーザーが選択している時間枠の場合は常に利用可能とみなす
-        if (userDispatchDate && userDispatchTime && 
-            slot.date === userDispatchDate && 
-            slot.time.slice(0, 5) === userDispatchTime) {
-          return true;
-        }
-        // それ以外は通常の利用可能性チェック
-        return slot.is_available;
-      }) || [];
-      
-      // 時間枠の数をカウント
-      setAvailableSlotsCount(availableSlots.length);
-      
-      // 実際の予約可能数（各スロットの残り容量の合計）を計算（仮予約分も考慮）
-      const totalCapacity = availableSlots.reduce((sum: number, slot: { max_capacity: number; current_bookings: number; temp_bookings?: number }) => {
-        const remainingCapacity = Math.max(0, slot.max_capacity - slot.current_bookings - (slot.temp_bookings ?? 0));
-        return sum + remainingCapacity;
-      }, 0);
-      
-      setAvailableCapacityTotal(totalCapacity);
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('時間枠データの取得に失敗しました:', error);
-      }
-      setAvailableSlotsCount(0);
-      setAvailableCapacityTotal(0);
-    } finally {
-      setCheckingSlots(false);
+  useEffect(() => {
+    activeCategoryRef.current = activeCategory;
+  }, [activeCategory]);
+
+  useEffect(() => {
+    if (
+      dispatchCategory === SLOT_CATEGORY_RICE_FLOUR &&
+      activeCategory !== SLOT_CATEGORY_RICE_FLOUR
+    ) {
+      setActiveCategory(SLOT_CATEGORY_RICE_FLOUR);
     }
-  }, [dispatchDate, dispatchTime]);
+  }, [dispatchCategory, activeCategory, setActiveCategory]);
+
+  const checkAvailableSlots = useCallback(
+    async (category: SlotCategory) => {
+      setCheckingSlots(true);
+      try {
+        const response = await fetch(
+          `/api/get-available-slots?category=${encodeURIComponent(category)}`,
+        );
+        if (!response.ok) {
+          throw new Error('時間枠データの取得に失敗しました');
+        }
+        const data = await response.json();
+
+        const userDispatchDate = dispatchDate;
+        const userDispatchTime = dispatchTime;
+
+        const availableSlots =
+          data.timeSlots?.filter((slot: AvailableSlot) => {
+            if (
+              userDispatchDate &&
+              userDispatchTime &&
+              slot.date === userDispatchDate &&
+              slot.time.slice(0, 5) === userDispatchTime
+            ) {
+              return true;
+            }
+            return slot.is_available;
+          }) || [];
+
+        if (activeCategoryRef.current !== category) return;
+        setAvailableSlotsCount(availableSlots.length);
+
+        const totalCapacity = availableSlots.reduce(
+          (
+            sum: number,
+            slot: {
+              max_capacity: number;
+              current_bookings: number;
+              temp_bookings?: number;
+            },
+          ) => {
+            const remainingCapacity = Math.max(
+              0,
+              slot.max_capacity -
+                slot.current_bookings -
+                (slot.temp_bookings ?? 0),
+            );
+            return sum + remainingCapacity;
+          },
+          0,
+        );
+        setAvailableCapacityTotal(totalCapacity);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('時間枠データの取得に失敗しました:', error);
+        }
+        if (activeCategoryRef.current !== category) return;
+        setAvailableSlotsCount(0);
+        setAvailableCapacityTotal(0);
+      } finally {
+        if (activeCategoryRef.current === category) {
+          setCheckingSlots(false);
+        }
+      }
+    },
+    [dispatchDate, dispatchTime],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -173,15 +244,47 @@ export default function OnlineShopPage() {
   }, []);
 
   useEffect(() => {
-    checkAvailableSlots();
-    
-    // 30秒ごとに利用可能な時間枠をチェック
+    checkAvailableSlots(activeCategory);
+
     const interval = setInterval(() => {
-      checkAvailableSlots();
+      checkAvailableSlots(activeCategoryRef.current);
     }, 30000);
-    
+
     return () => clearInterval(interval);
-  }, [dispatchDate, dispatchTime, checkAvailableSlots]);
+  }, [activeCategory, checkAvailableSlots]);
+
+  const categorizedProducts = useMemo(
+    () =>
+      products.reduce(
+        (acc, product) => {
+          const slotCategory = inferSlotCategoryFromProductCategory(
+            product.category?.name,
+          );
+          acc[slotCategory].push(product);
+          return acc;
+        },
+        {
+          [SLOT_CATEGORY_STANDARD]: [] as Product[],
+          [SLOT_CATEGORY_RICE_FLOUR]: [] as Product[],
+        },
+      ),
+    [products],
+  );
+
+  const lockToRiceCategory = dispatchCategory === SLOT_CATEGORY_RICE_FLOUR;
+  const bagelsForDisplay = useMemo(
+    () => convertToBagels(categorizedProducts[activeCategory] ?? []),
+    [categorizedProducts, activeCategory],
+  );
+  const activeCategoryLabel = SLOT_CATEGORY_LABELS[activeCategory];
+
+  const handleTabClick = (category: SlotCategory) => {
+    if (lockToRiceCategory && category !== SLOT_CATEGORY_RICE_FLOUR) {
+      return;
+    }
+    if (category === activeCategory) return;
+    setActiveCategory(category);
+  };
 
   // App Routerの経路変更（popstateが飛ばない場合）でも復元
   useEffect(() => {
@@ -213,19 +316,6 @@ export default function OnlineShopPage() {
     } catch {}
   }, [pathname, loading, products.length]);
 
-  const convertToBagels = (products: Product[]): Bagel[] => {
-    return products.map(product => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      longDescription: product.long_description,
-      price: product.price,
-      image: product.image && product.image !== '' ? product.image : undefined,
-      image_webp: product.image_webp || undefined,
-      tags: product.is_available ? [] : ['販売停止中'],
-    }));
-  };
-
   if (loading) {
     return <div className="flex justify-center items-center min-h-[calc(100vh-7rem)]">読み込み中...</div>;
   }
@@ -246,11 +336,17 @@ export default function OnlineShopPage() {
                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div className="text-sm">
                   <p className="text-red-800 font-semibold mb-1">
-                    現在、予約可能な時間枠がありません
+                    現在、{activeCategoryLabel}の予約可能な時間枠がありません
                   </p>
-                  <p className="text-red-700">
-                    後日、再度ご確認下さい。空き枠が出る場合もあります。
-                  </p>
+                  {activeCategory === SLOT_CATEGORY_STANDARD ? (
+                    <p className="text-red-700">
+                      米粉ベーグル営業日の可能性があります。「米粉ベーグル」タブもご確認ください。
+                    </p>
+                  ) : (
+                    <p className="text-red-700">
+                      後日、再度ご確認下さい。空き枠が出る場合もあります。
+                    </p>
+                  )}
                   <p className="text-red-600 mt-2 text-xs">
                     ※ 商品の確認は可能ですが、現時点では予約はできません。
                   </p>
@@ -260,13 +356,17 @@ export default function OnlineShopPage() {
           )}
           
           {/* 予約枠が少ない場合の通知（ユーザーが時間枠を選択していない場合のみ表示） */}
-          {!checkingSlots && availableCapacityTotal !== null && availableCapacityTotal > 0 && availableCapacityTotal <= 5 && !dispatchDate && (
+          {!checkingSlots &&
+            availableCapacityTotal !== null &&
+            availableCapacityTotal > 0 &&
+            availableCapacityTotal <= 5 &&
+            !dispatchDate && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
               <div className="flex items-start">
                 <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div className="text-sm">
                   <p className="text-amber-800">
-                    予約可能な時間枠は残り{availableCapacityTotal}枠になりました。
+                    {activeCategoryLabel}の予約可能な時間枠は残り{availableCapacityTotal}枠になりました。
                   </p>
                 </div>
               </div>
@@ -285,7 +385,11 @@ export default function OnlineShopPage() {
                 className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
               >
                 {dispatchDate && dispatchTime ? (
-                  <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
+                  <DateTimeDisplay
+                    date={dispatchDate}
+                    time={dispatchTime}
+                    endTime={dispatchEndTime}
+                  />
                 ) : (
                   "予約日時を選択してください"
                 )}
@@ -293,14 +397,47 @@ export default function OnlineShopPage() {
             )}
           </div>
 
-          <div className="flex border-b sm:border-b-0  max-w-4xl mx-auto ">
-            <div className=" border-b-2 pl-4">
-              <button className="font-medium text-2xl text-gray-400">BAGEL(税込価格)</button>
+          <div className="max-w-4xl mx-auto">
+            <div className="flex border-b sm:border-b-0">
+              {ALLOWED_SLOT_CATEGORIES.map((category) => {
+                const isActive = activeCategory === category;
+                const disabled =
+                  lockToRiceCategory && category !== SLOT_CATEGORY_RICE_FLOUR;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => handleTabClick(category)}
+                    disabled={disabled}
+                    className={[
+                      'px-4 pb-2 text-2xl font-medium transition-colors',
+                      isActive
+                        ? 'border-b-2 border-[#887c5d] text-gray-600'
+                        : 'text-gray-400 hover:text-gray-600',
+                      disabled ? 'cursor-not-allowed opacity-60' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {SLOT_CATEGORY_LABELS[category]}
+                  </button>
+                );
+              })}
             </div>
+            {lockToRiceCategory && (
+              <p className="mt-2 text-xs text-red-500">
+                米粉ベーグル営業日は米粉ベーグルのみご予約いただけます。
+              </p>
+            )}
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <BagelMenu bagels={convertToBagels(products)} />
+            {bagelsForDisplay.length > 0 ? (
+              <BagelMenu bagels={bagelsForDisplay} />
+            ) : (
+              <p className="py-12 text-center text-sm text-gray-400">
+                現在このカテゴリの商品はありません。
+              </p>
+            )}
           </div>
         </div>
       </main>
@@ -310,6 +447,7 @@ export default function OnlineShopPage() {
           totalQuantity={totalQuantity}
           onClick={() => router.push('/cart')}
           disabled={availableSlotsCount === 0 && !dispatchDate}
+          activeCategory={activeCategory}
         />
       )}
     </>
@@ -320,24 +458,33 @@ function CartFooter({
   totalQuantity,
   onClick,
   disabled = false,
+  activeCategory,
 }: {
   totalQuantity: number;
   onClick: () => void;
   disabled?: boolean;
+  activeCategory: SlotCategory;
 }) {
   const handleClick = async () => {
     // カートボタンクリック時に再度時間枠をチェック
     try {
-      const response = await fetch('/api/get-available-slots');
+      const {
+        dispatchDate: userDispatchDate,
+        dispatchTime: userDispatchTime,
+        dispatchCategory,
+      } = useCartStore.getState();
+
+      const categoryForCheck = dispatchCategory ?? activeCategory;
+
+      const response = await fetch(
+        `/api/get-available-slots?category=${encodeURIComponent(categoryForCheck)}`,
+      );
       if (!response.ok) {
         throw new Error('時間枠データの取得に失敗しました');
       }
       const data = await response.json();
       
       // ユーザーが既に選択している時間枠を取得
-      const userDispatchDate = useCartStore.getState().dispatchDate;
-      const userDispatchTime = useCartStore.getState().dispatchTime;
-      
       // 利用可能な時間枠をチェック（ユーザーが選択済みの枠も利用可能とみなす）
       const availableCount = data.timeSlots?.filter((slot: { is_available: boolean; date: string; time: string; max_capacity: number; current_bookings: number; temp_bookings?: number }) => {
         // ユーザーが選択している時間枠の場合は常に利用可能とみなす
