@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import SafeImage from "@/components/SafeImage";
 import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { Tag } from "@/components/BagelCard";
-import { MAX_BAGEL_PER_ORDER, MAX_BAGEL_PER_ITEM, MAX_BAGEL_PER_ITEM_FILLING } from "@/lib/constants";
+import {
+  MAX_BAGEL_PER_ITEM,
+  MAX_BAGEL_PER_ITEM_FILLING,
+  getMaxBagelPerOrder,
+} from "@/lib/constants";
 import { toast } from "sonner";
 import { RemoveScroll } from "react-remove-scroll";
 import { createPortal } from "react-dom";
@@ -82,6 +86,14 @@ export default function BagelModalPage() {
 
   // 背景スクロールのロックはライブラリで実施（react-remove-scroll）
 
+  const getOrderLimit = useCallback(() => {
+    const slotCategory =
+      dispatchCategory === SLOT_CATEGORY_RICE_FLOUR
+        ? SLOT_CATEGORY_RICE_FLOUR
+        : inferSlotCategoryFromProductCategory(product?.category?.name);
+    return getMaxBagelPerOrder(slotCategory);
+  }, [dispatchCategory, product]);
+
   const close = () => {
     try {
       sessionStorage.setItem('online-shop-scroll', String(window.scrollY));
@@ -92,9 +104,10 @@ export default function BagelModalPage() {
   };
   const inc = () => {
     const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-    if (totalQuantity >= MAX_BAGEL_PER_ORDER) {
-      toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
-        description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+    const orderLimit = getOrderLimit();
+    if (totalQuantity >= orderLimit) {
+      toast.error(`予約できる個数は最大${orderLimit}個までです！`, {
+        description: `お一人様${orderLimit}個までご予約いただけます。`,
       });
       return;
     }
@@ -151,9 +164,10 @@ export default function BagelModalPage() {
       return sum + item.quantity;
     }, 0);
 
-    if (totalQuantity + quantity > MAX_BAGEL_PER_ORDER) {
-      toast.error(`予約できる個数は最大${MAX_BAGEL_PER_ORDER}個までです！`, {
-        description: `お一人様${MAX_BAGEL_PER_ORDER}個までご予約いただけます。`,
+    const orderLimit = getOrderLimit();
+    if (totalQuantity + quantity > orderLimit) {
+      toast.error(`予約できる個数は最大${orderLimit}個までです！`, {
+        description: `お一人様${orderLimit}個までご予約いただけます。`,
       });
       return;
     }

@@ -5,6 +5,7 @@ export type TimeSlot = {
   id: string;
   date: string;
   time: string;
+  end_time: string;
   max_capacity: number;
   current_bookings: number;
   is_available: boolean;

@@ -23,6 +23,7 @@ const updateSchema = z.object({
   id: z.string().uuid(),
   dispatchDate: z.string().length(10),  // 'YYYY-MM-DD'
   dispatchTime: z.string().min(4),      // '11:00'
+  dispatchEndTime: z.string().min(4).optional(),
   items: z.array(
     z.object({
       id: z.string().uuid(),
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
     let q = supabase
       .from('orders')
       .select(`
-        id,user_id,created_at,items,dispatch_date,dispatch_time,total_price,
+        id,user_id,created_at,items,dispatch_date,dispatch_time,dispatch_end_time,total_price,
         shipped, payment_status
       `)
       .order('created_at', { ascending: order !== 'desc' });
@@ -129,14 +130,36 @@ export async function PUT(req: Request) {
   }
 
   try {
-    const { id, dispatchDate, dispatchTime, items } =
+    const { id, dispatchDate, dispatchTime, dispatchEndTime, items } =
       updateSchema.parse(await req.json());
+
+    let nextDispatchEndTime = dispatchEndTime ?? null;
+
+    if (dispatchDate && dispatchTime) {
+      const { data: slotEnd, error: slotEndError } = await supabase
+        .from('time_slots')
+        .select('end_time')
+        .eq('date', dispatchDate)
+        .eq('time', dispatchTime.length === 5 ? `${dispatchTime}:00` : dispatchTime)
+        .maybeSingle();
+
+      if (slotEndError) {
+        console.warn('Failed to fetch slot end_time for admin update:', slotEndError);
+      }
+
+      if (slotEnd?.end_time) {
+        nextDispatchEndTime = typeof slotEnd.end_time === 'string'
+          ? slotEnd.end_time.slice(0, 5)
+          : new Date(slotEnd.end_time).toISOString().slice(11, 16);
+      }
+    }
 
     const { data, error } = await supabase
       .from('orders')
       .update({
         dispatch_date:  dispatchDate,
         dispatch_time:  dispatchTime,
+        dispatch_end_time: nextDispatchEndTime,
         items,
       })
       .eq('id', id)

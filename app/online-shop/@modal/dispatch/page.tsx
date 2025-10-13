@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -18,6 +18,7 @@ import {
 } from '@/lib/categories';
 import { RemoveScroll } from 'react-remove-scroll';
 import { createPortal } from 'react-dom';
+import { formatDate, formatTimeRange } from '@/components/DateTimeDisplay';
 
 type DateOption = { iso: string; label: string };
 
@@ -32,6 +33,7 @@ export default function DispatchModalPage() {
   const router = useRouter();
   const dispatchDate = useCartStore((s) => s.dispatchDate);           // ISO yyyy‑mm‑dd
   const dispatchTime = useCartStore((s) => s.dispatchTime);           // '11:00' など
+  const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);     // '14:00' など
   const setDispatchDate = useCartStore((s) => s.setDispatchDate);
   const setDispatchTime = useCartStore((s) => s.setDispatchTime);
   const dispatchCategory = useCartStore((s) => s.dispatchCategory);
@@ -48,45 +50,13 @@ export default function DispatchModalPage() {
 
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [availableDates, setAvailableDates] = useState<DateOption[]>([]);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<TimeSlot[]>([]);
 
   useEffect(() => {
     if (dispatchCategory === SLOT_CATEGORY_RICE_FLOUR) {
       setActiveCategory(SLOT_CATEGORY_RICE_FLOUR);
     }
   }, [dispatchCategory, setActiveCategory]);
-
-  const TIME_RANGE_MAP = {
-    '11:00': '11:15',
-    '11:15': '11:30',
-    '11:30': '11:45',
-    '11:45': '12:00',
-    '12:00': '15:00',
-  };
-  type TimeRangeKey = keyof typeof TIME_RANGE_MAP;
-
-  /** 日付を日本語形式に変換 */
-  function formatDate(isoDate: string): string {
-    try {
-      const date = new Date(isoDate);
-      if (isNaN(date.getTime())) {
-        return '日付を選んでください';
-      }
-      return date.toLocaleDateString('ja-JP', {
-        month: 'numeric',
-        day: 'numeric',
-        weekday: 'short',
-      });
-    } catch {
-      return '日付を選んでください';
-    }
-  }
-
-  function formatTimeRange(startTime: string): string {
-    const start = startTime.slice(0, 5) as TimeRangeKey; // 明示的にキーであると伝える
-    const end = TIME_RANGE_MAP[start];
-    return end ? `${start} - ${end}` : start;
-  }
 
   /** 予約枠を取得 */
   useEffect(() => {
@@ -137,15 +107,22 @@ export default function DispatchModalPage() {
       return;
     }
 
-    const times = timeSlots
+    const slotsForDate = timeSlots
       .filter((s) => s.date === selectedDate && s.is_available)
-      .map((s) => s.time);
+      .sort((a, b) => a.time.localeCompare(b.time));
 
-    setAvailableTimes(times);
-    if (selectedTime && !times.includes(selectedTime)) {
+    setAvailableTimes(slotsForDate);
+    if (selectedTime && !slotsForDate.some((s) => s.time === selectedTime)) {
       setSelectedTime('');
     }
   }, [selectedDate, selectedTime, timeSlots]);
+
+  const selectedSlot = useMemo(() => {
+    if (!selectedDate || !selectedTime) return undefined;
+    return timeSlots.find(
+      (slot) => slot.date === selectedDate && slot.time === selectedTime,
+    );
+  }, [timeSlots, selectedDate, selectedTime]);
 
   // 背景スクロールロックはライブラリに委譲（react-remove-scroll）
 
@@ -174,18 +151,20 @@ export default function DispatchModalPage() {
         return;
       }
 
-      const matchedSlot = timeSlots.find(
-        (slot) =>
-          slot.date === selectedDate &&
-          slot.time.slice(0, 5) === selectedTime.slice(0, 5),
-      );
+      const matchedSlot = selectedSlot ??
+        timeSlots.find(
+          (slot) =>
+            slot.date === selectedDate &&
+            slot.time.slice(0, 5) === selectedTime.slice(0, 5),
+        );
       const slotCategory = matchedSlot
         ? normalizeSlotCategory(matchedSlot.allowed_category)
         : normalizeSlotCategory(activeCategory);
 
       setDispatchDate(selectedDate); // Zustand に保存
       // 時間を "10:00:00" から "10:00" 形式に変換して保存
-      setDispatchTime(selectedTime.slice(0, 5)); // Zustand に保存
+      const endTimeForStore = matchedSlot?.end_time?.slice(0, 5) ?? null;
+      setDispatchTime(selectedTime.slice(0, 5), endTimeForStore); // Zustand に保存
       setDispatchCategory(slotCategory);
       setActiveCategory(slotCategory);
       router.back();
@@ -274,13 +253,17 @@ export default function DispatchModalPage() {
             >
               <SelectTrigger className="w-full items-center border-2 border-gray-300 h-20 text-xl">
                 <SelectValue placeholder="時間を選択してください">
-                  {selectedTime ? formatTimeRange(selectedTime) : "お持ち帰り日時を選択してください"}
+                  {selectedSlot
+                    ? formatTimeRange(selectedSlot.time, selectedSlot.end_time)
+                    : selectedTime
+                    ? formatTimeRange(selectedTime, dispatchEndTime ?? undefined)
+                    : "お持ち帰り日時を選択してください"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {availableTimes.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {formatTimeRange(t)}
+                {availableTimes.map((slot) => (
+                  <SelectItem key={`${slot.date}-${slot.time}`} value={slot.time}>
+                    {formatTimeRange(slot.time, slot.end_time)}
                   </SelectItem>
                 ))}
               </SelectContent>

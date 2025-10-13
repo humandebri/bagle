@@ -71,6 +71,7 @@ export default function OnlineShopPage() {
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const dispatchCategory = useCartStore((s) => s.dispatchCategory);
   const activeCategory = useMenuStore((s) => s.activeCategory);
   const setActiveCategory = useMenuStore((s) => s.setActiveCategory);
@@ -384,7 +385,11 @@ export default function OnlineShopPage() {
                 className="w-full border-2 p-3 text-center hover:bg-gray-50 transition-colors"
               >
                 {dispatchDate && dispatchTime ? (
-                  <DateTimeDisplay date={dispatchDate} time={dispatchTime} />
+                  <DateTimeDisplay
+                    date={dispatchDate}
+                    time={dispatchTime}
+                    endTime={dispatchEndTime}
+                  />
                 ) : (
                   "予約日時を選択してください"
                 )}

@@ -19,6 +19,7 @@ type Order = {
   items: OrderItem[];
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   total_price: number;
   payment_status: string;
   shipped: boolean;
@@ -38,7 +39,7 @@ export default function OrderDetailPage() {
     const fetchOrder = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, items, dispatch_date, dispatch_time, total_price, payment_status, shipped')
+        .select('id, created_at, items, dispatch_date, dispatch_time, dispatch_end_time, total_price, payment_status, shipped')
         .eq('id', orderId)
         .single();
 
@@ -102,7 +103,7 @@ export default function OrderDetailPage() {
       </ul>
 
       <p className="text-sm text-gray-600 mb-1">
-        受取日時: {formatDate(order.dispatch_date)} {formatTimeRange(order.dispatch_time)}
+        受取日時: {formatDate(order.dispatch_date)} {formatTimeRange(order.dispatch_time, order.dispatch_end_time ?? undefined)}
       </p>
       <p className="text-right font-bold">
         合計: ¥{order.total_price.toLocaleString()}

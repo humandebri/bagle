@@ -18,6 +18,7 @@ type Order = {
   items: OrderItem[];
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   total_price: number;
   shipped: boolean;
   payment_status: string;
@@ -37,7 +38,7 @@ export default function OrdersPage() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, items, dispatch_date, dispatch_time, total_price, shipped, payment_status')
+        .select('id, created_at, items, dispatch_date, dispatch_time, dispatch_end_time, total_price, shipped, payment_status')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -136,7 +137,7 @@ export default function OrdersPage() {
               </ul>
 
               <p className="text-sm text-gray-600 mb-1">
-                受取日時: {formatDate(order.dispatch_date)} {formatTimeRange(order.dispatch_time)}
+                受取日時: {formatDate(order.dispatch_date)} {formatTimeRange(order.dispatch_time, order.dispatch_end_time ?? undefined)}
               </p>
               <div className="flex justify-between items-center">
                 <p className="text-right font-bold">

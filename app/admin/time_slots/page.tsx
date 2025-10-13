@@ -6,13 +6,17 @@ import {
   ALLOWED_SLOT_CATEGORIES,
   SLOT_CATEGORY_LABELS,
   SLOT_CATEGORY_STANDARD,
+  SLOT_CATEGORY_RICE_FLOUR,
+  type SlotCategory,
   normalizeSlotCategory,
 } from "@/lib/categories";
+import { SLOT_CATEGORY_RULES } from "@/lib/slot-rules";
 
 interface TimeSlot {
   id: string;
   date: string;
   time: string;
+  end_time: string;
   max_capacity: number;
   current_bookings?: number;
   temp_bookings?: number;  // 仮予約数を追加
@@ -41,13 +45,45 @@ function getWeekDates(startDate: Date): string[] {
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-const DEFAULT_TIME_SLOTS = [
-  { time: "11:00", max_capacity: 1 },
-  { time: "11:15", max_capacity: 1 },
-  { time: "11:30", max_capacity: 1 },
-  { time: "11:45", max_capacity: 1 },
-  { time: "12:00", max_capacity: 6 },  // 12:00-15:00の枠として8人
+type SlotPreset = {
+  time: string;
+  end: string;
+  max_capacity: number;
+};
+
+const STANDARD_DEFAULT_TIME_SLOTS: SlotPreset[] = [
+  { time: "11:00", end: "11:15", max_capacity: 1 },
+  { time: "11:15", end: "11:30", max_capacity: 1 },
+  { time: "11:30", end: "11:45", max_capacity: 1 },
+  { time: "11:45", end: "12:00", max_capacity: 1 },
+  { time: "12:00", end: "15:00", max_capacity: 6 },
 ];
+
+const RICE_FLOUR_DEFAULT_TIME_SLOTS: SlotPreset[] = SLOT_CATEGORY_RULES[
+  SLOT_CATEGORY_RICE_FLOUR
+].defaultSlots.map((slot) => ({
+  time: slot.start,
+  end: slot.end,
+  max_capacity: slot.max,
+}));
+
+const DEFAULT_TIME_SLOTS = STANDARD_DEFAULT_TIME_SLOTS;
+
+function getDefaultPresets(category: SlotCategory): SlotPreset[] {
+  return category === SLOT_CATEGORY_RICE_FLOUR
+    ? RICE_FLOUR_DEFAULT_TIME_SLOTS.map((slot) => ({ ...slot }))
+    : STANDARD_DEFAULT_TIME_SLOTS.map((slot) => ({ ...slot }));
+}
+
+function deriveEndTime(time: string, category: SlotCategory): string {
+  const startKey = time.slice(0, 5);
+  const presets = getDefaultPresets(category);
+  const matched = presets.find((slot) => slot.time === startKey);
+  if (matched) return matched.end;
+  const fallback =
+    TIME_RANGE_MAP[startKey as keyof typeof TIME_RANGE_MAP] ?? startKey;
+  return fallback;
+}
 
 // デフォルト日付計算
 function getNextWeekSundayAndSaturday() {
@@ -72,7 +108,9 @@ export default function TimeSlotsPage() {
   const { sunday, saturday } = getNextWeekSundayAndSaturday();
   const [bulkStart, setBulkStart] = useState<string>(sunday);
   const [bulkEnd, setBulkEnd] = useState<string>(saturday);
-  const [bulkTimeSlots, setBulkTimeSlots] = useState(DEFAULT_TIME_SLOTS);
+  const [bulkTimeSlots, setBulkTimeSlots] = useState<SlotPreset[]>(
+    getDefaultPresets(SLOT_CATEGORY_STANDARD),
+  );
   const [bulkCategory, setBulkCategory] = useState<string>(SLOT_CATEGORY_STANDARD);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState("");
@@ -147,6 +185,11 @@ export default function TimeSlotsPage() {
         if (data.timeSlots) setTimeSlots(data.timeSlots);
       });
   }, []);
+
+  useEffect(() => {
+    const normalized = normalizeSlotCategory(bulkCategory);
+    setBulkTimeSlots(getDefaultPresets(normalized));
+  }, [bulkCategory]);
 
   useEffect(() => {
     if (weekDates.length === 0) return;
@@ -226,7 +269,7 @@ export default function TimeSlotsPage() {
   }, [timeSlots]);
 
   // 一括作成対象枠数カウント
-  function countBulkCreateSlots(start: string, end: string, days: number[], timeSlotsList: typeof DEFAULT_TIME_SLOTS) {
+  function countBulkCreateSlots(start: string, end: string, days: number[], timeSlotsList: SlotPreset[]) {
     let count = 0;
     const s = new Date(start);
     const e = new Date(end);
@@ -246,6 +289,7 @@ export default function TimeSlotsPage() {
     setBulkLoading(true);
     setBulkError("");
     try {
+      const normalizedCategory = normalizeSlotCategory(bulkCategory);
       const start = new Date(bulkStart);
       const end = new Date(bulkEnd);
       const slots = [];
@@ -257,10 +301,11 @@ export default function TimeSlotsPage() {
                 slots.push({
                   date: d.toISOString().split("T")[0],
                   time: slot.time,
+                  end_time: deriveEndTime(slot.time, normalizedCategory),
                   max_capacity: slot.max_capacity,
                   current_bookings: 0,
                   is_available: true,
-                  allowed_category: normalizeSlotCategory(bulkCategory),
+                  allowed_category: normalizedCategory,
                 });
               }
             }
@@ -314,7 +359,9 @@ export default function TimeSlotsPage() {
           is_available: editIsAvailable,
         };
         if (editAllowedCategory !== "keep") {
-          payload.allowed_category = normalizeSlotCategory(editAllowedCategory);
+          const normalized = normalizeSlotCategory(editAllowedCategory);
+          payload.allowed_category = normalized;
+          payload.end_time = deriveEndTime(u.time, normalized);
         }
         await fetch("/api/time_slots", {
           method: "PUT",
@@ -772,7 +819,15 @@ export default function TimeSlotsPage() {
                     if (!slot) {
                       cell = (
                         <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
-                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true, allowed_category: SLOT_CATEGORY_STANDARD })}>
+                          id: '',
+                          date,
+                          time,
+                          end_time: deriveEndTime(time, SLOT_CATEGORY_STANDARD),
+                          max_capacity: 1,
+                          current_bookings: 0,
+                          is_available: true,
+                          allowed_category: SLOT_CATEGORY_STANDARD,
+                        })}>
                           -
                         </span>
                       );
@@ -873,7 +928,15 @@ export default function TimeSlotsPage() {
                     if (!slot) {
                       cell = (
                         <span className="text-gray-300 cursor-pointer" onClick={() => setDetailSlot({
-                          id: '', date, time, max_capacity: 1, current_bookings: 0, is_available: true, allowed_category: SLOT_CATEGORY_STANDARD })}>
+                          id: '',
+                          date,
+                          time,
+                          end_time: deriveEndTime(time, SLOT_CATEGORY_STANDARD),
+                          max_capacity: 1,
+                          current_bookings: 0,
+                          is_available: true,
+                          allowed_category: SLOT_CATEGORY_STANDARD,
+                        })}>
                           -
                         </span>
                       );
@@ -925,7 +988,7 @@ export default function TimeSlotsPage() {
           <div className="bg-white p-6 rounded shadow max-w-md w-full" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4">予約枠詳細</h2>
             <div className="mb-2">日付: <span className="font-mono">{detailSlot.date}</span></div>
-            <div className="mb-2">時間帯: <span className="font-mono">{formatTimeRange(detailSlot.time.slice(0,5))}</span></div>
+            <div className="mb-2">時間帯: <span className="font-mono">{formatTimeRange(detailSlot.time.slice(0,5), detailSlot.end_time.slice(0,5))}</span></div>
             <div className="mb-2">最大予約数: <input type="number" min={detailSlot.current_bookings ?? 0} value={editDetailMax ?? ''} onChange={e => setEditDetailMax(Number(e.target.value))} className="border px-2 py-1 w-24 ml-2" /></div>
             <div className="mb-2">
               予約数: <span className="font-mono">{detailSlot.current_bookings ?? 0}</span>

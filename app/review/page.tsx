@@ -44,7 +44,9 @@ export default function ReviewPage() {
 
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
-  const dispatchTime = useCartStore((s) => s.dispatchTime);
+const dispatchTime = useCartStore((s) => s.dispatchTime);
+const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
+const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const resetCart = useCartStore((s) => s.reset);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -112,6 +114,7 @@ export default function ReviewPage() {
           items,
           dispatch_date: dispatchDate,
           dispatch_time: dispatchTime,
+          dispatch_end_time: dispatchEndTime,
           user_id: session?.user?.id,
           total_price: total
         }),
@@ -145,7 +148,7 @@ export default function ReviewPage() {
           orderDetails: {
             items,
             dispatchDate: formatDate(dispatchDate || ''),
-            dispatchTime: formatTimeRange(dispatchTime || ''),
+            dispatchTime: formatTimeRange(dispatchTime || '', dispatchEndTime || undefined),
             total
           }
         }),
@@ -175,7 +178,11 @@ export default function ReviewPage() {
       {/* 受取日時 */}
       <div className="text-gray-700 mb-4">
         <h3 className=" mb-2">▪️お持ち帰り日時</h3>
-        <DateTimeDisplay_order date={dispatchDate || ''} time={dispatchTime || ''} />
+        <DateTimeDisplay_order
+          date={dispatchDate || ''}
+          time={dispatchTime || ''}
+          endTime={dispatchEndTime || undefined}
+        />
         {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
       </div>
 

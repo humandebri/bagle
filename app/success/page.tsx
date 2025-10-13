@@ -13,6 +13,7 @@ export default function SuccessPage() {
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
   const dispatchTime = useCartStore((s) => s.dispatchTime);
+  const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const resetCart = useCartStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
 
@@ -38,6 +39,7 @@ export default function SuccessPage() {
           items,
           dispatch_date: parseJapaneseDate(dispatchDate || ''),
           dispatch_time: dispatchTime,
+          dispatch_end_time: dispatchEndTime,
         }),
       });
 

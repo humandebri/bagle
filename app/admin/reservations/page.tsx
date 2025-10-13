@@ -21,6 +21,7 @@ type Order = {
   user_id: string;
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   shipped: boolean;
   items: {
     id: string;
@@ -270,13 +271,22 @@ export default function ReservationsPage() {
 
 
   // 受取ステータスの日本語表示
-  const getShippedStatusLabel = (order: Order) => {
-    if (order.payment_status === 'cancelled') {
-      return 'キャンセル済';
-    }
-    const shipped = order.shipped === true;
-    return shipped ? '受取済' : '未受取';
-  };
+const getShippedStatusLabel = (order: Order) => {
+  if (order.payment_status === 'cancelled') {
+    return 'キャンセル済';
+  }
+  const shipped = order.shipped === true;
+  return shipped ? '受取済' : '未受取';
+};
+
+const formatOrderTimeRange = (order: Order) => {
+  const start = order.dispatch_time?.slice(0, 5) ?? '';
+  const end = order.dispatch_end_time?.slice(0, 5);
+  if (end && end !== start) {
+    return `${start}〜${end}`;
+  }
+  return start;
+};
   
 
   // カレンダーに表示するイベントデータを作成
@@ -291,7 +301,7 @@ export default function ReservationsPage() {
     .map(order => {
       // 日付を正規化（YYYY-MM-DD形式に）
       const normalizedDate = order.dispatch_date.split('T')[0];
-      const formattedTime = order.dispatch_time.split(':').slice(0, 2).join(':');
+      const formattedTime = formatOrderTimeRange(order);
       const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
       // 苗字を抽出（スペースがある場合は最初の部分、なければ全体）
       const lastName = order.customer_name ? order.customer_name.split(/[\s　]/)[0] : '未設定';
@@ -610,7 +620,7 @@ export default function ReservationsPage() {
                   >
                     <div className="flex justify-between items-center mb-1">
                       <div className="font-medium text-sm text-gray-800">
-                        {order.dispatch_time.split(':').slice(0, 2).join(':')} {order.customer_name || '未設定'}様
+                        {formatOrderTimeRange(order)} {order.customer_name || '未設定'}様
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-700">{order.items.reduce((sum, item) => sum + item.quantity, 0)}個</span>
@@ -651,6 +661,7 @@ export default function ReservationsPage() {
                       <DateTimeDisplay_order 
                         date={selectedOrder.dispatch_date} 
                         time={selectedOrder.dispatch_time} 
+                        endTime={selectedOrder.dispatch_end_time ?? undefined}
                       />
                     </span>
                   </div>

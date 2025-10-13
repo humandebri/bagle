@@ -25,6 +25,7 @@ model orders {
   items             Json
   dispatch_date     String?
   dispatch_time     String?
+  dispatch_end_time String?
   total_price       Int?
   customer_name     String?
   phone             String?
@@ -78,6 +79,7 @@ model time_slots {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   date             DateTime @db.Date
   time             DateTime @db.Time(6)
+  end_time         DateTime @db.Time(6)
   max_capacity     Int
   current_bookings Int?     @default(0)
   is_available     Boolean? @default(true)

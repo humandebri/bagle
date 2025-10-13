@@ -1,5 +1,10 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { normalizeSlotCategory, isSlotCategory } from '@/lib/categories';
+import {
+  normalizeSlotCategory,
+  isSlotCategory,
+  SLOT_CATEGORY_RICE_FLOUR,
+} from '@/lib/categories';
+import { isTimeRangeWithinCategory } from '@/lib/slot-rules';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -84,7 +89,23 @@ export async function GET(request: Request) {
       const bookingStartJSTMs = slotStartJSTMs - 7 * 24 * 60 * 60 * 1000;
 
       // ④ いま（UTCの現在時刻）と絶対時刻（JST 00:00 相当）を ms で比較
-      return Date.now() >= bookingStartJSTMs;
+      if (Date.now() < bookingStartJSTMs) {
+        return false;
+      }
+
+      // ⑤ カテゴリ特有の営業時間制約
+      if (
+        slotCategory === SLOT_CATEGORY_RICE_FLOUR &&
+        !isTimeRangeWithinCategory(
+          slotCategory,
+          slot.time.slice(0, 5),
+          slot.end_time.slice(0, 5),
+        )
+      ) {
+        return false;
+      }
+
+      return true;
     });
 
     return NextResponse.json({ 

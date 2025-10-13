@@ -22,13 +22,14 @@ type CartState = {
   items: CartItem[];
   dispatchDate: string | null;
   dispatchTime: string | null;
+  dispatchEndTime: string | null;
   dispatchCategory: SlotCategory;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   setDispatchDate: (date: string | null) => void;
-  setDispatchTime: (time: string | null) => void;
+  setDispatchTime: (time: string | null, endTime?: string | null) => void;
   setDispatchCategory: (category: SlotCategory | null) => void;
   reset: () => void;
 };
@@ -45,6 +46,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       dispatchDate: initialDispatchDate,
       dispatchTime: initialDispatchTime,
+      dispatchEndTime: null,
       dispatchCategory: initialDispatchCategory,
 
       addItem: (item) =>
@@ -64,6 +66,7 @@ export const useCartStore = create<CartState>()(
               items: [],
               dispatchDate: initialDispatchDate,
               dispatchTime: initialDispatchTime,
+              dispatchEndTime: null,
               dispatchCategory: initialDispatchCategory,
             };
           }
@@ -81,6 +84,7 @@ export const useCartStore = create<CartState>()(
               items: [],
               dispatchDate: initialDispatchDate,
               dispatchTime: initialDispatchTime,
+              dispatchEndTime: null,
               dispatchCategory: initialDispatchCategory,
             };
           }
@@ -92,18 +96,24 @@ export const useCartStore = create<CartState>()(
           items: [],
           dispatchDate: initialDispatchDate,
           dispatchTime: initialDispatchTime,
+          dispatchEndTime: null,
           dispatchCategory: initialDispatchCategory,
         }),
 
       setDispatchDate: (date) =>
         set((state) => ({
           dispatchDate: date,
+          ...(date === null ? { dispatchEndTime: null, dispatchTime: initialDispatchTime } : {}),
           ...(date === null
             ? { dispatchCategory: initialDispatchCategory }
             : { dispatchCategory: state.dispatchCategory }),
         })),
 
-      setDispatchTime: (time) => set({ dispatchTime: time }),
+      setDispatchTime: (time, endTime = null) =>
+        set({
+          dispatchTime: time,
+          dispatchEndTime: endTime,
+        }),
 
       setDispatchCategory: (category) =>
         set({
@@ -115,6 +125,7 @@ export const useCartStore = create<CartState>()(
           items: [],
           dispatchDate: initialDispatchDate,
           dispatchTime: initialDispatchTime,
+          dispatchEndTime: null,
           dispatchCategory: initialDispatchCategory,
         }),
     }),

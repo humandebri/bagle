@@ -3,6 +3,7 @@
 type DateTimeDisplayProps = {
   date: string;
   time: string;
+  endTime?: string | null;
   className?: string;
 };
 
@@ -34,29 +35,33 @@ export function formatDate(isoDate: string): string {
 }
 
 /** 時間範囲を表示形式に変換 */
-export function formatTimeRange(startTime: string): string {
-  const start = startTime.slice(0, 5) as TimeRangeKey;
-  const end = TIME_RANGE_MAP[start];
-  return end ? `${start} - ${end}` : start;
+export function formatTimeRange(startTime: string, endTime?: string | null): string {
+  const normalizedStart = startTime.slice(0, 5);
+  if (endTime) {
+    const normalizedEnd = endTime.slice(0, 5);
+    return `${normalizedStart} - ${normalizedEnd}`;
+  }
+  const fallbackKey = normalizedStart as TimeRangeKey;
+  const fallback = TIME_RANGE_MAP[fallbackKey];
+  return fallback ? `${normalizedStart} - ${fallback}` : normalizedStart;
 }
 
-export function DateTimeDisplay({ date, time, className = '' }: DateTimeDisplayProps) {
+export function DateTimeDisplay({ date, time, endTime, className = '' }: DateTimeDisplayProps) {
   if (!date || !time) return null;
 
   return (
     <span className={className}>
-      お持ち帰り、 {formatDate(date)} {formatTimeRange(time)}
+      お持ち帰り、 {formatDate(date)} {formatTimeRange(time, endTime)}
     </span>
   );
-} 
+}
 
-
-export function DateTimeDisplay_order({ date, time, className = '' }: DateTimeDisplayProps) {
+export function DateTimeDisplay_order({ date, time, endTime, className = '' }: DateTimeDisplayProps) {
   if (!date || !time) return null;
 
   return (
     <span className={className}>
-      {formatDate(date)} {formatTimeRange(time)}
+      {formatDate(date)} {formatTimeRange(time, endTime)}
     </span>
   );
-} 
+}
