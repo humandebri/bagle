@@ -35,27 +35,27 @@ type ProductStat = {
 
 function parseItems(raw: unknown): ParsedItem[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null;
-      const obj = entry as Record<string, unknown>;
-      const priceValue = obj.price;
-      const quantityValue = obj.quantity;
-      const price = typeof priceValue === 'number' ? priceValue : Number(priceValue) || 0;
-      const quantity = typeof quantityValue === 'number' ? quantityValue : Number(quantityValue) || 0;
-      if (quantity <= 0) return null;
+  const items: ParsedItem[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const obj = entry as Record<string, unknown>;
+    const priceValue = obj.price;
+    const quantityValue = obj.quantity;
+    const price = typeof priceValue === 'number' ? priceValue : Number(priceValue) || 0;
+    const quantity = typeof quantityValue === 'number' ? quantityValue : Number(quantityValue) || 0;
+    if (quantity <= 0) continue;
 
-      const name = typeof obj.name === 'string' ? obj.name : undefined;
-      const id = typeof obj.id === 'string' ? obj.id : undefined;
+    const name = typeof obj.name === 'string' ? obj.name : undefined;
+    const id = typeof obj.id === 'string' ? obj.id : undefined;
 
-      return {
-        id,
-        name,
-        price,
-        quantity,
-      } satisfies ParsedItem;
-    })
-    .filter((item): item is ParsedItem => !!item);
+    items.push({
+      id,
+      name,
+      price,
+      quantity,
+    });
+  }
+  return items;
 }
 
 export async function GET(req: Request) {
