@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -66,6 +66,7 @@ export default function ReservationsPage() {
   
   // 予約データの取得
   const fetchOrders = async () => {
+    let fetched: Order[] = [];
     try {
       const response = await fetch('/api/admin/reservations');
       if (!response.ok) {
@@ -73,13 +74,16 @@ export default function ReservationsPage() {
       }
       const data = await response.json();
 
-      setOrders(Array.isArray(data) ? data : []);
+      fetched = Array.isArray(data) ? data : [];
+      setOrders(fetched);
     } catch (error) {
       console.error('予約データの取得に失敗しました:', error);
+      fetched = [];
       setOrders([]);
     } finally {
       setIsLoading(false);
     }
+    return fetched;
   };
 
   // 利用可能な時間枠を取得
@@ -175,6 +179,78 @@ export default function ReservationsPage() {
     setSelectedNewDate(selectedOrder.dispatch_date);
     setSelectedNewTime(selectedOrder.dispatch_time);
     setShowTimeEditModal(true);
+  };
+
+  const unshippedOrdersForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    return orders.filter(order => {
+      const orderDate = order.dispatch_date.split('T')[0];
+      return (
+        orderDate === selectedDate &&
+        !order.shipped &&
+        order.payment_status !== 'cancelled'
+      );
+    });
+  }, [orders, selectedDate]);
+
+  const handleBulkCompleteByDate = async () => {
+    if (!selectedDate) return;
+    const targets = unshippedOrdersForSelectedDate;
+    if (targets.length === 0) {
+      alert('未受取の予約はありません');
+      return;
+    }
+
+    const formattedDate = format(new Date(selectedDate), 'yyyy年MM月dd日', { locale: ja });
+    const confirmMessage = `${formattedDate} の未受取予約 ${targets.length}件を受取済に更新しますか？`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/admin/reservations/mark-shipped', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ date: selectedDate }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        const message =
+          (errorBody && typeof errorBody.error === 'string' && errorBody.error) ||
+          '一括更新に失敗しました';
+        throw new Error(message);
+      }
+
+      const result = await response.json().catch(() => ({}));
+      const updatedOrders = await fetchOrders();
+
+      setSelectedOrder(prev => {
+        if (!selectedDate) return null;
+        const ordersForDate = updatedOrders.filter(order => order.dispatch_date.split('T')[0] === selectedDate);
+        const sortedForDate = [...ordersForDate].sort((a, b) => a.dispatch_time.localeCompare(b.dispatch_time));
+        if (!prev) {
+          return sortedForDate[0] ?? null;
+        }
+        const updated = updatedOrders.find(order => order.id === prev.id);
+        return updated ?? (sortedForDate[0] ?? null);
+      });
+
+      const updatedCount = typeof result.updatedCount === 'number' ? result.updatedCount : targets.length;
+      if (updatedCount === 0) {
+        alert('対象の未受取予約はありませんでした');
+      } else {
+        alert(`${formattedDate} の未受取予約 ${updatedCount}件を受取済に更新しました`);
+      }
+    } catch (error) {
+      console.error('一括受取エラー:', error);
+      alert(error instanceof Error ? error.message : '一括更新に失敗しました');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   useEffect(() => {
@@ -438,6 +514,24 @@ export default function ReservationsPage() {
               {selectedDate ? format(new Date(selectedDate), 'yyyy年MM月dd日', { locale: ja }) : '日付を選択'}
             </h2>
             <div className="flex gap-2">
+              {selectedDate && (
+                <button
+                  onClick={handleBulkCompleteByDate}
+                  className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                  disabled={unshippedOrdersForSelectedDate.length === 0 || isProcessing}
+                  title={
+                    unshippedOrdersForSelectedDate.length === 0
+                      ? '未受取の予約がありません'
+                      : '選択した日付の未受取予約を一括で受取済に更新します'
+                  }
+                >
+                  <CheckCircleIcon className="h-4 w-4" />
+                  <span>
+                    一括受取
+                    {unshippedOrdersForSelectedDate.length > 0 && ` (${unshippedOrdersForSelectedDate.length})`}
+                  </span>
+                </button>
+              )}
               {selectedDate && (
                 <button
                   onClick={() => window.open(`/print/reservations?date=${selectedDate}`, '_blank')}

@@ -21,6 +21,13 @@ interface TimeSlot {
   allowed_category?: string | null;
 }
 
+interface BusinessDay {
+  date: string;
+  is_open: boolean;
+  is_special: boolean;
+  notes: string | null;
+}
+
 // 2週間分の日付配列を生成
 function getWeekDates(startDate: Date): string[] {
   const dates: string[] = [];
@@ -95,6 +102,9 @@ export default function TimeSlotsPage() {
   const deleteFormRef = useRef<HTMLFormElement>(null);
 
   const [detailSlot, setDetailSlot] = useState<TimeSlot | null>(null);
+  const [businessDays, setBusinessDays] = useState<Record<string, BusinessDay>>({});
+  const [businessDaysLoading, setBusinessDaysLoading] = useState(false);
+  const [businessDaysError, setBusinessDaysError] = useState("");
 
   // 週の開始日を状態で管理
   const [weekStart, setWeekStart] = useState(() => {
@@ -137,6 +147,51 @@ export default function TimeSlotsPage() {
         if (data.timeSlots) setTimeSlots(data.timeSlots);
       });
   }, []);
+
+  useEffect(() => {
+    if (weekDates.length === 0) return;
+
+    const controller = new AbortController();
+    async function fetchBusinessDays() {
+      const start = weekDates[0];
+      const end = weekDates[weekDates.length - 1];
+      if (!start || !end) return;
+
+      setBusinessDaysLoading(true);
+      setBusinessDaysError("");
+      try {
+        const response = await fetch(
+          `/api/admin/business-calendar/days?start=${start}&end=${end}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch business days');
+        }
+        const data = await response.json();
+        const mapped: Record<string, BusinessDay> = {};
+        (data.days ?? []).forEach((day: BusinessDay) => {
+          mapped[day.date] = day;
+        });
+        setBusinessDays(mapped);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+        if (process.env.NODE_ENV === 'development') {
+          console.error('営業日データの取得に失敗しました', error);
+        }
+        setBusinessDaysError('営業日データの取得に失敗しました');
+      } finally {
+        if (!controller.signal.aborted) {
+          setBusinessDaysLoading(false);
+        }
+      }
+    }
+
+    fetchBusinessDays();
+
+    return () => controller.abort();
+  }, [weekDates]);
 
   // 時間帯リスト
   const timeKeys = Object.keys(TIME_RANGE_MAP);
@@ -406,6 +461,12 @@ export default function TimeSlotsPage() {
         <span className="font-bold">{weekDates[0]} 〜 {weekDates[13]}</span>
         <button className="px-3 py-2 border border-[#887c5d]/30 bg-white rounded-lg hover:bg-[#f5f2ea] transition-colors font-medium" onClick={goNextWeek}>次の2週間</button>
       </div>
+      {businessDaysLoading && !businessDaysError && (
+        <div className="mb-4 text-sm text-gray-500">営業日情報を読み込み中...</div>
+      )}
+      {businessDaysError && (
+        <div className="mb-4 text-sm text-red-600">{businessDaysError}</div>
+      )}
       {showModal && (
         <div
           className="fixed inset-0  bg-black/30 flex items-center justify-center z-50"
@@ -666,11 +727,27 @@ export default function TimeSlotsPage() {
             <thead>
               <tr>
                 <th className="border px-2 py-1 bg-gray-50 text-center">時間帯</th>
-                {weekDates.slice(0, 7).map((date) => (
-                  <th key={date} className="border px-2 py-1 bg-gray-50 text-center">
-                    {formatDate(date)}
-                  </th>
-                ))}
+                {weekDates.slice(0, 7).map((date) => {
+                  const dayInfo = businessDays[date];
+                  const isClosed = dayInfo ? !dayInfo.is_open : false;
+                  const isSpecial = dayInfo?.is_special;
+                  const headerClass = `border px-2 py-1 text-center ${isClosed ? 'bg-red-50 text-red-600' : 'bg-gray-50'}`;
+                  return (
+                    <th key={date} className={headerClass}>
+                      <div className="flex flex-col items-center gap-1">
+                        <span>{formatDate(date)}</span>
+                        {isClosed ? (
+                          <span className="text-xs font-semibold text-red-600">休業日</span>
+                        ) : isSpecial ? (
+                          <span className="text-xs font-semibold text-blue-600">特別営業</span>
+                        ) : null}
+                        {dayInfo?.notes ? (
+                          <span className="text-[10px] text-gray-500">{dayInfo.notes}</span>
+                        ) : null}
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -679,6 +756,9 @@ export default function TimeSlotsPage() {
                   <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
                   {weekDates.slice(0, 7).map((date) => {
                     const slot = slotMap[date][time];
+                    const dayInfo = businessDays[date];
+                    const isClosed = dayInfo ? !dayInfo.is_open : false;
+                    const isSpecial = dayInfo?.is_special;
                     const slotCategory = slot
                       ? normalizeSlotCategory(slot.allowed_category)
                       : SLOT_CATEGORY_STANDARD;
@@ -717,8 +797,16 @@ export default function TimeSlotsPage() {
                       );
                     }
                     return (
-                      <td key={date} className="border px-2 py-1 text-center align-middle">
+                      <td
+                        key={date}
+                        className={`border px-2 py-1 text-center align-middle ${isClosed ? 'bg-red-50' : ''}`}
+                      >
                         <div className="flex flex-col items-center gap-1">
+                          {isClosed ? (
+                            <span className="text-[10px] text-red-600 font-semibold">休業日</span>
+                          ) : isSpecial ? (
+                            <span className="text-[10px] text-blue-600 font-semibold">特別営業</span>
+                          ) : null}
                           {cell}
                           {categoryBadge}
                         </div>
@@ -740,11 +828,27 @@ export default function TimeSlotsPage() {
             <thead>
               <tr>
                 <th className="border px-2 py-1 bg-gray-50 text-center">時間帯</th>
-                {weekDates.slice(7, 14).map((date) => (
-                  <th key={date} className="border px-2 py-1 bg-gray-50 text-center">
-                    {formatDate(date)}
-                  </th>
-                ))}
+                {weekDates.slice(7, 14).map((date) => {
+                  const dayInfo = businessDays[date];
+                  const isClosed = dayInfo ? !dayInfo.is_open : false;
+                  const isSpecial = dayInfo?.is_special;
+                  const headerClass = `border px-2 py-1 text-center ${isClosed ? 'bg-red-50 text-red-600' : 'bg-gray-50'}`;
+                  return (
+                    <th key={date} className={headerClass}>
+                      <div className="flex flex-col items-center gap-1">
+                        <span>{formatDate(date)}</span>
+                        {isClosed ? (
+                          <span className="text-xs font-semibold text-red-600">休業日</span>
+                        ) : isSpecial ? (
+                          <span className="text-xs font-semibold text-blue-600">特別営業</span>
+                        ) : null}
+                        {dayInfo?.notes ? (
+                          <span className="text-[10px] text-gray-500">{dayInfo.notes}</span>
+                        ) : null}
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -753,6 +857,9 @@ export default function TimeSlotsPage() {
                   <td className="border px-2 py-1 font-mono bg-gray-50 text-center">{formatTimeRange(time)}</td>
                   {weekDates.slice(7, 14).map((date) => {
                     const slot = slotMap[date][time];
+                    const dayInfo = businessDays[date];
+                    const isClosed = dayInfo ? !dayInfo.is_open : false;
+                    const isSpecial = dayInfo?.is_special;
                     const slotCategory = slot
                       ? normalizeSlotCategory(slot.allowed_category)
                       : SLOT_CATEGORY_STANDARD;
@@ -791,8 +898,16 @@ export default function TimeSlotsPage() {
                       );
                     }
                     return (
-                      <td key={date} className="border px-2 py-1 text-center align-middle">
+                      <td
+                        key={date}
+                        className={`border px-2 py-1 text-center align-middle ${isClosed ? 'bg-red-50' : ''}`}
+                      >
                         <div className="flex flex-col items-center gap-1">
+                          {isClosed ? (
+                            <span className="text-[10px] text-red-600 font-semibold">休業日</span>
+                          ) : isSpecial ? (
+                            <span className="text-[10px] text-blue-600 font-semibold">特別営業</span>
+                          ) : null}
                           {cell}
                           {categoryBadge}
                         </div>
