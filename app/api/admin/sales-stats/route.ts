@@ -25,27 +25,28 @@ export async function GET(req: Request) {
   try {
     let q = supabase
       .from('orders')
-      .select('id, total_price, created_at, payment_status')
-      .neq('payment_status', 'cancelled');
-    if (from && to) q = q.gte('created_at', from).lte('created_at', to);
+      .select('id, total_price, dispatch_date, payment_status')
+      .not('dispatch_date', 'is', null);
+    if (from && to) {
+      q = q.gte('dispatch_date', from).lte('dispatch_date', to);
+    }
     const { data, error } = await q;
     if (error) throw error;
-    const orders = data ?? [];
+    const orders = (data ?? []).filter((order) => order.payment_status !== 'cancelled');
 
     // 日付ごと or 月ごとに集計
-    const groupKey = (d: string) => {
-      const date = new Date(d);
+    const groupKey = (dispatchDate: string) => {
       if (period === 'monthly') {
-        return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      } else {
-        return date.toISOString().slice(0, 10);
+        return dispatchDate.slice(0, 7);
       }
+      return dispatchDate;
     };
     const stats: Record<string, { totalSales: number; orderCount: number }> = {};
     for (const o of orders) {
-      const key = groupKey(o.created_at);
+      if (!o.dispatch_date) continue;
+      const key = groupKey(o.dispatch_date);
       if (!stats[key]) stats[key] = { totalSales: 0, orderCount: 0 };
-      stats[key].totalSales += o.total_price || 0;
+      stats[key].totalSales += Number(o.total_price) || 0;
       stats[key].orderCount += 1;
     }
     // 日付順にソートして配列化

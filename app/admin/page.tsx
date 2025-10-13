@@ -30,7 +30,20 @@ interface Order {
 }
 
 // OrderItem型を定義
-type OrderItem = unknown;
+type OrderItem = {
+  id?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+};
+
+interface ProductSalesRow {
+  productId: string;
+  name: string;
+  totalSales: number;
+  totalQuantity: number;
+  ordersCount: number;
+}
 
 
 const ORDER_STATUS_OPTIONS = [
@@ -77,6 +90,9 @@ export default function AdminDashboard() {
   const [salesPeriod, setSalesPeriod] = useState<'daily' | 'monthly'>('daily');
   const [salesFrom, setSalesFrom] = useState<string>('');
   const [salesTo, setSalesTo] = useState<string>('');
+  const [productSales, setProductSales] = useState<ProductSalesRow[]>([]);
+  const [productSalesLoading, setProductSalesLoading] = useState(true);
+  const [productSalesError, setProductSalesError] = useState<string | null>(null);
 
   // 商品数・カテゴリー数・注文数・時間枠数をAPIから取得
   const [availableProductCount, setAvailableProductCount] = useState<number>(0);
@@ -211,6 +227,31 @@ export default function AdminDashboard() {
     };
     if (salesFrom && salesTo) fetchSales();
   }, [salesPeriod, salesFrom, salesTo]);
+
+  useEffect(() => {
+    const fetchProductSales = async () => {
+      if (!salesFrom || !salesTo) return;
+      setProductSalesLoading(true);
+      setProductSalesError(null);
+      try {
+        const params = new URLSearchParams();
+        params.append('limit', '10');
+        if (salesFrom) params.append('from', salesFrom);
+        if (salesTo) params.append('to', salesTo);
+        const res = await fetch(`/api/admin/product-sales?${params.toString()}`);
+        if (!res.ok) throw new Error('商品別売上ランキングの取得に失敗しました');
+        const data = await res.json();
+        setProductSales(Array.isArray(data) ? data : []);
+      } catch (e: unknown) {
+        setProductSalesError(
+          e instanceof Error ? e.message : '商品別売上ランキングの取得に失敗しました'
+        );
+      } finally {
+        setProductSalesLoading(false);
+      }
+    };
+    fetchProductSales();
+  }, [salesFrom, salesTo]);
 
 
 
@@ -464,32 +505,69 @@ export default function AdminDashboard() {
         ) : salesError ? (
           <p className="text-red-500">{salesError}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[300px]">
-              <ResponsiveContainer width="100%" height={240} className="sm:hidden">
-                <BarChart data={salesStats} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="date" stroke="#6b7280" fontSize={10} />
-                  <YAxis stroke="#6b7280" fontSize={10} tickFormatter={v => v.toLocaleString()} />
-                  <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-                  <Legend verticalAlign="top" height={28} iconType="circle" wrapperStyle={{ color: '#374151', fontSize: '12px' }} />
-                  <Bar dataKey="totalSales" name="売上" fill="#887c5d" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="orderCount" name="注文数" fill="#d4c5a9" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              <ResponsiveContainer width="100%" height={320} className="hidden sm:block">
-                <BarChart data={salesStats} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={v => v.toLocaleString()} />
-                  <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ color: '#374151' }} />
-                  <Bar dataKey="totalSales" name="売上合計" fill="#887c5d" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="orderCount" name="注文数" fill="#d4c5a9" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <>
+            <div className="overflow-x-auto">
+              <div className="min-w-[300px]">
+                <ResponsiveContainer width="100%" height={240} className="sm:hidden">
+                  <BarChart data={salesStats} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="date" stroke="#6b7280" fontSize={10} />
+                    <YAxis stroke="#6b7280" fontSize={10} tickFormatter={v => v.toLocaleString()} />
+                    <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                    <Legend verticalAlign="top" height={28} iconType="circle" wrapperStyle={{ color: '#374151', fontSize: '12px' }} />
+                    <Bar dataKey="totalSales" name="売上" fill="#887c5d" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="orderCount" name="注文数" fill="#d4c5a9" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height={320} className="hidden sm:block">
+                  <BarChart data={salesStats} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+                    <YAxis stroke="#6b7280" fontSize={12} tickFormatter={v => v.toLocaleString()} />
+                    <Tooltip formatter={(v: number) => v.toLocaleString()} labelStyle={{ color: '#374151' }} contentStyle={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ color: '#374151' }} />
+                    <Bar dataKey="totalSales" name="売上合計" fill="#887c5d" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="orderCount" name="注文数" fill="#d4c5a9" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+            <div className="mt-6">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3">商品別売上ランキング</h3>
+              {productSalesLoading ? (
+                <p className="text-sm text-gray-500">集計中...</p>
+              ) : productSalesError ? (
+                <p className="text-sm text-red-500">{productSalesError}</p>
+              ) : productSales.length === 0 ? (
+                <p className="text-sm text-gray-500">該当データがありません。</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-600">
+                        <th className="px-2 py-2 text-left w-16">順位</th>
+                        <th className="px-2 py-2 text-left">商品名</th>
+                        <th className="px-2 py-2 text-right">売上合計</th>
+                        <th className="px-2 py-2 text-right">数量</th>
+                        <th className="px-2 py-2 text-right">注文数</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productSales.map((product, index) => (
+                        <tr key={product.productId} className="border-b last:border-0">
+                          <td className="px-2 py-2 text-left font-semibold text-gray-700">{index + 1}</td>
+                          <td className="px-2 py-2 text-left text-gray-900">{product.name}</td>
+                          <td className="px-2 py-2 text-right text-gray-900">{formatYen(product.totalSales)}</td>
+                          <td className="px-2 py-2 text-right text-gray-700">{product.totalQuantity.toLocaleString()}</td>
+                          <td className="px-2 py-2 text-right text-gray-700">{product.ordersCount.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
