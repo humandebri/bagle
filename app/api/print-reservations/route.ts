@@ -30,6 +30,7 @@ export async function GET(req: Request) {
         items,
         dispatch_date,
         dispatch_time,
+        dispatch_end_time,
         total_price,
         shipped,
         payment_status

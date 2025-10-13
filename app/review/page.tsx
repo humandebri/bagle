@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { useAuthSession } from '@/lib/auth-compat';
 import { useState, useEffect } from 'react';
-import { DateTimeDisplay_order } from '@/components/DateTimeDisplay';
+import { DateTimeDisplay_order, formatTimeRange } from '@/components/DateTimeDisplay';
 import { STORE_PHONE_NUMBER } from '@/lib/constants';
 
 // 日付と時間のフォーマット関数をインポート
@@ -24,19 +24,6 @@ const formatDate = (isoDate: string): string => {
   }
 };
 
-const TIME_RANGE_MAP = {
-  '11:00': '11:15',
-  '11:15': '11:30',
-  '11:30': '11:45',
-  '11:45': '12:00',
-  '12:00': '15:00',
-} as const;
-
-const formatTimeRange = (startTime: string): string => {
-  const start = startTime.slice(0, 5);
-  const end = TIME_RANGE_MAP[start as keyof typeof TIME_RANGE_MAP];
-  return end ? `${start} - ${end}` : start;
-};
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -45,7 +32,6 @@ export default function ReviewPage() {
   const items = useCartStore((s) => s.items);
   const dispatchDate = useCartStore((s) => s.dispatchDate);
 const dispatchTime = useCartStore((s) => s.dispatchTime);
-const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
 const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const resetCart = useCartStore((s) => s.reset);
   const [error, setError] = useState('');

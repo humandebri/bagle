@@ -21,6 +21,7 @@ interface Order {
   items: OrderItem[];
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   total_price: number;
   shipped: boolean;
   customer_name?: string;
@@ -41,6 +42,15 @@ const ORDER_STATUS_OPTIONS = [
 
 function formatYen(num: number) {
   return num.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' });
+}
+
+function formatOrderTime(order: Order): string {
+  const start = order.dispatch_time?.slice(0, 5) ?? '';
+  const end = order.dispatch_end_time?.slice(0, 5);
+  if (start && end && end !== start) {
+    return `${start}〜${end}`;
+  }
+  return start || '-';
 }
 
 export default function AdminDashboard() {
@@ -359,7 +369,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <span className="text-gray-500">時間:</span>
-                        <span className="ml-1">{order.dispatch_time || '-'}</span>
+                        <span className="ml-1">{formatOrderTime(order)}</span>
                       </div>
                     </div>
                   </div>
@@ -401,7 +411,7 @@ export default function AdminDashboard() {
                         {formatYen(order.total_price)}
                       </td>
                       <td className="px-2 py-1 text-left">{order.dispatch_date || '-'}</td>
-                      <td className="px-2 py-1 text-left">{order.dispatch_time || '-'}</td>
+                      <td className="px-2 py-1 text-left">{formatOrderTime(order)}</td>
                       <td className="px-2 py-1 text-left">{order.shipped ? '発送済み' : '未発送'}</td>
                     </tr>
                   ))}

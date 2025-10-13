@@ -18,6 +18,7 @@ type Order = {
   user_id: string;
   dispatch_date: string;
   dispatch_time: string;
+  dispatch_end_time?: string | null;
   shipped: boolean;
   items: OrderItem[];
   total_price: number;
@@ -188,7 +189,7 @@ function PrintPageContent() {
                 className={order.payment_status === 'cancelled' ? 'bg-gray-100 text-gray-500' : ''}
               >
                 <td className="border p-2">
-                  {order.dispatch_time ? formatTimeRange(order.dispatch_time) : '-'}
+                  {order.dispatch_time ? formatTimeRange(order.dispatch_time, order.dispatch_end_time ?? undefined) : '-'}
                 </td>
                 <td className="border p-2">
                   {order.payment_status === 'cancelled' && (

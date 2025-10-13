@@ -24,6 +24,104 @@ type Order = {
   payment_status: string;
 };
 
+const normalizeDate = (value: string) => value.split('T')[0] ?? value;
+
+const toTimeWithSeconds = (time: string) =>
+  time.length === 5 ? `${time}:00` : time;
+
+const toHHMM = (time: string | null | undefined) => {
+  if (!time) return null;
+  return time.slice(0, 5);
+};
+
+const withDispatchEndTimes = async (orders: Order[]): Promise<Order[]> => {
+  const targets = orders.filter((order) =>
+    !order.dispatch_end_time && order.dispatch_date && order.dispatch_time,
+  );
+
+  if (targets.length === 0) {
+    return orders;
+  }
+
+  const uniqueKeys = Array.from(
+    new Map(
+      targets.map((order) => {
+        const date = normalizeDate(order.dispatch_date);
+        const time = toHHMM(order.dispatch_time) ?? order.dispatch_time;
+        return [`${date}|${time}`, { date, time }];
+      }),
+    ).entries(),
+  );
+
+  const uniqueDates = Array.from(
+    new Set(uniqueKeys.map(([, { date }]) => date)),
+  ).filter(Boolean) as string[];
+
+  const uniqueTimesWithSeconds = Array.from(
+    new Set(
+      uniqueKeys.map(([, { time }]) => toTimeWithSeconds(time)),
+    ),
+  ).filter(Boolean) as string[];
+
+  const resolved = new Map<string, string>();
+
+  if (uniqueDates.length > 0 && uniqueTimesWithSeconds.length > 0) {
+    const { data, error } = await supabase
+      .from('time_slots')
+      .select('date, time, end_time')
+      .in('date', uniqueDates)
+      .in('time', uniqueTimesWithSeconds);
+
+    if (error) {
+      console.warn('Failed to resolve dispatch_end_time for order slots', error);
+    } else {
+      (data ?? []).forEach((slot) => {
+        const slotDate = slot.date as string | null;
+        const slotTimeRaw = typeof slot.time === 'string'
+          ? slot.time
+          : slot.time instanceof Date
+            ? slot.time.toISOString().slice(11, 19)
+            : null;
+
+        if (!slotDate || !slotTimeRaw) {
+          return;
+        }
+
+        const key = `${slotDate}|${slotTimeRaw.slice(0, 5)}`;
+
+        if (!slot.end_time) {
+          return;
+        }
+
+        const formatted =
+          typeof slot.end_time === 'string'
+            ? slot.end_time.slice(0, 5)
+            : new Date(slot.end_time).toISOString().slice(11, 16);
+        resolved.set(key, formatted);
+      });
+    }
+  }
+
+  return orders.map((order) => {
+    if (order.dispatch_end_time) {
+      return order;
+    }
+
+    const date = normalizeDate(order.dispatch_date);
+    const time = toHHMM(order.dispatch_time) ?? order.dispatch_time;
+    const resolvedEnd = resolved.get(`${date}|${time}`);
+
+    if (!resolvedEnd) {
+      return order;
+    }
+
+    return {
+      ...order,
+      dispatch_end_time: resolvedEnd,
+    };
+  });
+};
+
 export default function OrdersPage() {
   const { data: session, status } = useAuthSession();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -46,7 +144,8 @@ export default function OrdersPage() {
         console.error('注文取得エラー:', error.message);
         setError('注文履歴の取得に失敗しました');
       } else if (data) {
-        setOrders(data as Order[]);
+        const resolvedOrders = await withDispatchEndTimes(data as Order[]);
+        setOrders(resolvedOrders);
       }
 
       setLoading(false);

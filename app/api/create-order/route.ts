@@ -11,6 +11,14 @@ type OrderItem = {
   quantity: number;
 };
 
+const toTimeWithSeconds = (time: string) =>
+  time.length === 5 ? `${time}:00` : time;
+
+const toHHMM = (time: string | null | undefined) => {
+  if (!time) return null;
+  return time.slice(0, 5);
+};
+
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -44,14 +52,14 @@ export async function POST(req: NextRequest) {
     const calculatedTotalPrice = total_price || items.reduce((s: number, i: OrderItem) => s + i.price * i.quantity, 0);
 
     // dispatch_dateとdispatch_timeがある場合のみ処理
-    let finalDispatchEndTime = requestEndTime ?? null;
+    let finalDispatchEndTime = toHHMM(requestEndTime ?? null);
 
     if (dispatch_date && dispatch_time) {
       const { data: slotForEndTime, error: slotEndTimeError } = await supabaseAdmin
         .from('time_slots')
         .select('end_time')
         .eq('date', dispatch_date)
-        .eq('time', dispatch_time.length === 5 ? `${dispatch_time}:00` : dispatch_time)
+        .eq('time', toTimeWithSeconds(dispatch_time))
         .maybeSingle();
 
       if (slotEndTimeError) {
@@ -60,7 +68,7 @@ export async function POST(req: NextRequest) {
 
       if (slotForEndTime?.end_time) {
         if (typeof slotForEndTime.end_time === 'string') {
-          finalDispatchEndTime = slotForEndTime.end_time.slice(0, 5);
+          finalDispatchEndTime = toHHMM(slotForEndTime.end_time);
         } else {
           const iso = new Date(slotForEndTime.end_time).toISOString();
           finalDispatchEndTime = iso.slice(11, 16);

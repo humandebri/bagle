@@ -17,8 +17,6 @@ export default function SuccessPage() {
   const resetCart = useCartStore((s) => s.reset);
   const [saved, setSaved] = useState(false);
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
   useEffect(() => {
     const parseJapaneseDate = (jpDate: string): string => {
       const match = jpDate.match(/^(\d{1,2})月(\d{1,2})日/);
@@ -55,7 +53,7 @@ export default function SuccessPage() {
     };
 
     saveOrder();
-  }, [session, items, dispatchDate, dispatchTime, total, saved, resetCart]);
+  }, [session, items, dispatchDate, dispatchTime, dispatchEndTime, saved, resetCart]);
 
   return (
     <main className="max-w-md mx-auto p-6 text-center">

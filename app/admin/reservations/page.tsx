@@ -139,7 +139,7 @@ export default function ReservationsPage() {
       // 2. 新しいタイムスロットを予約
       const { data: newSlot, error: newSlotError } = await supabase
         .from('time_slots')
-        .select('current_bookings')
+        .select('current_bookings, end_time')
         .eq('date', selectedNewDate)
         .eq('time', selectedNewTime)
         .single();
@@ -153,11 +153,18 @@ export default function ReservationsPage() {
         .eq('time', selectedNewTime);
 
       // 3. 注文情報を更新
+      const nextDispatchEndTime = newSlot?.end_time
+        ? typeof newSlot.end_time === 'string'
+          ? newSlot.end_time.slice(0, 5)
+          : new Date(newSlot.end_time).toISOString().slice(11, 16)
+        : null;
+
       const { error: orderError } = await supabase
         .from('orders')
         .update({
           dispatch_date: selectedNewDate,
           dispatch_time: selectedNewTime,
+          dispatch_end_time: nextDispatchEndTime,
         })
         .eq('id', selectedOrder.id);
 
@@ -301,13 +308,18 @@ const formatOrderTimeRange = (order: Order) => {
     .map(order => {
       // 日付を正規化（YYYY-MM-DD形式に）
       const normalizedDate = order.dispatch_date.split('T')[0];
-      const formattedTime = formatOrderTimeRange(order);
+      const startTime = order.dispatch_time
+        ? order.dispatch_time.slice(0, 5)
+        : '';
+      const formattedTime = startTime || formatOrderTimeRange(order);
       const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
       // 苗字を抽出（スペースがある場合は最初の部分、なければ全体）
       const lastName = order.customer_name ? order.customer_name.split(/[\s　]/)[0] : '未設定';
       
+      const customerLabel = order.customer_name ? `${lastName}様` : '未設定';
+
       return {
-        title: `${formattedTime} - ${totalItems}個${order.payment_status === 'cancelled' ? ' (キャンセル)' : ''}`,
+        title: `${formattedTime} ${customerLabel} ${totalItems}個`,
         date: normalizedDate,
         extendedProps: { 
           order,
