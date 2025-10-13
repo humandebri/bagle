@@ -24,23 +24,26 @@ export async function GET(req: Request) {
   try {
     let q = supabase
       .from('orders')
-      .select('id, user_id, total_price, created_at, payment_status')
-      .neq('payment_status', 'cancelled');
-    if (from && to) q = q.gte('created_at', from).lte('created_at', to);
+      .select('id, user_id, total_price, created_at, payment_status');
+    if (from && to) {
+      const fromDate = new Date(`${from}T00:00:00.000Z`).toISOString();
+      const toDate = new Date(`${to}T23:59:59.999Z`).toISOString();
+      q = q.gte('created_at', fromDate).lte('created_at', toDate);
+    }
 
     const { data, error } = await q;
     if (error) throw error;
-    const orders = data ?? [];
+    const orders = (data ?? []).filter((order) => order.payment_status !== 'cancelled');
 
     // 売上合計
-    const totalSales = orders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+    const totalSales = orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
     // 注文数
     const orderCount = orders.length;
     // ユーザーごとに集計
-    const userOrderMap = new Map();
+    const userOrderMap = new Map<string, number>();
     for (const o of orders) {
-      if (!userOrderMap.has(o.user_id)) userOrderMap.set(o.user_id, 0);
-      userOrderMap.set(o.user_id, userOrderMap.get(o.user_id) + 1);
+      const customerKey = o.user_id ?? `guest-${o.id}`;
+      userOrderMap.set(customerKey, (userOrderMap.get(customerKey) ?? 0) + 1);
     }
     // 新規顧客数（この期間で初めて注文したユーザー）
     const newCustomers = Array.from(userOrderMap.values()).filter(v => v === 1).length;
