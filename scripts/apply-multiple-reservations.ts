@@ -99,6 +99,7 @@ async function applyMultipleReservations() {
         create: {
           date: testDate,
           time: new Date('1970-01-01T11:00:00'),
+          end_time: new Date('1970-01-01T11:15:00'),
           max_capacity: 3,
           current_bookings: 0,
           is_available: true
