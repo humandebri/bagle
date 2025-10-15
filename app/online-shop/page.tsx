@@ -66,6 +66,7 @@ export default function OnlineShopPage() {
   const [availableSlotsCount, setAvailableSlotsCount] = useState<number | null>(null);
   const [availableCapacityTotal, setAvailableCapacityTotal] = useState<number | null>(null);
   const [checkingSlots, setCheckingSlots] = useState(true);
+  const [slotValidationMessage, setSlotValidationMessage] = useState<string | null>(null);
   
   const cartItems = useCartStore((s) => s.items);
   const totalQuantity = cartItems.reduce((sum, i) => sum + i.quantity, 0);
@@ -73,6 +74,8 @@ export default function OnlineShopPage() {
   const dispatchTime = useCartStore((s) => s.dispatchTime);
   const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const dispatchCategory = useCartStore((s) => s.dispatchCategory);
+  const setDispatchDate = useCartStore((s) => s.setDispatchDate);
+  const setDispatchCategory = useCartStore((s) => s.setDispatchCategory);
   const activeCategory = useMenuStore((s) => s.activeCategory);
   const setActiveCategory = useMenuStore((s) => s.setActiveCategory);
   const activeCategoryRef = useRef<SlotCategory>(activeCategory);
@@ -123,6 +126,34 @@ export default function OnlineShopPage() {
 
         const userDispatchDate = dispatchDate;
         const userDispatchTime = dispatchTime;
+        const userDispatchCategory = dispatchCategory;
+
+        const hasUserSelection = Boolean(userDispatchDate && userDispatchTime);
+
+        let shouldResetSelection = false;
+
+        if (hasUserSelection) {
+          const matchingSlot = data.timeSlots?.find(
+            (slot: AvailableSlot) =>
+              slot.date === userDispatchDate &&
+              slot.time.slice(0, 5) === userDispatchTime,
+          );
+
+          const remainingCapacity = matchingSlot
+            ? Math.max(
+                0,
+                matchingSlot.max_capacity -
+                  matchingSlot.current_bookings -
+                  (matchingSlot.temp_bookings ?? 0),
+              )
+            : 0;
+
+          const slotStillBookable =
+            Boolean(matchingSlot) &&
+            (matchingSlot.is_available || remainingCapacity > 0);
+
+          shouldResetSelection = !slotStillBookable;
+        }
 
         const availableSlots =
           data.timeSlots?.filter((slot: AvailableSlot) => {
@@ -138,6 +169,20 @@ export default function OnlineShopPage() {
           }) || [];
 
         if (activeCategoryRef.current !== category) return;
+
+        if (shouldResetSelection && hasUserSelection) {
+          setSlotValidationMessage((prev) =>
+            prev ??
+            '以前に選択された予約枠は満席になったためリセットされました。',
+          );
+          setDispatchDate(null);
+          if (userDispatchCategory) {
+            setDispatchCategory(userDispatchCategory);
+          }
+        } else if (!shouldResetSelection && hasUserSelection) {
+          setSlotValidationMessage((prev) => (prev ? null : prev));
+        }
+
         setAvailableSlotsCount(availableSlots.length);
 
         const totalCapacity = availableSlots.reduce(
@@ -173,7 +218,13 @@ export default function OnlineShopPage() {
         }
       }
     },
-    [dispatchDate, dispatchTime],
+    [
+      dispatchDate,
+      dispatchTime,
+      dispatchCategory,
+      setDispatchDate,
+      setDispatchCategory,
+    ],
   );
 
   useEffect(() => {
@@ -368,6 +419,19 @@ export default function OnlineShopPage() {
                   <p className="text-amber-800">
                     {activeCategoryLabel}の予約可能な時間枠は残り{availableCapacityTotal}枠になりました。
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {slotValidationMessage && (
+            <div className="max-w-4xl mx-auto mb-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <div className="text-sm text-red-700">
+                    <p>{slotValidationMessage}</p>
+                  </div>
                 </div>
               </div>
             </div>
