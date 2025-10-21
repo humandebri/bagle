@@ -31,6 +31,7 @@ export default function Navbar() {
           <Link
             key={link.name}
             href={link.href}
+            prefetch={false}
             className={clsx(
               'transition',
               isHomepage ? 'hover:text-gray-300' : 'hover:text-gray-700',

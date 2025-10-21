@@ -74,8 +74,11 @@ export default function OnlineShopPage() {
   const dispatchTime = useCartStore((s) => s.dispatchTime);
   const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);
   const dispatchCategory = useCartStore((s) => s.dispatchCategory);
+  const dispatchHoldSessionId = useCartStore((s) => s.dispatchHoldSessionId);
+  const dispatchHoldExpiresAt = useCartStore((s) => s.dispatchHoldExpiresAt);
   const setDispatchDate = useCartStore((s) => s.setDispatchDate);
   const setDispatchCategory = useCartStore((s) => s.setDispatchCategory);
+  const setDispatchHold = useCartStore((s) => s.setDispatchHold);
   const activeCategory = useMenuStore((s) => s.activeCategory);
   const setActiveCategory = useMenuStore((s) => s.setActiveCategory);
   const activeCategoryRef = useRef<SlotCategory>(activeCategory);
@@ -131,6 +134,7 @@ export default function OnlineShopPage() {
         const hasUserSelection = Boolean(userDispatchDate && userDispatchTime);
 
         let shouldResetSelection = false;
+        let slotNoLongerAvailable = false;
 
         if (hasUserSelection) {
           const matchingSlot = data.timeSlots?.find(
@@ -139,20 +143,71 @@ export default function OnlineShopPage() {
               slot.time.slice(0, 5) === userDispatchTime,
           );
 
-          const remainingCapacity = matchingSlot
-            ? Math.max(
+          const normalizedSelectionTime = `${userDispatchTime ?? ''}`.slice(0, 5);
+          const selectionTimeForDate = normalizedSelectionTime
+            ? `${normalizedSelectionTime}:00`
+            : null;
+          const selectionDateTime =
+            selectionTimeForDate && userDispatchDate
+              ? new Date(`${userDispatchDate}T${selectionTimeForDate}`)
+              : null;
+          const selectionIsPast = Boolean(
+            selectionDateTime &&
+              !Number.isNaN(selectionDateTime.getTime()) &&
+              selectionDateTime.getTime() < Date.now(),
+          );
+
+          const holdExpiresMs = dispatchHoldExpiresAt
+            ? Date.parse(dispatchHoldExpiresAt)
+            : NaN;
+          const holdStillValid =
+            Boolean(
+              dispatchHoldSessionId &&
+                !Number.isNaN(holdExpiresMs) &&
+                holdExpiresMs > Date.now(),
+            );
+
+          if (!holdStillValid && dispatchHoldSessionId) {
+            setDispatchHold(null);
+          }
+
+          const holdActiveForSelection = Boolean(
+            holdStillValid && userDispatchDate && userDispatchTime,
+          );
+
+          if (!matchingSlot) {
+            if (selectionIsPast) {
+              shouldResetSelection = true;
+            } else if (holdActiveForSelection) {
+              shouldResetSelection = false;
+              slotNoLongerAvailable = true;
+            } else {
+              shouldResetSelection = true;
+            }
+          } else {
+            if (selectionIsPast) {
+              shouldResetSelection = true;
+            } else {
+              const remainingCapacity = Math.max(
                 0,
                 matchingSlot.max_capacity -
                   matchingSlot.current_bookings -
                   (matchingSlot.temp_bookings ?? 0),
-              )
-            : 0;
+              );
 
-          const slotStillBookable =
-            Boolean(matchingSlot) &&
-            (matchingSlot.is_available || remainingCapacity > 0);
+              const slotStillBookable =
+                matchingSlot.is_available || remainingCapacity > 0;
 
-          shouldResetSelection = !slotStillBookable;
+              if (slotStillBookable) {
+                shouldResetSelection = false;
+              } else if (holdActiveForSelection) {
+                shouldResetSelection = false;
+                slotNoLongerAvailable = true;
+              } else {
+                shouldResetSelection = true;
+              }
+            }
+          }
         }
 
         const availableSlots =
@@ -171,16 +226,23 @@ export default function OnlineShopPage() {
         if (activeCategoryRef.current !== category) return;
 
         if (shouldResetSelection && hasUserSelection) {
-          setSlotValidationMessage((prev) =>
-            prev ??
-            '以前に選択された予約枠は満席になったためリセットされました。',
+          setSlotValidationMessage(
+            '以前に選択された予約枠は利用できなくなったためリセットされました。',
           );
           setDispatchDate(null);
           if (userDispatchCategory) {
             setDispatchCategory(userDispatchCategory);
           }
-        } else if (!shouldResetSelection && hasUserSelection) {
-          setSlotValidationMessage((prev) => (prev ? null : prev));
+        } else if (hasUserSelection) {
+          if (slotNoLongerAvailable) {
+            setSlotValidationMessage(
+              '選択中の予約枠は現在満席です。ご注文確定前に空き状況をご確認ください。',
+            );
+          } else {
+            setSlotValidationMessage(null);
+          }
+        } else {
+          setSlotValidationMessage(null);
         }
 
         setAvailableSlotsCount(availableSlots.length);
@@ -222,8 +284,11 @@ export default function OnlineShopPage() {
       dispatchDate,
       dispatchTime,
       dispatchCategory,
+      dispatchHoldSessionId,
+      dispatchHoldExpiresAt,
       setDispatchDate,
       setDispatchCategory,
+      setDispatchHold,
     ],
   );
 

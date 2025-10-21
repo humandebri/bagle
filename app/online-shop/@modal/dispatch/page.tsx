@@ -36,6 +36,7 @@ export default function DispatchModalPage() {
   const dispatchEndTime = useCartStore((s) => s.dispatchEndTime);     // '14:00' など
   const setDispatchDate = useCartStore((s) => s.setDispatchDate);
   const setDispatchTime = useCartStore((s) => s.setDispatchTime);
+  const setDispatchHold = useCartStore((s) => s.setDispatchHold);
   const dispatchCategory = useCartStore((s) => s.dispatchCategory);
   const setDispatchCategory = useCartStore((s) => s.setDispatchCategory);
   const activeCategory = useMenuStore((s) => s.activeCategory);
@@ -145,8 +146,10 @@ export default function DispatchModalPage() {
         body: JSON.stringify({ date: selectedDate, time: selectedTime }),
       });
 
+      const result = await res.json();
+
       if (!res.ok) {
-        const { error } = await res.json();
+        const { error } = result;
         alert(error || '予約枠の更新に失敗しました');
         return;
       }
@@ -167,6 +170,11 @@ export default function DispatchModalPage() {
       setDispatchTime(selectedTime.slice(0, 5), endTimeForStore); // Zustand に保存
       setDispatchCategory(slotCategory);
       setActiveCategory(slotCategory);
+      if (result.session_id && result.expires_at) {
+        setDispatchHold({ sessionId: result.session_id, expiresAt: result.expires_at });
+      } else {
+        setDispatchHold(null);
+      }
       router.back();
     } catch (err) {
       console.error('Error updating time slot:', err);

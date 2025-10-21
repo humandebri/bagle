@@ -24,6 +24,8 @@ type CartState = {
   dispatchTime: string | null;
   dispatchEndTime: string | null;
   dispatchCategory: SlotCategory;
+  dispatchHoldSessionId: string | null;
+  dispatchHoldExpiresAt: string | null;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -31,6 +33,9 @@ type CartState = {
   setDispatchDate: (date: string | null) => void;
   setDispatchTime: (time: string | null, endTime?: string | null) => void;
   setDispatchCategory: (category: SlotCategory | null) => void;
+  setDispatchHold: (
+    payload: { sessionId: string; expiresAt: string } | null,
+  ) => void;
   reset: () => void;
 };
 
@@ -48,6 +53,8 @@ export const useCartStore = create<CartState>()(
       dispatchTime: initialDispatchTime,
       dispatchEndTime: null,
       dispatchCategory: initialDispatchCategory,
+      dispatchHoldSessionId: null,
+      dispatchHoldExpiresAt: null,
 
       addItem: (item) =>
         set((state) => {
@@ -68,6 +75,8 @@ export const useCartStore = create<CartState>()(
               dispatchTime: initialDispatchTime,
               dispatchEndTime: null,
               dispatchCategory: initialDispatchCategory,
+              dispatchHoldSessionId: null,
+              dispatchHoldExpiresAt: null,
             };
           }
           return { items: nextItems };
@@ -86,6 +95,8 @@ export const useCartStore = create<CartState>()(
               dispatchTime: initialDispatchTime,
               dispatchEndTime: null,
               dispatchCategory: initialDispatchCategory,
+              dispatchHoldSessionId: null,
+              dispatchHoldExpiresAt: null,
             };
           }
           return { items: filteredItems };
@@ -98,6 +109,8 @@ export const useCartStore = create<CartState>()(
           dispatchTime: initialDispatchTime,
           dispatchEndTime: null,
           dispatchCategory: initialDispatchCategory,
+          dispatchHoldSessionId: null,
+          dispatchHoldExpiresAt: null,
         }),
 
       setDispatchDate: (date) =>
@@ -107,6 +120,9 @@ export const useCartStore = create<CartState>()(
           ...(date === null
             ? { dispatchCategory: initialDispatchCategory }
             : { dispatchCategory: state.dispatchCategory }),
+          ...(date === null
+            ? { dispatchHoldSessionId: null, dispatchHoldExpiresAt: null }
+            : {}),
         })),
 
       setDispatchTime: (time, endTime = null) =>
@@ -120,6 +136,12 @@ export const useCartStore = create<CartState>()(
           dispatchCategory: category ?? initialDispatchCategory,
         }),
 
+      setDispatchHold: (payload) =>
+        set({
+          dispatchHoldSessionId: payload?.sessionId ?? null,
+          dispatchHoldExpiresAt: payload?.expiresAt ?? null,
+        }),
+
       reset: () =>
         set({
           items: [],
@@ -127,6 +149,8 @@ export const useCartStore = create<CartState>()(
           dispatchTime: initialDispatchTime,
           dispatchEndTime: null,
           dispatchCategory: initialDispatchCategory,
+          dispatchHoldSessionId: null,
+          dispatchHoldExpiresAt: null,
         }),
     }),
     {
