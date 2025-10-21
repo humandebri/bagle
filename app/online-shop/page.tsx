@@ -180,7 +180,7 @@ export default function OnlineShopPage() {
               shouldResetSelection = true;
             } else if (holdActiveForSelection) {
               shouldResetSelection = false;
-              slotNoLongerAvailable = true;
+              slotNoLongerAvailable = false;
             } else {
               shouldResetSelection = true;
             }
@@ -202,7 +202,7 @@ export default function OnlineShopPage() {
                 shouldResetSelection = false;
               } else if (holdActiveForSelection) {
                 shouldResetSelection = false;
-                slotNoLongerAvailable = true;
+                slotNoLongerAvailable = false;
               } else {
                 shouldResetSelection = true;
               }
