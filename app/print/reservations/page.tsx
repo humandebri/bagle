@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { formatTimeRange } from '@/components/DateTimeDisplay';
 
@@ -189,7 +189,16 @@ function PrintPageContent() {
                 className={order.payment_status === 'cancelled' ? 'bg-gray-100 text-gray-500' : ''}
               >
                 <td className="border p-2">
-                  {order.dispatch_time ? formatTimeRange(order.dispatch_time, order.dispatch_end_time ?? undefined) : '-'}
+                  <div className="font-semibold">
+                    {order.dispatch_date
+                      ? format(parseISO(order.dispatch_date), 'M月d日(E)', { locale: ja })
+                      : '-'}
+                  </div>
+                  <div>
+                    {order.dispatch_time
+                      ? formatTimeRange(order.dispatch_time, order.dispatch_end_time ?? undefined)
+                      : '-'}
+                  </div>
                 </td>
                 <td className="border p-2">
                   {order.payment_status === 'cancelled' && (
